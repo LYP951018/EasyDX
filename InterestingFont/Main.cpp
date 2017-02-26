@@ -1,7 +1,7 @@
-#include <Game.hpp>
+#include <EasyDx/Game.hpp>
 #include <memory>
 #include "MainWindow.hpp"
-#include <LinkWithDirectX.hpp>
+#include <EasyDx/LinkWithDirectX.hpp>
 
 int main()
 {

@@ -27,7 +27,7 @@ MainWindow::MainWindow()
     SetUpLayout();
 }
 
-void MainWindow::Render(ID3D11DeviceContext& context)
+void MainWindow::Render(ID3D11DeviceContext& context, ID2D1DeviceContext&)
 {
     ClearWithDefault();
     SetUpMatrices();

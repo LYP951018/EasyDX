@@ -4,6 +4,7 @@
 #include <gsl/gsl_assert>
 #include <Windows.h>
 #include <d3d11.h>
+#include <d2d1_1.h>
 
 namespace dx
 {
@@ -45,7 +46,7 @@ namespace dx
         return ::DefWindowProc(windowHandle, messageId, wParam, lParam);
     }
 
-    GameWindow::GameWindow(const std::wstring& title, bool fullScreen, std::uint32_t width, std::uint32_t height,
+    GameWindow::GameWindow(const std::wstring& title, std::uint32_t width, std::uint32_t height,
         SwapChainOptions options)
         : swapChainOptions_{options}
     {
@@ -64,6 +65,7 @@ namespace dx
             nullptr, nullptr, GetInstanceHandle(), static_cast<void*>(this));
         Ensures(windowHandle_ != nullptr);
         //CreateResources();
+        InitializeDpi();
         CreateSwapChain();
     }
 
@@ -71,6 +73,17 @@ namespace dx
     {
         ::ShowWindow(GetWin32WindowHandle(*this), SW_SHOW);
         ::UpdateWindow(GetWin32WindowHandle(*this));
+    }
+
+    void GameWindow::Relocate(const Rect& rect)
+    {
+        TryWin32(SetWindowPos(GetWin32WindowHandle(*this),
+            HWND_TOP,
+            rect.LeftTopX,
+            rect.LeftTopY,
+            rect.Width,
+            rect.Height,
+            SWP_NOZORDER | SWP_NOACTIVATE));
     }
 
     void* GameWindow::GetNativeHandle() const noexcept
@@ -103,15 +116,29 @@ namespace dx
         return height_;
     }
 
+    float GameWindow::GetDpiX() const noexcept
+    {
+        return static_cast<float>(dpiX_);
+    }
+
+    float GameWindow::GetDpiY() const noexcept
+    {
+        return static_cast<float>(dpiY_);
+    }
+
     GameWindow::~GameWindow()
     {
     }
 
-    void GameWindow::Render(ID3D11DeviceContext& context)
+    void GameWindow::Render(ID3D11DeviceContext&, ID2D1DeviceContext&)
     {
     }
 
-    void GameWindow::OnResize(std::uint32_t newWidth, std::uint32_t newHeight)
+    void GameWindow::OnResize(std::uint32_t, std::uint32_t)
+    {
+    }
+
+    void GameWindow::OnDpiUpdated(std::uint32_t, std::uint32_t)
     {
     }
 
@@ -127,12 +154,24 @@ namespace dx
             const auto lParam = params.lParam;
             const auto newWidth = static_cast<std::uint32_t>(lParam & 0xFFFF);
             const auto newHeight = static_cast<std::uint32_t>(lParam >> 16);
-            OnResizeInternal(newWidth, newHeight);
+            PrepareForResize(newWidth, newHeight);
+            OnResize(newWidth, newHeight);
         }
         break;
         case WM_QUIT:
             ::PostQuitMessage(0);
             break;
+        case WM_DPICHANGED:
+        {
+            const auto wParam = params.wParam;
+            const auto newDpiX = static_cast<std::uint32_t>(LOWORD(wParam));
+            const auto newDpiY = static_cast<std::uint32_t>(HIWORD(wParam));
+            const auto rect = *reinterpret_cast<RECT*>(params.lParam);
+            const auto newWindowRect = Rect::FromRECT(rect);
+            UpdateDpi(newDpiX, newDpiY, newWindowRect);
+            OnDpiUpdated(newDpiX, newDpiY);
+        }
+           break; 
         default:
             break;
         }
@@ -141,18 +180,25 @@ namespace dx
 
     void GameWindow::OnPaint()
     {
-        Render(GetDeviceContext());
+        auto& game = GetGame();
+        Render(game.GetContext3D(), game.GetContext2D());
         Present();
     }
 
-    void GameWindow::OnResizeInternal(std::uint32_t newWidth, std::uint32_t newHeight)
+    void GameWindow::PrepareForResize(std::uint32_t newWidth, std::uint32_t newHeight)
     {
         width_ = newWidth;
         height_ = newHeight;
         ResetD3D();
         TryHR(swapChain_-> ResizeBuffers(2, newWidth, newHeight, DXGI_FORMAT_B8G8R8A8_UNORM, 0));
         CreateResources();
-        OnResize(newWidth, newHeight);
+    }
+
+    void GameWindow::UpdateDpi(std::uint32_t dpiX, std::uint32_t dpiY, const Rect& newWindowRect)
+    {
+        dpiX_ = dpiX;
+        dpiY_ = dpiY;
+        Relocate(newWindowRect);
     }
 
     void GameWindow::Present()
@@ -162,7 +208,8 @@ namespace dx
 
     void GameWindow::CreateResources()
     {
-        auto& device = GetD3DDevice();
+        auto& game = GetGame();
+        auto& device = game.GetDevice3D();
         wrl::ComPtr<ID3D11Texture2D> backBuffer;
         TryHR(swapChain_->GetBuffer(0, IID_PPV_ARGS(backBuffer.ReleaseAndGetAddressOf())));
         device.CreateRenderTargetView(backBuffer.Get(), {}, backBufferRenderTargetView_.ReleaseAndGetAddressOf());
@@ -172,25 +219,44 @@ namespace dx
         TryHR(device.CreateTexture2D(&depthStencilDesc, nullptr, depthStencil.GetAddressOf()));
         CD3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc(D3D11_DSV_DIMENSION_TEXTURE2D);
         TryHR(device.CreateDepthStencilView(depthStencil.Get(), &depthStencilViewDesc, depthBufferRenderTargetView_.ReleaseAndGetAddressOf()));
+    
+        const auto props = D2D1::BitmapProperties1(
+            D2D1_BITMAP_OPTIONS_TARGET | D2D1_BITMAP_OPTIONS_CANNOT_DRAW,
+            D2D1::PixelFormat(DXGI_FORMAT_B8G8R8A8_UNORM, D2D1_ALPHA_MODE_PREMULTIPLIED),
+            static_cast<float>(GetDpiX()),
+            static_cast<float>(GetDpiY())
+        );
+       wrl::ComPtr<IDXGISurface> surface;
+       TryHR(swapChain_->GetBuffer(0, IID_PPV_ARGS(surface.ReleaseAndGetAddressOf())));
+       auto& context2D = game.GetContext2D();
+       context2D.CreateBitmapFromDxgiSurface(surface.Get(), &props, targetBitmap_.ReleaseAndGetAddressOf());
+       context2D.SetTarget(targetBitmap_.Get());
     }
 
     void GameWindow::ResetD3D()
     {
         ID3D11RenderTargetView* nullViews[] = { nullptr };
-        auto& deviceContext = GetDeviceContext();
-        deviceContext.OMSetRenderTargets(std::size(nullViews), nullViews, nullptr);
+        auto& game = GetGame();
+        auto& context3D = game.GetContext3D();
+        auto& context2D = game.GetContext2D();
+        context3D.OMSetRenderTargets(std::size(nullViews), nullViews, nullptr);
+        context2D.SetTarget(nullptr);
+        targetBitmap_.Reset();
         backBufferRenderTargetView_.Reset();
         depthBufferRenderTargetView_.Reset();
-        deviceContext.Flush();
+        context3D.Flush();
     }
 
     void GameWindow::Clear(gsl::span<float, 4> color, const ViewportOptions& viewportOptions)
     {
-        auto& deviceContext = GetDeviceContext();
+        auto& game = GetGame();
+        auto& deviceContext = game.GetContext3D();
         deviceContext.ClearRenderTargetView(backBufferRenderTargetView_.Get(), color.data());
         deviceContext.ClearDepthStencilView(depthBufferRenderTargetView_.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.f, 0);
         ID3D11RenderTargetView* views[] = { backBufferRenderTargetView_.Get() };
         deviceContext.OMSetRenderTargets(std::size(views), views, depthBufferRenderTargetView_.Get());
+        
+        
         const D3D11_VIEWPORT viewport{
             viewportOptions.TopLeftX,
             viewportOptions.TopLeftY,
@@ -213,11 +279,11 @@ namespace dx
 
     void GameWindow::CreateSwapChain()
     {
-        wrl::ComPtr<IDXGIDevice> dxgiDevice;
-        auto& d3dDevice = GetD3DDevice();
-        TryHR(d3dDevice.QueryInterface(dxgiDevice.ReleaseAndGetAddressOf()));
+        auto& game = GetGame();
+        auto& dxgiDevice = game.GetDxgiDevice();
+        auto& d3dDevice = game.GetDevice3D();
         wrl::ComPtr<IDXGIAdapter> adapter;
-        TryHR(dxgiDevice->GetAdapter(adapter.ReleaseAndGetAddressOf()));
+        TryHR(dxgiDevice.GetAdapter(adapter.ReleaseAndGetAddressOf()));
         wrl::ComPtr<IDXGIFactory> dxgiFactory;
         TryHR(adapter->GetParent(IID_PPV_ARGS(dxgiFactory.ReleaseAndGetAddressOf())));
         DXGI_SWAP_CHAIN_DESC desc = {};
@@ -231,5 +297,13 @@ namespace dx
         desc.SampleDesc.Quality = 0;
         desc.Windowed = swapChainOptions_.Windowed == true ? 1 : 0;
         TryHR(dxgiFactory->CreateSwapChain(&d3dDevice, &desc, swapChain_.ReleaseAndGetAddressOf()));
+    }
+
+    void GameWindow::InitializeDpi()
+    {
+        const auto dpi = GetDpiForWindow(GetWin32WindowHandle(*this));
+        Ensures(dpi != 0);
+        dpiX_ = static_cast<std::uint32_t>(dpi);
+        dpiY_ = static_cast<std::uint32_t>(dpi);
     }
 }

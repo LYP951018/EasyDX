@@ -9,7 +9,7 @@ public:
     MainWindow();
 
 protected:
-    void Render(ID3D11DeviceContext& context) override;
+    void Render(ID3D11DeviceContext& context, ID2D1DeviceContext&) override;
 
 private:
     void SetUpBuffers();
