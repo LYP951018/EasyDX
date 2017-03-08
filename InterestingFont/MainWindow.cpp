@@ -22,7 +22,7 @@ MainWindow::MainWindow()
 
     const std::wstring_view str = L"Aji chvim 😭";
 
-    wrl::ComPtr<IDWriteTextLayout> layout = {};
+    wrl::ComPtr<IDWriteTextLayout> layout;
 
     dx::TryHR(dwFactory.CreateTextLayout(
         str.data(), static_cast<UINT>(str.size()), textFormat_.Get(), 300.f, 100.f, layout.ReleaseAndGetAddressOf()));

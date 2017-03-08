@@ -1,6 +1,8 @@
 #pragma once
 
-#include <GameWindow.hpp>
+#include <EasyDx/GameWindow.hpp>
+#include <EasyDx/RenderedObject.hpp>
+#include <EasyDx/Shaders.hpp>
 #include <DirectXMath.h>
 
 class MainWindow : public dx::GameWindow
@@ -12,18 +14,13 @@ protected:
     void Render(ID3D11DeviceContext& context, ID2D1DeviceContext&) override;
 
 private:
-    void SetUpBuffers();
+    void InitializeObjects();
     void SetUpMatrices();
-    void SetUpLayout();
-    void CompileShaders();
 
     DirectX::XMFLOAT4X4 world_, view_, projection_;
 
-    wrl::ComPtr<ID3D11InputLayout> vertexLayout_;
-    wrl::ComPtr<ID3D11Buffer> vertexBuffer_;
-    wrl::ComPtr<ID3D11Buffer> indexBuffer_;
     wrl::ComPtr<ID3D11Buffer> constantBuffer_;
-    wrl::ComPtr<ID3D10Blob> vertexShaderByteCode_;
-    wrl::ComPtr<ID3D11VertexShader> vertexShader_;
-    wrl::ComPtr<ID3D11PixelShader> pixelShader_;
+    dx::RenderedObject cube_;
+    dx::VertexShader vs_;
+    wrl::ComPtr<ID3D11PixelShader> ps_;
 };

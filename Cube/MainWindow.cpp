@@ -1,9 +1,10 @@
 #include "MainWindow.hpp"
-#include <Game.hpp>
-#include <DXHelpers.hpp>
+#include <EasyDX/Game.hpp>
+#include <EasyDX/DXHelpers.hpp>
 #include <gsl/span>
 #include <cstdint>
 #include <d3d11.h>
+#include <EasyDx/Mesh.hpp>
 #include <DirectXMath.h>
 #include <DirectXColors.h>
 
@@ -21,25 +22,32 @@ struct ConstantBuffer
 
 MainWindow::MainWindow()
 {
-    SetUpBuffers();
-   
-    CompileShaders();
-    SetUpLayout();
+    SetUpMatrices();
+    InitializeObjects();
+
+    D3D11_INPUT_ELEMENT_DESC layout[] = {
+        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 }
+    };
+
+    auto& d3dDevice = dx::GetGame().GetDevice3D();
+    vs_ = dx::VertexShader::CompileFromFile(
+        d3dDevice,
+        L"Cube.hlsl",
+        "VS",
+        gsl::make_span(layout)
+    );
+    ps_ = dx::PixelShader::CompileFromFile(
+        d3dDevice,
+        L"Cube.hlsl",
+        "PS"
+    );
 }
 
 void MainWindow::Render(ID3D11DeviceContext& context, ID2D1DeviceContext&)
 {
     ClearWithDefault();
     SetUpMatrices();
-    context.IASetInputLayout(vertexLayout_.Get());
-
-    ID3D11Buffer* const vertexBuffers[] = { vertexBuffer_.Get() };
-    const UINT vertexBufferStrides[] = { sizeof(Vertex) };
-    const UINT vertexBufferOffsets[] = { 0 };
-    context.IASetVertexBuffers(0, std::size(vertexBuffers), vertexBuffers, vertexBufferStrides, vertexBufferOffsets);
-
-    context.IASetIndexBuffer(indexBuffer_.Get(), DXGI_FORMAT_R16_UINT, 0);
-    context.IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
     ConstantBuffer cb;
     using namespace DirectX;
@@ -52,15 +60,15 @@ void MainWindow::Render(ID3D11DeviceContext& context, ID2D1DeviceContext&)
     context.UpdateSubresource(constantBuffer_.Get(), 0, nullptr, &cb, 0, 0);
 
     ID3D11Buffer* const cbs[] = { constantBuffer_.Get() };
-    context.VSSetShader(vertexShader_.Get(), nullptr, 0);
     context.VSSetConstantBuffers(0, 1, cbs);
-    context.PSSetShader(pixelShader_.Get(), nullptr, 0);
     context.PSSetConstantBuffers(0, 1, cbs);
 
-    context.DrawIndexed(36, 0, 0);
+    cube_.AttachVertexShader(vs_);
+    cube_.AttachPixelShader(ps_);
+    cube_.Render(context);
 }
 
-void MainWindow::SetUpBuffers()
+void MainWindow::InitializeObjects()
 {
     using namespace DirectX;
 
@@ -96,9 +104,6 @@ void MainWindow::SetUpBuffers()
         { XMFLOAT3(-1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f) },
     };
 
-    auto& d3dDevice = dx::GetD3DDevice();
-    vertexBuffer_ = dx::MakeVertexBuffer(d3dDevice, gsl::make_span(vertices));
-
     std::uint16_t indices[] = {
         3,1,0,
         2,1,3,
@@ -119,7 +124,16 @@ void MainWindow::SetUpBuffers()
         23,20,22
     };
 
-    indexBuffer_ = dx::MakeIndexBuffer(d3dDevice, gsl::make_span(indices));
+    auto& game = dx::GetGame();
+    auto& d3dDevice = game.GetDevice3D();
+
+    dx::Mesh mesh{
+        d3dDevice,
+        gsl::make_span(vertices),
+        gsl::make_span(indices)
+    };
+
+    cube_ = { gsl::make_span(&mesh, 1) };
 
     D3D11_BUFFER_DESC constantBufferDesc = {};
     constantBufferDesc.Usage = D3D11_USAGE_DEFAULT;
@@ -142,24 +156,4 @@ void MainWindow::SetUpMatrices()
     XMStoreFloat4x4(&projection_, XMMatrixPerspectiveFovLH(
         XM_PIDIV4, static_cast<float>(GetWidth()) / GetHeight(), 0.01f, 100.f
     ));
-}
-
-void MainWindow::SetUpLayout()
-{
-    const D3D11_INPUT_ELEMENT_DESC layout[] = {
-        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-        { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 }
-    };
-    auto& device = dx::GetD3DDevice();
-    dx::TryHR(device.CreateInputLayout(layout, std::size(layout), vertexShaderByteCode_->GetBufferPointer(),
-        vertexShaderByteCode_->GetBufferSize(), vertexLayout_.GetAddressOf()));
-}
-
-void MainWindow::CompileShaders()
-{
-    vertexShaderByteCode_ = dx::CompileShaderFromFile(L"Cube.hlsl", "VS", "vs_4_0");
-    auto& device = dx::GetD3DDevice();
-    vertexShader_ = dx::CreateVertexShader(device, *vertexShaderByteCode_.Get());
-    auto psBlob = dx::CompileShaderFromFile(L"Cube.hlsl", "PS", "ps_4_0");
-    pixelShader_ = dx::CreatePixelShader(device, *psBlob.Get());
 }

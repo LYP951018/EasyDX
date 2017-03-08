@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <string>
 #include <wrl/client.h>
@@ -30,6 +30,8 @@ struct ID2D1Bitmap1;
 struct IDWriteFactory1;
 struct IDWriteTextLayout1;
 struct IDWriteTextFormat;
+
+struct D3D11_INPUT_ELEMENT_DESC;
 
 struct tagRECT;
 
