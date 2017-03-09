@@ -1,10 +1,10 @@
-#pragma once
+ï»¿#pragma once
 
 #include <EasyDx/Scene.hpp>
 #include <EasyDx/RenderedObject.hpp>
 #include <EasyDx/Shaders.hpp>
 #include <DirectXMath.h>
-//wrl::ComPtr ¶ÔÓÚ incomplete type µÄÖ§³ÖÎÊÌâ¡£
+//wrl::ComPtr å¯¹äº incomplete type çš„æ”¯æŒé—®é¢˜ã€‚
 #include <d3d11.h>
 
 class MainScene : public dx::Scene
