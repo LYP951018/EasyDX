@@ -148,10 +148,10 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
-    <ClCompile Include="MainWindow.cpp" />
+    <ClCompile Include="MainScene.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="MainWindow.hpp" />
+    <ClInclude Include="MainScene.hpp" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Cube.hlsl">

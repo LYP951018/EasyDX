@@ -1,11 +1,10 @@
 #include <EasyDX/Game.hpp>
+#include <EasyDx/GameWindow.hpp>
 #include <memory>
-#include "MainWindow.hpp"
+#include "MainScene.hpp"
 #include <EasyDX/LinkWithDirectX.hpp>
 
 int main()
 {
-    dx::GetGame()
-        .SetUp(std::make_unique<MainWindow>())
-        .Run();
+    dx::RunGame(std::make_unique<dx::GameWindow>(), std::make_shared<MainScene>());
 }

@@ -7,7 +7,7 @@ Make DirectX easy to use.
 * ~~Direct2D 1.1 & DirectWrite~~
 * ~~basic assimp support~~
 * Events
-* Constant Buffer
+* ~~Constant Buffer~~
 * Cameras
 * Basic3D vertex shader
 * Textures

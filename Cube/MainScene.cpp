@@ -1,6 +1,7 @@
-#include "MainWindow.hpp"
+#include "MainScene.hpp"
 #include <EasyDX/Game.hpp>
-#include <EasyDX/DXHelpers.hpp>
+#include <EasyDX/Buffers.hpp>
+#include <EasyDx/GameWindow.hpp>
 #include <gsl/span>
 #include <cstdint>
 #include <d3d11.h>
@@ -20,7 +21,32 @@ struct ConstantBuffer
     DirectX::XMFLOAT4 Color;
 };
 
-MainWindow::MainWindow()
+void MainScene::Render(ID3D11DeviceContext& context, ID2D1DeviceContext&)
+{
+    auto mainWindow = dx::GetGame().GetMainWindow();
+    mainWindow->ClearWithDefault();
+    SetUpMatrices();
+
+    ConstantBuffer cb;
+    using namespace DirectX;
+    XMStoreFloat4x4(&cb.world, XMMatrixTranspose(XMMatrixRotationY(XM_PI / 4.f)));
+    XMStoreFloat4x4(&cb.view, XMMatrixTranspose(XMLoadFloat4x4(&view_)));
+    XMStoreFloat4x4(&cb.projection, XMMatrixTranspose(XMLoadFloat4x4(&projection_)));
+    cb.LightDir = { -0.577f, 0.577f, -0.577f, 1.0f };
+    cb.LightColor = { 0.5f, 0.5f, 0.5f, 1.0f };
+    XMStoreFloat4(&cb.Color, DirectX::Colors::Black);
+    context.UpdateSubresource(constantBuffer_.Get(), 0, nullptr, &cb, 0, 0);
+
+    ID3D11Buffer* const cbs[] = { constantBuffer_.Get() };
+    context.VSSetConstantBuffers(0, 1, cbs);
+    context.PSSetConstantBuffers(0, 1, cbs);
+
+    cube_.AttachVertexShader(vs_);
+    cube_.AttachPixelShader(ps_);
+    cube_.Render(context);
+}
+
+void MainScene::Start()
 {
     SetUpMatrices();
     InitializeObjects();
@@ -44,31 +70,7 @@ MainWindow::MainWindow()
     );
 }
 
-void MainWindow::Render(ID3D11DeviceContext& context, ID2D1DeviceContext&)
-{
-    ClearWithDefault();
-    SetUpMatrices();
-
-    ConstantBuffer cb;
-    using namespace DirectX;
-    XMStoreFloat4x4(&cb.world, XMMatrixTranspose(XMMatrixRotationY(XM_PI / 4.f)));
-    XMStoreFloat4x4(&cb.view, XMMatrixTranspose(XMLoadFloat4x4(&view_)));
-    XMStoreFloat4x4(&cb.projection, XMMatrixTranspose(XMLoadFloat4x4(&projection_)));
-    cb.LightDir = { -0.577f, 0.577f, -0.577f, 1.0f };
-    cb.LightColor = { 0.5f, 0.5f, 0.5f, 1.0f };
-    XMStoreFloat4(&cb.Color, DirectX::Colors::Black);
-    context.UpdateSubresource(constantBuffer_.Get(), 0, nullptr, &cb, 0, 0);
-
-    ID3D11Buffer* const cbs[] = { constantBuffer_.Get() };
-    context.VSSetConstantBuffers(0, 1, cbs);
-    context.PSSetConstantBuffers(0, 1, cbs);
-
-    cube_.AttachVertexShader(vs_);
-    cube_.AttachPixelShader(ps_);
-    cube_.Render(context);
-}
-
-void MainWindow::InitializeObjects()
+void MainScene::InitializeObjects()
 {
     using namespace DirectX;
 
@@ -134,18 +136,13 @@ void MainWindow::InitializeObjects()
     };
 
     cube_ = { gsl::make_span(&mesh, 1) };
-
-    D3D11_BUFFER_DESC constantBufferDesc = {};
-    constantBufferDesc.Usage = D3D11_USAGE_DEFAULT;
-    constantBufferDesc.ByteWidth = sizeof(ConstantBuffer);
-    constantBufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-
-    dx::TryHR(d3dDevice.CreateBuffer(&constantBufferDesc, nullptr, constantBuffer_.GetAddressOf()));
+    constantBuffer_ = dx::MakeConstantBuffer<ConstantBuffer>(d3dDevice);
 }
 
-void MainWindow::SetUpMatrices()
+void MainScene::SetUpMatrices()
 {
     using namespace DirectX;
+    auto mainWindow = dx::GetGame().GetMainWindow();
     XMStoreFloat4x4(&world_, XMMatrixIdentity());
     const XMFLOAT3 eye = { 0.f, 4.f, -10.f };
     const XMFLOAT3 at = { 0.f, 1.f, 0.f };
@@ -154,6 +151,6 @@ void MainWindow::SetUpMatrices()
         XMLoadFloat3(&eye), XMLoadFloat3(&at), XMLoadFloat3(&up)
     ));
     XMStoreFloat4x4(&projection_, XMMatrixPerspectiveFovLH(
-        XM_PIDIV4, static_cast<float>(GetWidth()) / GetHeight(), 0.01f, 100.f
+        XM_PIDIV4, static_cast<float>(mainWindow->GetWidth()) / mainWindow->GetHeight(), 0.01f, 100.f
     ));
 }

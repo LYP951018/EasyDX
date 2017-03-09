@@ -6,6 +6,14 @@
 
 namespace dx
 {
+    wrl::ComPtr<ID3D11VertexShader> CreateVertexShader(ID3D11Device& device, ID3D10Blob& blob);
+    wrl::ComPtr<ID3D11PixelShader> CreatePixelShader(ID3D11Device& device, ID3D10Blob& blob);
+
+    wrl::ComPtr<ID3D10Blob> CompileShaderFromFile(
+        const wchar_t* fileName,
+        const char* entryPoint,
+        const char* shaderModel);
+
     //对 InputLayout 与 VertexShader 的浅封装。无需使用 shared_ptr，直接 copy，因为其类成员都使用 wrl::ComPtr。
     class VertexShader
     {

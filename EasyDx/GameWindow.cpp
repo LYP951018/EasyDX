@@ -1,6 +1,7 @@
 #include "GameWindow.hpp"
 #include "Game.hpp"
 #include "Common.hpp"
+#include "Scene.hpp"
 #include <gsl/gsl_assert>
 #include <Windows.h>
 #include <d3d11.h>
@@ -130,8 +131,10 @@ namespace dx
     {
     }
 
-    void GameWindow::Render(ID3D11DeviceContext&, ID2D1DeviceContext&)
+    void GameWindow::Render(ID3D11DeviceContext& context3D, ID2D1DeviceContext& context2D)
     {
+        auto mainScene = GetGame().GetMainScene();
+        mainScene->Render(context3D, context2D);
     }
 
     void GameWindow::OnResize(std::uint32_t, std::uint32_t)
@@ -247,15 +250,14 @@ namespace dx
         context3D.Flush();
     }
 
-    void GameWindow::Clear(gsl::span<float, 4> color, const ViewportOptions& viewportOptions)
+    void GameWindow::Clear(const DirectX::XMFLOAT4& color, const ViewportOptions& viewportOptions)
     {
         auto& game = GetGame();
         auto& deviceContext = game.GetContext3D();
-        deviceContext.ClearRenderTargetView(backBufferRenderTargetView_.Get(), color.data());
+        deviceContext.ClearRenderTargetView(backBufferRenderTargetView_.Get(), reinterpret_cast<const float*>(&color));
         deviceContext.ClearDepthStencilView(depthBufferRenderTargetView_.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.f, 0);
         ID3D11RenderTargetView* views[] = { backBufferRenderTargetView_.Get() };
         deviceContext.OMSetRenderTargets(std::size(views), views, depthBufferRenderTargetView_.Get());
-        
         
         const D3D11_VIEWPORT viewport{
             viewportOptions.TopLeftX,
@@ -270,11 +272,10 @@ namespace dx
 
     void GameWindow::ClearWithDefault()
     {
-        float color[] = { 1.f, 1.f, 1.f, 1.f };
         ViewportOptions options = {
             0.f, 0.f, static_cast<float>(width_), static_cast<float>(height_), 0.f, 1.f
         };
-        Clear({ color }, options);
+        Clear({ 1.f, 1.f, 1.f, 1.f }, options);
     }
 
     void GameWindow::CreateSwapChain()

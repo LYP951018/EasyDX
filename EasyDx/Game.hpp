@@ -2,17 +2,24 @@
 
 #include "Common.hpp"
 #include <memory>
-#include <wrl/client.h>
+#include <unordered_map>
+#include <string>
 
 namespace dx
 {
     class GameWindow;
+    class Scene;
 
     class Game
     {
     public:
         void Run();
-        Game& SetUp(std::unique_ptr<GameWindow> mainWindow);
+        void SetUp(std::unique_ptr<GameWindow> mainWindow);
+        void AddScene(std::string name, std::shared_ptr<Scene> scene);
+        std::shared_ptr<Scene> GetScene(const std::string& name) const;
+        void SetMainScene(const std::string& name);
+        std::shared_ptr<Scene> GetMainScene() const;
+        GameWindow* GetMainWindow() const;
 
         ID3D11Device& GetDevice3D() const;
         ID3D11DeviceContext& GetContext3D() const;
@@ -41,5 +48,12 @@ namespace dx
         wrl::ComPtr<IDWriteFactory1> dwFactory_;
 
         std::unique_ptr<GameWindow> mainWindow_;
+        std::unordered_map<std::string, std::shared_ptr<Scene>> scenes_;
+
+        //TODO: raw pointer?
+        std::shared_ptr<Scene> mainScene_;
     };
+
+
+    void RunGame(std::unique_ptr<GameWindow> mainWindow, std::shared_ptr<Scene> mainScene);
 }

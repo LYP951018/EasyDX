@@ -1,6 +1,8 @@
 #include "Game.hpp"
 #include "GameWindow.hpp"
 #include "Common.hpp"
+#include "Scene.hpp"
+#include <stdexcept>
 #include <gsl/gsl_assert>
 #include <d3d11.h>
 #include <d2d1_1.h>
@@ -28,10 +30,39 @@ namespace dx
         }
     }
 
-    Game& Game::SetUp(std::unique_ptr<GameWindow> mainWindow)
+    void Game::SetUp(std::unique_ptr<GameWindow> mainWindow)
     {
         mainWindow_ = std::move(mainWindow);
-        return *this;
+    }
+
+    void Game::AddScene(std::string name, std::shared_ptr<Scene> scene)
+    {
+        scenes_.insert({ std::move(name), std::move(scene) });
+    }
+
+    std::shared_ptr<Scene> Game::GetScene(const std::string& name) const
+    {
+        const auto it = scenes_.find(name);
+        if (it != scenes_.end())
+            return it->second;
+        using namespace std::string_literals;
+        throw std::runtime_error{ "Not found scene "s + name };
+    }
+
+    void Game::SetMainScene(const std::string& name)
+    {
+        mainScene_ = GetScene(name);
+        mainScene_->Start();
+    }
+
+    std::shared_ptr<Scene> Game::GetMainScene() const
+    {
+        return mainScene_;
+    }
+
+    GameWindow* Game::GetMainWindow() const
+    {
+        return mainWindow_.get();
     }
 
     ID3D11Device& Game::GetDevice3D() const
@@ -118,5 +149,14 @@ namespace dx
     {
         static Game game;
         return game;
+    }
+
+    void RunGame(std::unique_ptr<GameWindow> mainWindow, std::shared_ptr<Scene> mainScene)
+    {
+        auto& game = GetGame();
+        game.SetUp(std::move(mainWindow));
+        game.AddScene("Main", std::move(mainScene));
+        game.SetMainScene("Main");
+        game.Run();
     }
 }

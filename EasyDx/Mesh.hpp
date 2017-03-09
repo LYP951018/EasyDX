@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Common.hpp"
-#include "DXHelpers.hpp"
+#include "Buffers.hpp"
 #include <gsl/span>
 
 namespace dx
@@ -17,11 +17,12 @@ namespace dx
         template<typename VertexT>
         Mesh(ID3D11Device& device,
             gsl::span<VertexT> vertices,
-            gsl::span<std::uint16_t> indices)
+            gsl::span<std::uint16_t> indices,
+            BufferUsage usage = BufferUsage::Default)
             : Mesh{ static_cast<std::uint32_t>(sizeof(VertexT)),
             static_cast<std::uint32_t>(indices.size()),
-            MakeVertexBuffer(device, vertices),
-            MakeIndexBuffer(device, indices) }
+            MakeVertexBuffer(device, vertices, usage),
+            MakeIndexBuffer(device, indices, usage) }
         {}
 
         void Render(ID3D11DeviceContext& context);

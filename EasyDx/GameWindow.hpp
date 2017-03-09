@@ -3,8 +3,8 @@
 #include "Common.hpp"
 #include <cstdint>
 #include <string>
-#include <wrl/client.h>
 #include <gsl/span>
+#include <DirectXMath.h>
 
 namespace dx
 {
@@ -54,6 +54,10 @@ namespace dx
 
         virtual ~GameWindow();
 
+        void Clear(const DirectX::XMFLOAT4& color,
+            const ViewportOptions& viewPortOptions);
+        void ClearWithDefault();
+
     protected:
         void Present();
 
@@ -62,10 +66,6 @@ namespace dx
         virtual void OnDpiUpdated(std::uint32_t dpiX, std::uint32_t dpiY);
 
         void ResetD3D();
-        void Clear(gsl::span<float, 4> color,
-            const ViewportOptions& viewPortOptions);
-        void ClearWithDefault();
-
     private:
         void OnPaint();
         void PrepareForResize(std::uint32_t newWidth, std::uint32_t newHeight);
