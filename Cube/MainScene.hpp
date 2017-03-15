@@ -18,8 +18,6 @@ protected:
 private:
     void InitializeObjects();
 
-    DirectX::XMFLOAT4X4 world_;
-
     wrl::ComPtr<ID3D11Buffer> constantBuffer_;
     dx::RenderedObject cube_;
     dx::VertexShader vs_;
