@@ -11,5 +11,6 @@ Make DirectX easy to use.
 * Cameras (working on it)
 * Basic3D vertex shader
 * Textures
+* Lighting (prototyping & working)
 
 Special thanks to the [aMazing Project](https://github.com/AntiMoron/aMazing).
