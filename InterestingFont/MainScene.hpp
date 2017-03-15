@@ -1,13 +1,14 @@
 #pragma once
 
-#include <EasyDx/GameWindow.hpp>
+#include <EasyDx/Scene.hpp>
+#include <EasyDx/Common.hpp>
+#include <d2d1_1.h>
+#include <dwrite_1.h>
 
-class MainWindow : public dx::GameWindow
+class MainScene : public dx::Scene
 {
-public:
-    MainWindow();
-
 protected:
+    void Start() override;
     void Render(ID3D11DeviceContext&, ID2D1DeviceContext& context2D) override;
 
 private:

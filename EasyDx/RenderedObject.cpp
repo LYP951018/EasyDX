@@ -22,10 +22,10 @@ namespace dx
     DirectX::XMMATRIX RenderedObject::ComputeWorld() const noexcept
     {
         using namespace DirectX;
-        return XMMatrixMultiply(XMMatrixMultiply(
-            XMMatrixScaling(Scale.x, Scale.y, Scale.z),
-            XMMatrixRotationQuaternion(XMLoadFloat4(&Rotation))),
-            XMMatrixTranslation(Translation.x, Translation.y, Translation.z));
+        return 
+            XMMatrixScaling(Scale.x, Scale.y, Scale.z) *
+            XMMatrixRotationQuaternion(XMLoadFloat4(&Rotation)) *
+            XMMatrixTranslation(Translation.x, Translation.y, Translation.z);
     }
 
     void RenderedObject::Render(ID3D11DeviceContext& deviceContext)

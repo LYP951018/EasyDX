@@ -2,10 +2,12 @@
 #include "Game.hpp"
 #include "Common.hpp"
 #include "Scene.hpp"
+#include "Misc.hpp"
 #include <gsl/gsl_assert>
 #include <Windows.h>
 #include <d3d11.h>
 #include <d2d1_1.h>
+#include <windowsx.h>
 
 namespace dx
 {
@@ -137,12 +139,10 @@ namespace dx
         mainScene->Render(context3D, context2D);
     }
 
-    void GameWindow::OnResize(std::uint32_t, std::uint32_t)
+    Point PosFromLParam(LPARAM lParam) noexcept
     {
-    }
-
-    void GameWindow::OnDpiUpdated(std::uint32_t, std::uint32_t)
-    {
+        return { static_cast<std::int32_t>(GET_X_LPARAM(lParam)), 
+            static_cast<std::int32_t>(GET_Y_LPARAM(lParam)) };
     }
 
     std::int32_t GameWindow::ProcessMessage(std::uint32_t message, Win32Params params)
@@ -151,14 +151,17 @@ namespace dx
         {
         case WM_PAINT:
             OnPaint();
-        break;
+            break;
         case WM_SIZE:
         {
             const auto lParam = params.lParam;
             const auto newWidth = static_cast<std::uint32_t>(lParam & 0xFFFF);
             const auto newHeight = static_cast<std::uint32_t>(lParam >> 16);
             PrepareForResize(newWidth, newHeight);
-            OnResize(newWidth, newHeight);
+            ResizeEventArgs args;
+            args.Window = this;
+            args.NewSize = { newWidth, newHeight };
+            WindowResize(args);
         }
         break;
         case WM_QUIT:
@@ -172,9 +175,65 @@ namespace dx
             const auto rect = *reinterpret_cast<RECT*>(params.lParam);
             const auto newWindowRect = Rect::FromRECT(rect);
             UpdateDpi(newDpiX, newDpiY, newWindowRect);
-            OnDpiUpdated(newDpiX, newDpiY);
+            DpiChangedEventArgs args;
+            args.Window = this;
+            args.NewDpiX = newDpiX;
+            args.NewDpiY = newDpiY;
+            DpiChanged(args);
         }
-           break; 
+        break;
+        case WM_KEYDOWN:
+        {
+            KeyEventArgs args;
+            args.Window = this;
+            args.Key = static_cast<std::uint32_t>(params.wParam);
+            KeyDown(args);
+        }
+        break;
+        case WM_KEYUP:
+        {
+            KeyEventArgs args;
+            args.Window = this;
+            args.Key = static_cast<std::uint32_t>(params.wParam);
+            KeyUp(args);
+        }
+        break;
+        case WM_LBUTTONDOWN:
+        {
+            MouseEventArgs args;
+            args.Window = this;
+            args.Button = MouseButton::kLeft;
+            args.Position = PosFromLParam(params.lParam);
+            MouseDown(args);
+        }
+        break;
+        case WM_LBUTTONUP:
+        {
+            MouseEventArgs args;
+            args.Window = this;
+            args.Button = MouseButton::kLeft;
+            args.Position = PosFromLParam(params.lParam);
+            MouseUp(args);
+        }
+        break;
+        case WM_RBUTTONDOWN:
+        {
+            MouseEventArgs args;
+            args.Window = this;
+            args.Button = MouseButton::kRight;
+            args.Position = PosFromLParam(params.lParam);
+            MouseDown(args);
+        }
+        break;
+        case WM_RBUTTONUP:
+        {
+            MouseEventArgs args;
+            args.Window = this;
+            args.Button = MouseButton::kRight;
+            args.Position = PosFromLParam(params.lParam);
+            MouseUp(args);
+        }
+        break;
         default:
             break;
         }
@@ -250,32 +309,28 @@ namespace dx
         context3D.Flush();
     }
 
-    void GameWindow::Clear(const DirectX::XMFLOAT4& color, const ViewportOptions& viewportOptions)
+    void GameWindow::Clear(DirectX::XMVECTOR color)
     {
         auto& game = GetGame();
         auto& deviceContext = game.GetContext3D();
-        deviceContext.ClearRenderTargetView(backBufferRenderTargetView_.Get(), reinterpret_cast<const float*>(&color));
+        DirectX::XMFLOAT4 colorFloats;
+        DirectX::XMStoreFloat4(&colorFloats, color);
+        deviceContext.ClearRenderTargetView(backBufferRenderTargetView_.Get(), reinterpret_cast<const float*>(&colorFloats));
         deviceContext.ClearDepthStencilView(depthBufferRenderTargetView_.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.f, 0);
         ID3D11RenderTargetView* views[] = { backBufferRenderTargetView_.Get() };
+        //FIXME: is this necessary?
         deviceContext.OMSetRenderTargets(std::size(views), views, depthBufferRenderTargetView_.Get());
         
+        const auto& mainViewport = game.GetMainScene()->GetMainCamera().MainViewport;
         const D3D11_VIEWPORT viewport{
-            viewportOptions.TopLeftX,
-            viewportOptions.TopLeftY,
-            viewportOptions.Width,
-            viewportOptions.Height,
-            viewportOptions.MinDepth,
-            viewportOptions.MaxDepth
+           mainViewport.TopLeftX,
+           mainViewport.TopLeftY,
+           mainViewport.Width,
+           mainViewport.Height,
+           mainViewport.MinDepth,
+           mainViewport.MaxDepth
         };
         deviceContext.RSSetViewports(1, &viewport);
-    }
-
-    void GameWindow::ClearWithDefault()
-    {
-        ViewportOptions options = {
-            0.f, 0.f, static_cast<float>(width_), static_cast<float>(height_), 0.f, 1.f
-        };
-        Clear({ 1.f, 1.f, 1.f, 1.f }, options);
     }
 
     void GameWindow::CreateSwapChain()

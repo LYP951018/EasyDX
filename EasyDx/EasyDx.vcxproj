@@ -128,15 +128,17 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Buffers.hpp" />
+    <ClInclude Include="Camera.hpp" />
     <ClInclude Include="Common.hpp" />
     <ClInclude Include="DXDef.hpp" />
-    <ClInclude Include="Event.hpp" />
+    <ClInclude Include="Events.hpp" />
     <ClInclude Include="FileSystemAlias.hpp" />
     <ClInclude Include="Game.hpp" />
     <ClInclude Include="GameWindow.hpp" />
     <ClInclude Include="LinkWithDirectX.hpp" />
     <ClInclude Include="Mesh.hpp" />
     <ClInclude Include="Model.hpp" />
+    <ClInclude Include="Misc.hpp" />
     <ClInclude Include="RenderedObject.hpp" />
     <ClInclude Include="Scene.hpp" />
     <ClInclude Include="Shaders.hpp" />
@@ -144,6 +146,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Buffers.cpp" />
+    <ClCompile Include="Camera.cpp" />
     <ClCompile Include="Common.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="GameWindow.cpp" />

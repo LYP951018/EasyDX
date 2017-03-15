@@ -1,10 +1,10 @@
-﻿#include "MainWindow.hpp"
+﻿#include "MainScene.hpp"
 #include <string_view>
 #include <EasyDx/Game.hpp>
 #include <d2d1_1.h>
 #include <dwrite_1.h>
 
-MainWindow::MainWindow()
+void MainScene::Start()
 {
     auto& game = dx::GetGame();
     auto& context2D = game.GetContext2D();
@@ -30,9 +30,10 @@ MainWindow::MainWindow()
     layout.As(&textLayout_);
 }
 
-void MainWindow::Render(ID3D11DeviceContext&, ID2D1DeviceContext& context2D)
+void MainScene::Render(ID3D11DeviceContext&, ID2D1DeviceContext& context2D)
 {
     context2D.BeginDraw();
+    context2D.Clear(D2D1::ColorF(D2D1::ColorF::Black));
     context2D.DrawRectangle(D2D1::RectF(20.f, 20.f, 200.f, 200.f),
         brush_.Get());
     context2D.DrawTextLayout(

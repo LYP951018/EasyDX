@@ -6,9 +6,9 @@ Make DirectX easy to use.
 * ~~Per-monitor DPI aware~~
 * ~~Direct2D 1.1 & DirectWrite~~
 * ~~basic assimp support~~
-* Events
+* ~~Events~~
 * ~~Constant Buffer~~
-* Cameras
+* Cameras (working on it)
 * Basic3D vertex shader
 * Textures
 

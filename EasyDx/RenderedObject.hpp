@@ -23,9 +23,9 @@ namespace dx
         RenderedObject(RenderedObject&&) = default;
         RenderedObject& operator= (RenderedObject&&) = default;
 
-        DirectX::XMFLOAT3 Scale;
-        DirectX::XMFLOAT4 Rotation;
-        DirectX::XMFLOAT3 Translation;
+        DirectX::XMFLOAT3 Scale{ 1.f, 1.f, 1.f };
+        DirectX::XMFLOAT4 Rotation{ 0.f, 0.f, 0.f, 1.f };
+        DirectX::XMFLOAT3 Translation{ 0.f, 0.f, 0.f };
 
         DirectX::XMMATRIX ComputeWorld() const noexcept;
         void AttachVertexShader(VertexShader vs);

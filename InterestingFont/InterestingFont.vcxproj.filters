@@ -18,18 +18,18 @@
     <ClCompile Include="Main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="MainWindow.cpp">
+    <ClCompile Include="MainScene.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="MainWindow.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Manifest Include="DeclareDPIAware.manifest">
       <Filter>Resource Files</Filter>
     </Manifest>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="MainScene.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

@@ -1,11 +1,12 @@
-#include "MainScene.hpp"
+﻿#include "MainScene.hpp"
 #include <EasyDX/Game.hpp>
 #include <EasyDX/Buffers.hpp>
 #include <EasyDx/GameWindow.hpp>
+#include <EasyDx/Mesh.hpp>
+#include <EasyDx/Camera.hpp>
 #include <gsl/span>
 #include <cstdint>
 #include <d3d11.h>
-#include <EasyDx/Mesh.hpp>
 #include <DirectXMath.h>
 #include <DirectXColors.h>
 
@@ -23,15 +24,18 @@ struct ConstantBuffer
 
 void MainScene::Render(ID3D11DeviceContext& context, ID2D1DeviceContext&)
 {
-    auto mainWindow = dx::GetGame().GetMainWindow();
-    mainWindow->ClearWithDefault();
-    SetUpMatrices();
+    using namespace DirectX;
+
+    auto& game = dx::GetGame();
+    auto mainWindow = game.GetMainWindow();
+
+    mainWindow->Clear(Colors::White);
 
     ConstantBuffer cb;
-    using namespace DirectX;
-    XMStoreFloat4x4(&cb.world, XMMatrixTranspose(XMMatrixRotationY(XM_PI / 4.f)));
-    XMStoreFloat4x4(&cb.view, XMMatrixTranspose(XMLoadFloat4x4(&view_)));
-    XMStoreFloat4x4(&cb.projection, XMMatrixTranspose(XMLoadFloat4x4(&projection_)));
+    const auto& camera = GetMainCamera();
+    XMStoreFloat4x4(&cb.world, XMMatrixTranspose(cube_.ComputeWorld()));
+    XMStoreFloat4x4(&cb.view, XMMatrixTranspose(camera.GetView()));
+    XMStoreFloat4x4(&cb.projection, XMMatrixTranspose(camera.GetProjection()));
     cb.LightDir = { -0.577f, 0.577f, -0.577f, 1.0f };
     cb.LightColor = { 0.5f, 0.5f, 0.5f, 1.0f };
     XMStoreFloat4(&cb.Color, DirectX::Colors::Black);
@@ -48,8 +52,32 @@ void MainScene::Render(ID3D11DeviceContext& context, ID2D1DeviceContext&)
 
 void MainScene::Start()
 {
-    SetUpMatrices();
+    using namespace DirectX;
+
+    auto camera = std::make_unique<dx::Camera>();
+
+    const XMFLOAT3 eye = { 0.f, 4.f, -10.f };
+    const XMFLOAT3 at = { 0.f, 1.f, 0.f };
+    const XMFLOAT3 up = { 0.f, 1.f, 0.f };
+
+    camera->SetUvn(eye, at, up);
+
+    SetMainCamera(std::move(camera));
+
     InitializeObjects();
+
+    auto& game = dx::GetGame();
+    auto mainWindow = game.GetMainWindow();
+
+    eventHandles_.push_back(mainWindow->WindowResize.Add([this](dx::ResizeEventArgs& e) noexcept
+    {
+        auto& camera = GetMainCamera();
+        camera.SetProjection(XM_PIDIV4, static_cast<float>(e.NewSize.Width) / e.NewSize.Height, 0.01f, 100.f);
+        camera.MainViewport = {
+            0.f, 0.f, static_cast<float>(e.NewSize.Width), static_cast<float>(e.NewSize.Height),
+            0.f, 1.f
+        };
+    }));
 
     D3D11_INPUT_ELEMENT_DESC layout[] = {
         { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
@@ -68,6 +96,17 @@ void MainScene::Start()
         L"Cube.hlsl",
         "PS"
     );
+}
+
+void MainScene::Destroy() noexcept
+{
+    auto mainWindow = dx::GetGame().GetMainWindow();
+    for (auto eventHandle : eventHandles_)
+    {
+        //FIXME: 要用户记录 Event 类型与索引之间的对应关系非常麻烦。
+        //好像没有什么太好的方案？
+        mainWindow->WindowResize.Remove(eventHandle);
+    }
 }
 
 void MainScene::InitializeObjects()
@@ -137,20 +176,6 @@ void MainScene::InitializeObjects()
 
     cube_ = { gsl::make_span(&mesh, 1) };
     constantBuffer_ = dx::MakeConstantBuffer<ConstantBuffer>(d3dDevice);
-}
 
-void MainScene::SetUpMatrices()
-{
-    using namespace DirectX;
-    auto mainWindow = dx::GetGame().GetMainWindow();
-    XMStoreFloat4x4(&world_, XMMatrixIdentity());
-    const XMFLOAT3 eye = { 0.f, 4.f, -10.f };
-    const XMFLOAT3 at = { 0.f, 1.f, 0.f };
-    const XMFLOAT3 up = { 0.f, 1.f, 0.f };
-    XMStoreFloat4x4(&view_, XMMatrixLookAtLH(
-        XMLoadFloat3(&eye), XMLoadFloat3(&at), XMLoadFloat3(&up)
-    ));
-    XMStoreFloat4x4(&projection_, XMMatrixPerspectiveFovLH(
-        XM_PIDIV4, static_cast<float>(mainWindow->GetWidth()) / mainWindow->GetHeight(), 0.01f, 100.f
-    ));
+    DirectX::XMStoreFloat4(&cube_.Rotation, DirectX::XMQuaternionRotationRollPitchYaw(0.f, XM_PIDIV4, 0.f));
 }

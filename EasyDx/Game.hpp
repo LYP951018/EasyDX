@@ -2,8 +2,9 @@
 
 #include "Common.hpp"
 #include <memory>
-#include <unordered_map>
-#include <string>
+#include <vector>
+#include <cstdint>
+#include <climits>
 
 namespace dx
 {
@@ -12,12 +13,11 @@ namespace dx
 
     class Game
     {
+        friend void RunGame(Game&, std::unique_ptr<GameWindow>, std::uint32_t);
+
     public:
-        void Run();
-        void SetUp(std::unique_ptr<GameWindow> mainWindow);
-        void AddScene(std::string name, std::shared_ptr<Scene> scene);
-        std::shared_ptr<Scene> GetScene(const std::string& name) const;
-        void SetMainScene(const std::string& name);
+        void AddScene(std::shared_ptr<Scene> scene);
+        void SwitchToScene(std::uint32_t index);
         std::shared_ptr<Scene> GetMainScene() const;
         GameWindow* GetMainWindow() const;
 
@@ -34,9 +34,13 @@ namespace dx
     private:
         friend Game& GetGame();
 
+        static constexpr std::uint32_t InvalidSceneIndex = UINT32_MAX;
+
         Game();
 
         void InitializeDevices();
+        void Run();
+        void SetUp(std::unique_ptr<GameWindow> mainWindow);
 
         wrl::ComPtr<ID3D11Device> device3D_;
         wrl::ComPtr<ID3D11DeviceContext> context3D_;
@@ -48,12 +52,11 @@ namespace dx
         wrl::ComPtr<IDWriteFactory1> dwFactory_;
 
         std::unique_ptr<GameWindow> mainWindow_;
-        std::unordered_map<std::string, std::shared_ptr<Scene>> scenes_;
+        std::vector<std::shared_ptr<Scene>> scenes_;
 
-        //TODO: raw pointer?
-        std::shared_ptr<Scene> mainScene_;
+        std::uint32_t mainSceneIndex_;
     };
 
-
-    void RunGame(std::unique_ptr<GameWindow> mainWindow, std::shared_ptr<Scene> mainScene);
+    Game& GetGame();
+    void RunGame(Game& game, std::unique_ptr<GameWindow> mainWindow, std::uint32_t mainSceneIndex);
 }

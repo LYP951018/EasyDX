@@ -28,6 +28,8 @@ namespace dx
                 DispatchMessage(&message);
             }
         }
+        scenes_[mainSceneIndex_]->Destroy();
+        mainSceneIndex_ = InvalidSceneIndex;
     }
 
     void Game::SetUp(std::unique_ptr<GameWindow> mainWindow)
@@ -35,29 +37,26 @@ namespace dx
         mainWindow_ = std::move(mainWindow);
     }
 
-    void Game::AddScene(std::string name, std::shared_ptr<Scene> scene)
+    void Game::AddScene(std::shared_ptr<Scene> scene)
     {
-        scenes_.insert({ std::move(name), std::move(scene) });
+        scenes_.push_back(std::move(scene));
     }
 
-    std::shared_ptr<Scene> Game::GetScene(const std::string& name) const
+    void Game::SwitchToScene(std::uint32_t index)
     {
-        const auto it = scenes_.find(name);
-        if (it != scenes_.end())
-            return it->second;
-        using namespace std::string_literals;
-        throw std::runtime_error{ "Not found scene "s + name };
-    }
-
-    void Game::SetMainScene(const std::string& name)
-    {
-        mainScene_ = GetScene(name);
-        mainScene_->Start();
+        if (index >= scenes_.size())
+            throw std::logic_error{ "Invalid scene index!" };
+        if (mainSceneIndex_ != InvalidSceneIndex)
+        {
+            scenes_[mainSceneIndex_]->Destroy();
+        }
+        mainSceneIndex_ = index;
+        scenes_[index]->Start();
     }
 
     std::shared_ptr<Scene> Game::GetMainScene() const
     {
-        return mainScene_;
+        return scenes_[mainSceneIndex_];
     }
 
     GameWindow* Game::GetMainWindow() const
@@ -85,7 +84,7 @@ namespace dx
         return *device2D_.Get();
     }
 
-    ID2D1Factory1 & Game::GetFactory2D() const
+    ID2D1Factory1& Game::GetFactory2D() const
     {
         return *d2dFactory_.Get();
     }
@@ -101,6 +100,7 @@ namespace dx
     }
 
     Game::Game()
+        : mainSceneIndex_{UINT32_MAX}
     {
         InitializeDevices();
     }
@@ -145,18 +145,21 @@ namespace dx
             reinterpret_cast<IUnknown**>(dwFactory_.ReleaseAndGetAddressOf())));
     }
 
-    Game & GetGame()
+    Game& GetGame()
     {
         static Game game;
         return game;
     }
 
-    void RunGame(std::unique_ptr<GameWindow> mainWindow, std::shared_ptr<Scene> mainScene)
+    void RunGame(Game& game, std::unique_ptr<GameWindow> mainWindow, std::uint32_t mainSceneIndex)
     {
-        auto& game = GetGame();
+        //Step 1: setup the main window.
         game.SetUp(std::move(mainWindow));
-        game.AddScene("Main", std::move(mainScene));
-        game.SetMainScene("Main");
+        //Step 2: switch to the main scene, in which Scene::Start will be called, which may depend on MainWindow.
+        //There always be event registration in Scene::Start, so we must ensure GameWindow::Show be executed after
+        //Start.
+        game.SwitchToScene(mainSceneIndex);
+        //Step 3: run the game.
         game.Run();
     }
 }

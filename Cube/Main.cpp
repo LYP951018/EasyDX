@@ -6,5 +6,7 @@
 
 int main()
 {
-    dx::RunGame(std::make_unique<dx::GameWindow>(), std::make_shared<MainScene>());
+    auto& game = dx::GetGame();
+    game.AddScene(std::make_shared<MainScene>());
+    dx::RunGame(game, std::make_unique<dx::GameWindow>(), 0);
 }
