@@ -100,7 +100,7 @@ namespace dx
     }
 
     Game::Game()
-        : mainSceneIndex_{UINT32_MAX}
+        : mainSceneIndex_{InvalidSceneIndex}
     {
         InitializeDevices();
     }
