@@ -13,14 +13,14 @@ namespace dx
             const void* buffer,
             std::size_t bufferSize,
             BindFlag bindFlags,
-            BufferUsage usage);
+            ResourceUsage usage);
     }
 
     template<typename VertexT>
     wrl::ComPtr<ID3D11Buffer> MakeVertexBuffer(
         ID3D11Device& device,
         gsl::span<VertexT> vertices,
-        BufferUsage usage = BufferUsage::Default)
+        ResourceUsage usage = ResourceUsage::Default)
     {
         return Internal::RawMakeD3DBuffer(device, vertices.data(), vertices.length_bytes(), BindFlag::VertexBuffer, usage);
     }
@@ -29,7 +29,7 @@ namespace dx
     wrl::ComPtr<ID3D11Buffer> MakeIndexBuffer(
         ID3D11Device& device,
         gsl::span<IndexT> indices,
-        BufferUsage usage = BufferUsage::Default)
+        ResourceUsage usage = ResourceUsage::Default)
     {
         return Internal::RawMakeD3DBuffer(device, indices.data(), indices.length_bytes(), BindFlag::IndexBuffer, usage);
     }
@@ -38,7 +38,7 @@ namespace dx
     wrl::ComPtr<ID3D11Buffer> MakeConstantBuffer(
         ID3D11Device& device,
         T* cb = nullptr,
-        BufferUsage usage = BufferUsage::Default)
+        ResourceUsage usage = ResourceUsage::Default)
     {
         return Internal::RawMakeD3DBuffer(device, cb, sizeof(*cb), BindFlag::ConstantBuffer, usage);
     }

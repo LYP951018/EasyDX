@@ -5,12 +5,12 @@ Make DirectX easy to use.
 
 * ~~Per-monitor DPI aware~~
 * ~~Direct2D 1.1 & DirectWrite~~
-* ~~basic assimp support~~
+* Models (overhaul required)
 * ~~Events~~
 * ~~Constant Buffer~~
 * Cameras (working on it)
 * Basic3D vertex shader
-* Textures
+* Textures (2D textures is complete)
 * Lighting (prototyping & working)
 
 Special thanks to the [aMazing Project](https://github.com/AntiMoron/aMazing).

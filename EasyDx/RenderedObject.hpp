@@ -2,8 +2,6 @@
 
 #include "Mesh.hpp"
 #include "Common.hpp"
-#include "Shaders.hpp"
-#include <memory>
 #include <vector>
 #include <gsl/span>
 #include <DirectXMath.h>
@@ -28,13 +26,9 @@ namespace dx
         DirectX::XMFLOAT3 Translation{ 0.f, 0.f, 0.f };
 
         DirectX::XMMATRIX ComputeWorld() const noexcept;
-        void AttachVertexShader(VertexShader vs);
-        void AttachPixelShader(wrl::ComPtr<ID3D11PixelShader> ps);
         void Render(ID3D11DeviceContext& deviceContext);
 
     private:
         std::vector<Mesh> meshes_;
-        VertexShader vertexShader_;
-        wrl::ComPtr<ID3D11PixelShader> pixelShader_;
     };
 }

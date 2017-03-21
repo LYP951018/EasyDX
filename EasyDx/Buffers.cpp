@@ -11,9 +11,9 @@ namespace dx
             const void* buffer,
             std::size_t bufferSize,
             BindFlag bindFlags,
-            BufferUsage usage)
+            ResourceUsage usage)
         {
-            Ensures(buffer != nullptr || usage != BufferUsage::Immutable);
+            Ensures(buffer != nullptr || usage != ResourceUsage::Immutable);
             wrl::ComPtr<ID3D11Buffer> d3dBuffer;
             D3D11_BUFFER_DESC bufferDesc = {};
             bufferDesc.Usage = static_cast<D3D11_USAGE>(usage);

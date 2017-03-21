@@ -4,22 +4,18 @@
 #include <EasyDx/GameWindow.hpp>
 #include <EasyDx/Mesh.hpp>
 #include <EasyDx/Camera.hpp>
+#include <EasyDx/Texture.hpp>
+#include <EasyDx/SimpleVertex.hpp>
 #include <gsl/span>
 #include <cstdint>
 #include <d3d11.h>
 #include <DirectXMath.h>
 #include <DirectXColors.h>
 
-struct Vertex
-{
-    DirectX::XMFLOAT3 Pos, Normal;
-};
-
 struct ConstantBuffer
 {
     DirectX::XMFLOAT4X4 world, view, projection;
     DirectX::XMFLOAT4 LightDir, LightColor;
-    DirectX::XMFLOAT4 Color;
 };
 
 void MainScene::Render(ID3D11DeviceContext& context, ID2D1DeviceContext&)
@@ -38,15 +34,13 @@ void MainScene::Render(ID3D11DeviceContext& context, ID2D1DeviceContext&)
     XMStoreFloat4x4(&cb.projection, XMMatrixTranspose(camera.GetProjection()));
     cb.LightDir = { -0.577f, 0.577f, -0.577f, 1.0f };
     cb.LightColor = { 0.5f, 0.5f, 0.5f, 1.0f };
-    XMStoreFloat4(&cb.Color, DirectX::Colors::Black);
+    //XMStoreFloat4(&cb.Color, DirectX::Colors::Black);
     context.UpdateSubresource(constantBuffer_.Get(), 0, nullptr, &cb, 0, 0);
 
     ID3D11Buffer* const cbs[] = { constantBuffer_.Get() };
     context.VSSetConstantBuffers(0, 1, cbs);
     context.PSSetConstantBuffers(0, 1, cbs);
 
-    cube_.AttachVertexShader(vs_);
-    cube_.AttachPixelShader(ps_);
     cube_.Render(context);
 }
 
@@ -64,6 +58,21 @@ void MainScene::Start()
 
     SetMainCamera(std::move(camera));
 
+    
+
+    auto& d3dDevice = dx::GetGame().GetDevice3D();
+    vs_ = dx::VertexShader::CompileFromFile(
+        d3dDevice,
+        L"Cube.hlsl",
+        "VS",
+        dx::SimpleVertex::GetLayout()
+    );
+    ps_ = dx::PixelShader::CompileFromFile(
+        d3dDevice,
+        L"Cube.hlsl",
+        "PS"
+    );
+
     InitializeObjects();
 
     auto& game = dx::GetGame();
@@ -78,24 +87,6 @@ void MainScene::Start()
             0.f, 1.f
         };
     }));
-
-    D3D11_INPUT_ELEMENT_DESC layout[] = {
-        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-        { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 }
-    };
-
-    auto& d3dDevice = dx::GetGame().GetDevice3D();
-    vs_ = dx::VertexShader::CompileFromFile(
-        d3dDevice,
-        L"Cube.hlsl",
-        "VS",
-        gsl::make_span(layout)
-    );
-    ps_ = dx::PixelShader::CompileFromFile(
-        d3dDevice,
-        L"Cube.hlsl",
-        "PS"
-    );
 }
 
 void MainScene::Destroy() noexcept
@@ -113,37 +104,38 @@ void MainScene::InitializeObjects()
 {
     using namespace DirectX;
 
-    Vertex vertices[] = {
-        { XMFLOAT3(-1.0f, 1.0f, -1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f) },
-        { XMFLOAT3(1.0f, 1.0f, -1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f) },
-        { XMFLOAT3(1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f) },
-        { XMFLOAT3(-1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f) },
+    dx::SimpleVertex vertices[] = {
+        { XMFLOAT3(-1.0f, 1.0f, -1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), { 0.f, 0.f }},
+        { XMFLOAT3(1.0f, 1.0f, -1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), { 0.f, 1.f } },
+        { XMFLOAT3(1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), { 1.f, 0.f } },
+        { XMFLOAT3(-1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), { 1.f, 1.f } },
 
-        { XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f) },
-        { XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f) },
-        { XMFLOAT3(1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f) },
-        { XMFLOAT3(-1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f) },
+        { XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f), { 0.f, 0.f } },
+        { XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f), { 0.f, 1.f } },
+        { XMFLOAT3(1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f) , { 1.f, 0.f } },
+        { XMFLOAT3(-1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f), { 1.f, 1.f } },
 
-        { XMFLOAT3(-1.0f, -1.0f, 1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f) },
-        { XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f) },
-        { XMFLOAT3(-1.0f, 1.0f, -1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f) },
-        { XMFLOAT3(-1.0f, 1.0f, 1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f) },
+        { XMFLOAT3(-1.0f, -1.0f, 1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), { 0.f, 0.f } },
+        { XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), { 0.f, 1.f } },
+        { XMFLOAT3(-1.0f, 1.0f, -1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), { 1.f, 0.f } },
+        { XMFLOAT3(-1.0f, 1.0f, 1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), { 1.f, 1.f } },
 
-        { XMFLOAT3(1.0f, -1.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f) },
-        { XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f) },
-        { XMFLOAT3(1.0f, 1.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f) },
-        { XMFLOAT3(1.0f, 1.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f) },
+        { XMFLOAT3(1.0f, -1.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), { 0.f, 0.f } },
+        { XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), { 0.f, 1.f } },
+        { XMFLOAT3(1.0f, 1.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), { 1.f, 0.f } },
+        { XMFLOAT3(1.0f, 1.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), { 1.f, 1.f } },
 
-        { XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f) },
-        { XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f) },
-        { XMFLOAT3(1.0f, 1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f) },
-        { XMFLOAT3(-1.0f, 1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f) },
+        { XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), { 0.f, 0.f } },
+        { XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), { 0.f, 1.f } },
+        { XMFLOAT3(1.0f, 1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), { 1.f, 0.f } },
+        { XMFLOAT3(-1.0f, 1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), { 1.f, 1.f } },
 
-        { XMFLOAT3(-1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f) },
-        { XMFLOAT3(1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f) },
-        { XMFLOAT3(1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f) },
-        { XMFLOAT3(-1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f) },
+        { XMFLOAT3(-1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), { 0.f, 0.f } },
+        { XMFLOAT3(1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), { 0.f, 1.f } },
+        { XMFLOAT3(1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), { 1.f, 0.f } },
+        { XMFLOAT3(-1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), { 1.f, 1.f } },
     };
+
 
     std::uint16_t indices[] = {
         3,1,0,
@@ -168,11 +160,28 @@ void MainScene::InitializeObjects()
     auto& game = dx::GetGame();
     auto& d3dDevice = game.GetDevice3D();
 
+    material_ = std::make_shared<dx::Material>();
+    const auto texture = dx::Texture::Load2DWicFromFile(d3dDevice, LR"(..\Cube\Cat.png)");
+
+    D3D11_SAMPLER_DESC samplerDesc = {};
+    samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
+    samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+    samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+    samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+
+    wrl::ComPtr<ID3D11SamplerState> sampler;
+    d3dDevice.CreateSamplerState(&samplerDesc, sampler.ReleaseAndGetAddressOf());
+
+    material_->MainTexture = { dx::Texture::GetView(d3dDevice, *texture.Get()), sampler };
+
     dx::Mesh mesh{
         d3dDevice,
         gsl::make_span(vertices),
-        gsl::make_span(indices)
+        gsl::make_span(indices),
+        material_
     };
+
+    mesh.AttachShaders(vs_, ps_);
 
     cube_ = { gsl::make_span(&mesh, 1) };
     constantBuffer_ = dx::MakeConstantBuffer<ConstantBuffer>(d3dDevice);

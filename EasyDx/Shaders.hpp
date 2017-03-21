@@ -23,9 +23,10 @@ namespace dx
         static VertexShader CompileFromFile(ID3D11Device& device,
             const fs::path& filePath,
             const char* entryName,
-            gsl::span<D3D11_INPUT_ELEMENT_DESC> layoutDesc);
+            gsl::span<const D3D11_INPUT_ELEMENT_DESC> layoutDesc);
 
-        void Bind(ID3D11DeviceContext& deviceContext);
+        wrl::ComPtr<ID3D11VertexShader> GetShader() const;
+        wrl::ComPtr<ID3D11InputLayout> GetLayout() const;
 
     private:
         VertexShader(
@@ -45,4 +46,8 @@ namespace dx
             const fs::path& filePath,
             const char* entryName);
     };
+
+    void BindShader(ID3D11DeviceContext& deviceContext, VertexShader& vs);
+    void BindShader(ID3D11DeviceContext& deviceContext, ID3D11PixelShader& ps);
+    void BindShaders(ID3D11DeviceContext& deviceContext, VertexShader& vs, ID3D11PixelShader& ps);
 }

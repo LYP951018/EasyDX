@@ -16,7 +16,8 @@ namespace dx
 
         const auto pathString = filePath.u8string();
         const auto scene = aiImportFile(pathString.c_str(), aiProcessPreset_TargetRealtime_MaxQuality);
-
+        if (scene == nullptr)
+            throw std::runtime_error{ aiGetErrorString() };
         const auto meshesInScene = gsl::make_span(scene->mMeshes, scene->mNumMeshes);
         meshes.reserve(meshesInScene.size());
         for (auto mesh : meshesInScene)
@@ -63,11 +64,11 @@ namespace dx
                 }
             }
 
-            meshes.push_back(Mesh{
+            /*meshes.push_back(Mesh{
                 device,
                 gsl::make_span(verticesInMesh),
                 gsl::make_span(indicesInMesh)
-            });
+            });*/
         }
     }
 }

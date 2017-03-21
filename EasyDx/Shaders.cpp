@@ -43,7 +43,7 @@ namespace dx
     VertexShader VertexShader::CompileFromFile(ID3D11Device& device,
         const fs::path& filePath,
         const char* entryName,
-        gsl::span<D3D11_INPUT_ELEMENT_DESC> layoutDesc)
+        gsl::span<const D3D11_INPUT_ELEMENT_DESC> layoutDesc)
     {
         auto byteCode = dx::CompileShaderFromFile(filePath.c_str(), entryName, "vs_5_0");
         auto shader = CreateVertexShader(device, *byteCode.Get());
@@ -56,11 +56,14 @@ namespace dx
         };
     }
 
-    void VertexShader::Bind(ID3D11DeviceContext& deviceContext)
+    wrl::ComPtr<ID3D11VertexShader> VertexShader::GetShader() const
     {
-        Ensures(shader_ != nullptr);
-        deviceContext.IASetInputLayout(layout_.Get());
-        deviceContext.VSSetShader(shader_.Get(), nullptr, 0);
+        return shader_;
+    }
+
+    wrl::ComPtr<ID3D11InputLayout> VertexShader::GetLayout() const
+    {
+        return layout_;
     }
 
     VertexShader::VertexShader(wrl::ComPtr<ID3D11VertexShader> shader, wrl::ComPtr<ID3D11InputLayout> layout)
@@ -77,5 +80,22 @@ namespace dx
             "ps_5_0"
         );
         return dx::CreatePixelShader(device, *psByteCode.Get());
+    }
+
+    void BindShader(ID3D11DeviceContext& deviceContext, VertexShader& vs)
+    {
+        deviceContext.IASetInputLayout(vs.GetLayout().Get());
+        deviceContext.VSSetShader(vs.GetShader().Get(), nullptr, 0);
+    }
+
+    void BindShader(ID3D11DeviceContext& deviceContext, ID3D11PixelShader& ps)
+    {
+        deviceContext.PSSetShader(&ps, nullptr, 0);
+    }
+
+    void BindShaders(ID3D11DeviceContext& deviceContext, VertexShader& vs, ID3D11PixelShader& ps)
+    {
+        BindShader(deviceContext, vs);
+        BindShader(deviceContext, ps);
     }
 }

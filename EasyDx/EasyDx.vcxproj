@@ -136,6 +136,7 @@
     <ClInclude Include="Game.hpp" />
     <ClInclude Include="GameWindow.hpp" />
     <ClInclude Include="LinkWithDirectX.hpp" />
+    <ClInclude Include="Material.hpp" />
     <ClInclude Include="Mesh.hpp" />
     <ClInclude Include="Model.hpp" />
     <ClInclude Include="Misc.hpp" />
@@ -143,6 +144,7 @@
     <ClInclude Include="Scene.hpp" />
     <ClInclude Include="Shaders.hpp" />
     <ClInclude Include="SimpleVertex.hpp" />
+    <ClInclude Include="Texture.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Buffers.cpp" />
@@ -155,6 +157,8 @@
     <ClCompile Include="RenderedObject.cpp" />
     <ClCompile Include="Scene.cpp" />
     <ClCompile Include="Shaders.cpp" />
+    <ClCompile Include="SimpleVertex.cpp" />
+    <ClCompile Include="Texture.cpp" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\Basic3D.hlsl">

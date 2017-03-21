@@ -39,9 +39,9 @@ namespace dx
     DirectX::XMMATRIX Camera::GetView() const noexcept
     {
         using namespace DirectX;
-        const auto view = XMLoadFloat4x4(&viewMatrix_) /**
+        const auto view = XMLoadFloat4x4(&viewMatrix_) *
             XMMatrixTranspose(XMMatrixRotationQuaternion(GetRotation())) *
-            XMMatrixTranslation(translation_.x, translation_.y, translation_.z)*/;
+            XMMatrixTranslation(translation_.x, translation_.y, translation_.z);
         return view;
     }
 

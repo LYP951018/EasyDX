@@ -102,6 +102,7 @@ namespace dx
     Game::Game()
         : mainSceneIndex_{InvalidSceneIndex}
     {
+        TryHR(::CoInitialize(nullptr));
         InitializeDevices();
     }
 

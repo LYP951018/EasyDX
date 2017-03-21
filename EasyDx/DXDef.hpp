@@ -12,6 +12,10 @@ struct ID3D11VertexShader;
 struct ID3D11InputLayout;
 struct IDXGIDevice;
 struct IDXGIDevice1;
+struct ID3D11ShaderResourceView;
+struct ID3D11Texture2D;
+struct ID3D11Resource;
+struct ID3D11SamplerState;
 
 struct ID2D1Factory1;
 struct ID2D1Device;
@@ -29,7 +33,7 @@ struct D3D11_INPUT_ELEMENT_DESC;
 
 namespace dx
 {
-    enum class BufferUsage
+    enum class ResourceUsage
     {
         Default, // requires read and write access by the GPU
         Immutable, // can only be read by the GPU

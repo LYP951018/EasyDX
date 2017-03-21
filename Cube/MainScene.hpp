@@ -4,6 +4,7 @@
 #include <EasyDx/Scene.hpp>
 #include <EasyDx/RenderedObject.hpp>
 #include <EasyDx/Shaders.hpp>
+#include <EasyDx/Material.hpp>
 #include <DirectXMath.h>
 //wrl::ComPtr 对于 incomplete type 的支持问题。
 #include <d3d11.h>
@@ -23,4 +24,5 @@ private:
     dx::VertexShader vs_;
     wrl::ComPtr<ID3D11PixelShader> ps_;
     std::vector<dx::EventHandle> eventHandles_;
+    std::shared_ptr<dx::Material> material_;
 };
