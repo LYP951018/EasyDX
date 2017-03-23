@@ -13,6 +13,7 @@ struct tagRECT;
 namespace dx
 {
     std::string ws2s(const std::wstring& wstr);
+    std::wstring s2ws(const std::string& str);
 
     [[noreturn]]
     void ThrowHRException(long hr);
@@ -20,6 +21,21 @@ namespace dx
     void TryHR(long hr);
 
     void TryWin32(int b);
+
+    template<typename ExceptionT, typename... Args>
+    void ThrowIf(bool cond, Args&&... args)
+    {
+        if (cond)
+        {
+            throw ExceptionT{ std::forward<Args>(args)... };
+        }
+    }
+
+    template<typename T>
+    T& Ref(const wrl::ComPtr<T>& ptr) noexcept
+    {
+        return *ptr.Get();
+    }
 
     template<typename T>
     gsl::span<T*> ComPtrsCast(gsl::span<wrl::ComPtr<T>> comPtrs) noexcept

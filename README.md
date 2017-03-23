@@ -5,10 +5,10 @@ Make DirectX easy to use.
 
 * ~~Per-monitor DPI aware~~
 * ~~Direct2D 1.1 & DirectWrite~~
-* Models (overhaul required)
+* Models ~~(overhaul required)~~
 * ~~Events~~
-* ~~Constant Buffer~~
-* Cameras (working on it)
+* Constant Buffer
+* Cameras (movement)
 * Basic3D vertex shader
 * Textures (2D textures is complete)
 * Lighting (prototyping & working)

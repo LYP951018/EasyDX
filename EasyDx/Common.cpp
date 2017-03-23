@@ -11,6 +11,11 @@ namespace dx
         return std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t>{}.to_bytes(wstr);
     }
 
+    std::wstring s2ws(const std::string& str)
+    {
+        return std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t>{}.from_bytes(str);
+    }
+
     void TryHR(long hr)
     {
         if (FAILED(hr))

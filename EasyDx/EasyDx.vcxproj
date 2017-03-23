@@ -138,9 +138,8 @@
     <ClInclude Include="LinkWithDirectX.hpp" />
     <ClInclude Include="Material.hpp" />
     <ClInclude Include="Mesh.hpp" />
-    <ClInclude Include="Model.hpp" />
     <ClInclude Include="Misc.hpp" />
-    <ClInclude Include="RenderedObject.hpp" />
+    <ClInclude Include="RenderableObject.hpp" />
     <ClInclude Include="Scene.hpp" />
     <ClInclude Include="Shaders.hpp" />
     <ClInclude Include="SimpleVertex.hpp" />
@@ -153,8 +152,7 @@
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="GameWindow.cpp" />
     <ClCompile Include="Mesh.cpp" />
-    <ClCompile Include="Model.cpp" />
-    <ClCompile Include="RenderedObject.cpp" />
+    <ClCompile Include="RenderableObject.cpp" />
     <ClCompile Include="Scene.cpp" />
     <ClCompile Include="Shaders.cpp" />
     <ClCompile Include="SimpleVertex.cpp" />

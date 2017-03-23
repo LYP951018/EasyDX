@@ -66,37 +66,37 @@ namespace dx
 
     ID3D11Device& Game::GetDevice3D() const
     {
-        return *device3D_.Get();
+        return Ref(device3D_);
     }
 
     ID3D11DeviceContext& Game::GetContext3D() const
     {
-        return *context3D_.Get();
+        return Ref(context3D_);
     }
 
     IDXGIDevice& Game::GetDxgiDevice() const
     {
-        return *dxgiDevice_.Get();
+        return Ref(dxgiDevice_);
     }
 
     ID2D1Device& Game::GetDevice2D() const
     {
-        return *device2D_.Get();
+        return Ref(device2D_);
     }
 
     ID2D1Factory1& Game::GetFactory2D() const
     {
-        return *d2dFactory_.Get();
+        return Ref(d2dFactory_);
     }
 
     ID2D1DeviceContext& Game::GetContext2D() const
     {
-        return *context2D_.Get();
+        return Ref(context2D_);
     }
 
     IDWriteFactory1& Game::GetDWriteFactory() const
     {
-        return *dwFactory_.Get();
+        return Ref(dwFactory_);
     }
 
     Game::Game()

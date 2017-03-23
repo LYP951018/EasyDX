@@ -2,7 +2,7 @@
 
 #include <EasyDx/Events.hpp>
 #include <EasyDx/Scene.hpp>
-#include <EasyDx/RenderedObject.hpp>
+#include <EasyDx/RenderableObject.hpp>
 #include <EasyDx/Shaders.hpp>
 #include <EasyDx/Material.hpp>
 #include <DirectXMath.h>
@@ -20,7 +20,8 @@ private:
     void InitializeObjects();
 
     wrl::ComPtr<ID3D11Buffer> constantBuffer_;
-    dx::RenderedObject cube_;
+    dx::RenderableObject cube_;
+    dx::RenderableObject character_;
     dx::VertexShader vs_;
     wrl::ComPtr<ID3D11PixelShader> ps_;
     std::vector<dx::EventHandle> eventHandles_;

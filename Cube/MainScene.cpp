@@ -14,7 +14,7 @@
 
 struct ConstantBuffer
 {
-    DirectX::XMFLOAT4X4 world, view, projection;
+    DirectX::XMFLOAT4X4 World, View, Projection;
     DirectX::XMFLOAT4 LightDir, LightColor;
 };
 
@@ -29,9 +29,9 @@ void MainScene::Render(ID3D11DeviceContext& context, ID2D1DeviceContext&)
 
     ConstantBuffer cb;
     const auto& camera = GetMainCamera();
-    XMStoreFloat4x4(&cb.world, XMMatrixTranspose(cube_.ComputeWorld()));
-    XMStoreFloat4x4(&cb.view, XMMatrixTranspose(camera.GetView()));
-    XMStoreFloat4x4(&cb.projection, XMMatrixTranspose(camera.GetProjection()));
+    XMStoreFloat4x4(&cb.World, XMMatrixTranspose(cube_.ComputeWorld()));
+    XMStoreFloat4x4(&cb.View, XMMatrixTranspose(camera.GetView()));
+    XMStoreFloat4x4(&cb.Projection, XMMatrixTranspose(camera.GetProjection()));
     cb.LightDir = { -0.577f, 0.577f, -0.577f, 1.0f };
     cb.LightColor = { 0.5f, 0.5f, 0.5f, 1.0f };
     //XMStoreFloat4(&cb.Color, DirectX::Colors::Black);
@@ -42,6 +42,9 @@ void MainScene::Render(ID3D11DeviceContext& context, ID2D1DeviceContext&)
     context.PSSetConstantBuffers(0, 1, cbs);
 
     cube_.Render(context);
+    XMStoreFloat4x4(&cb.World, XMMatrixTranspose(character_.ComputeWorld()));
+    context.UpdateSubresource(constantBuffer_.Get(), 0, nullptr, &cb, 0, 0);
+    character_.Render(context);
 }
 
 void MainScene::Start()
@@ -50,15 +53,13 @@ void MainScene::Start()
 
     auto camera = std::make_unique<dx::Camera>();
 
-    const XMFLOAT3 eye = { 0.f, 4.f, -10.f };
+    const XMFLOAT3 eye = { 0.f, 14.f, -10.f };
     const XMFLOAT3 at = { 0.f, 1.f, 0.f };
     const XMFLOAT3 up = { 0.f, 1.f, 0.f };
 
     camera->SetUvn(eye, at, up);
 
     SetMainCamera(std::move(camera));
-
-    
 
     auto& d3dDevice = dx::GetGame().GetDevice3D();
     vs_ = dx::VertexShader::CompileFromFile(
@@ -161,7 +162,14 @@ void MainScene::InitializeObjects()
     auto& d3dDevice = game.GetDevice3D();
 
     material_ = std::make_shared<dx::Material>();
-    const auto texture = dx::Texture::Load2DWicFromFile(d3dDevice, LR"(..\Cube\Cat.png)");
+    const auto texture = dx::Texture::Load2DFromWicFile(d3dDevice, LR"(..\Cube\Cat.png)");
+
+    character_ = dx::RenderableObject::LoadFromModel(d3dDevice, LR"(..\Cube\3DModel\figure.FBX)");
+    for (auto& mesh : character_.GetMeshes())
+    {
+        mesh.AttachShaders(vs_, ps_);
+    }
+    character_.Scale = { 0.5f, 0.5f, 0.5f };
 
     D3D11_SAMPLER_DESC samplerDesc = {};
     samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
@@ -186,5 +194,5 @@ void MainScene::InitializeObjects()
     cube_ = { gsl::make_span(&mesh, 1) };
     constantBuffer_ = dx::MakeConstantBuffer<ConstantBuffer>(d3dDevice);
 
-    DirectX::XMStoreFloat4(&cube_.Rotation, DirectX::XMQuaternionRotationRollPitchYaw(0.f, XM_PIDIV4, 0.f));
+   DirectX::XMStoreFloat4(&cube_.Rotation, DirectX::XMQuaternionRotationRollPitchYaw(-XM_PIDIV2, XM_PIDIV4, 0.f));
 }

@@ -4,20 +4,34 @@
 
 namespace dx
 {
-    wrl::ComPtr<ID3D11Texture2D> Texture::Load2DWicFromFile(ID3D11Device& device, const fs::path& filePath, ResourceUsage usage)
+    wrl::ComPtr<ID3D11Texture2D> MakeTexture2D(ID3D11Device& device, const DirectX::ScratchImage& image,
+        const DirectX::TexMetadata& metaData, ResourceUsage usage)
     {
-        auto image = std::make_unique<DirectX::ScratchImage>();
-        DirectX::TexMetadata metaData;
-        TryHR(DirectX::LoadFromWICFile(filePath.c_str(),
-            DirectX::WIC_FLAGS_NONE, &metaData, *image));
         wrl::ComPtr<ID3D11Resource> resource;
-        TryHR(DirectX::CreateTextureEx(&device, image->GetImages(), image->GetImageCount(), metaData, static_cast<D3D11_USAGE>(usage), D3D11_BIND_SHADER_RESOURCE, 0, 0, 0, resource.ReleaseAndGetAddressOf()));
+        TryHR(DirectX::CreateTextureEx(&device, image.GetImages(), image.GetImageCount(), metaData, static_cast<D3D11_USAGE>(usage), D3D11_BIND_SHADER_RESOURCE, 0, 0, 0, resource.ReleaseAndGetAddressOf()));
         wrl::ComPtr<ID3D11Texture2D> texture;
         const auto hr = resource.As(&texture);
         if (hr == E_NOINTERFACE)
             throw std::runtime_error{ "Invalid 2D WIC image" };
         TryHR(hr);
         return texture;
+    }
+
+    wrl::ComPtr<ID3D11Texture2D> Texture::Load2DFromWicFile(ID3D11Device& device, const fs::path& filePath, ResourceUsage usage)
+    {
+        DirectX::ScratchImage image;
+        DirectX::TexMetadata metaData;
+        TryHR(DirectX::LoadFromWICFile(filePath.c_str(),
+            DirectX::WIC_FLAGS_NONE, &metaData, image));
+        return MakeTexture2D(device, image, metaData, usage);
+    }
+
+    wrl::ComPtr<ID3D11Texture2D> Texture::Load2DFromTgaFile(ID3D11Device& device, const fs::path& filePath, ResourceUsage usage)
+    {
+        DirectX::ScratchImage image;
+        DirectX::TexMetadata metaData;
+        TryHR(DirectX::LoadFromTGAFile(filePath.c_str(), &metaData, image));
+        return MakeTexture2D(device, image, metaData, usage);
     }
 
     wrl::ComPtr<ID3D11Texture2D> Texture::Load2DFromMemory(ID3D11Device& device, const unsigned char* buffer, std::uint32_t width, std::uint32_t height, ResourceUsage usage)
@@ -43,6 +57,19 @@ namespace dx
         TryHR(device.CreateTexture2D(&textureDesc, &data, d3dTexture.ReleaseAndGetAddressOf()));
 
         return d3dTexture;
+    }
+
+    wrl::ComPtr<ID3D11Texture2D> Texture::Load2DFromFile(ID3D11Device& device, const fs::path& filePath, ResourceUsage usage)
+    {
+        const auto format = filePath.extension();
+        if (format == L".tga")
+        {
+            return Load2DFromTgaFile(device, filePath, usage);
+        }
+        else
+        {
+            return Load2DFromWicFile(device, filePath, usage);
+        }
     }
 
     wrl::ComPtr<ID3D11ShaderResourceView> Texture::GetView(ID3D11Device& device, ID3D11Texture2D& texture)
