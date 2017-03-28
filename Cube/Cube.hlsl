@@ -1,11 +1,18 @@
-cbuffer ConstantBuffer : register(b0)
+cbuffer ChangedPerFrame : register(b0)
 {
     matrix World;
+    float3 LightDir;
+}
+
+cbuffer ImmutablePerFrame : register(b1)
+{
+    float4 LightColor;
+}
+
+cbuffer MayChanged : register(b2)
+{
     matrix View;
     matrix Projection;
-    float3 LightDir;
-    float4 LightColor;
-    float4 OutputColor;
 }
 
 struct VS_INPUT

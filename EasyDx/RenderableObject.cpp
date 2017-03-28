@@ -154,7 +154,6 @@ namespace dx
             {
                 resultMat->MainTexture = { Texture::GetView(device, Ref(textures.front())), samplerStates.front() };
             }
-
             materials.push_back(std::move(resultMat));
         }
     }
@@ -170,12 +169,10 @@ namespace dx
             return ptr;
         };
         const auto scene = AssimpThrow(importer.ReadFile(pathString.c_str(), aiProcessPreset_TargetRealtime_MaxQuality));
-        
         std::vector<std::shared_ptr<Material>> materials;
         LoadAllMaterialsFromScene(device, scene, filePath.parent_path(), materials);
         std::vector<Mesh> meshes;
         LoadAllMeshFromScene(device, scene, meshes, gsl::make_span(materials));
-
         //TODO: wtf
         RenderableObject object;
         object.meshes_ = std::move(meshes);

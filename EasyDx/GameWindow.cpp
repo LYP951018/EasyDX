@@ -3,6 +3,7 @@
 #include "Common.hpp"
 #include "Scene.hpp"
 #include "Misc.hpp"
+#include "Camera.hpp"
 #include <gsl/gsl_assert>
 #include <Windows.h>
 #include <d3d11.h>
@@ -133,10 +134,11 @@ namespace dx
     {
     }
 
-    void GameWindow::Render(ID3D11DeviceContext& context3D, ID2D1DeviceContext& context2D)
+    void GameWindow::Draw(ID3D11DeviceContext& context3D, ID2D1DeviceContext& context2D)
     {
         auto mainScene = GetGame().GetMainScene();
         mainScene->Render(context3D, context2D);
+        Present();
     }
 
     Point PosFromLParam(LPARAM lParam) noexcept
@@ -149,9 +151,6 @@ namespace dx
     {
         switch (message)
         {
-        case WM_PAINT:
-            OnPaint();
-            break;
         case WM_SIZE:
         {
             const auto lParam = params.lParam;
@@ -164,7 +163,7 @@ namespace dx
             WindowResize(args);
         }
         break;
-        case WM_QUIT:
+        case WM_DESTROY:
             ::PostQuitMessage(0);
             break;
         case WM_DPICHANGED:
@@ -238,13 +237,6 @@ namespace dx
             break;
         }
         return 0;
-    }
-
-    void GameWindow::OnPaint()
-    {
-        auto& game = GetGame();
-        Render(game.GetContext3D(), game.GetContext2D());
-        Present();
     }
 
     void GameWindow::PrepareForResize(std::uint32_t newWidth, std::uint32_t newHeight)

@@ -2,6 +2,7 @@
 #include "GameWindow.hpp"
 #include "Common.hpp"
 #include "Scene.hpp"
+#include <chrono>
 #include <stdexcept>
 #include <gsl/gsl_assert>
 #include <d3d11.h>
@@ -12,24 +13,36 @@ namespace dx
 {
     void Game::Run()
     {
+        MSG message = {};
+        const auto fps = fps_;
+        auto destroyMainScene = gsl::finally([this]() noexcept {
+            scenes_[mainSceneIndex_]->Destroy();
+            mainSceneIndex_ = InvalidSceneIndex;
+        });
         mainWindow_->Show();
-        BOOL ret;
-        MSG message;
-        while ((ret = GetMessage(&message, nullptr, 0, 0)) != 0)
+        auto prevTime = std::chrono::steady_clock::now();
+        while (true)
         {
-            if (ret == -1)
+            if (PeekMessage(&message, {}, {}, {}, PM_REMOVE) != 0)
             {
-                //TODO: throw
-                break;
-            }
-            else
-            {
+                if (message.message == WM_QUIT)
+                {
+                    break;
+                }
                 TranslateMessage(&message);
                 DispatchMessage(&message);
             }
+            else
+            {
+                using namespace std::chrono_literals;
+                const auto nowTime = std::chrono::steady_clock::now();
+                if (nowTime - prevTime >= std::chrono::milliseconds(1000 / fps))
+                {
+                    prevTime = nowTime;
+                    mainWindow_->Draw(GetContext3D(), GetContext2D());
+                }
+            }
         }
-        scenes_[mainSceneIndex_]->Destroy();
-        mainSceneIndex_ = InvalidSceneIndex;
     }
 
     void Game::SetUp(std::unique_ptr<GameWindow> mainWindow)
@@ -51,7 +64,7 @@ namespace dx
             scenes_[mainSceneIndex_]->Destroy();
         }
         mainSceneIndex_ = index;
-        scenes_[index]->Start();
+        scenes_[index]->Start(GetDevice3D());
     }
 
     std::shared_ptr<Scene> Game::GetMainScene() const
@@ -100,7 +113,8 @@ namespace dx
     }
 
     Game::Game()
-        : mainSceneIndex_{InvalidSceneIndex}
+        : mainSceneIndex_{InvalidSceneIndex},
+        fps_{60}
     {
         TryHR(::CoInitialize(nullptr));
         InitializeDevices();

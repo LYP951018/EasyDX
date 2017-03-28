@@ -25,4 +25,14 @@ namespace dx
             return d3dBuffer;
         }
     }
+
+    void SetupVSConstantBuffer(ID3D11DeviceContext& deviceContext, gsl::span<ID3D11Buffer* const> cbuffers, std::uint32_t startSlot)
+    {
+        deviceContext.VSSetConstantBuffers(static_cast<UINT>(startSlot), static_cast<UINT>(cbuffers.size()), cbuffers.data());
+    }
+
+    void SetupPSConstantBuffer(ID3D11DeviceContext& deviceContext, gsl::span<ID3D11Buffer* const> cbuffers, std::uint32_t startSlot)
+    {
+        deviceContext.PSSetConstantBuffers(static_cast<UINT>(startSlot), static_cast<UINT>(cbuffers.size()), cbuffers.data());
+    }
 }

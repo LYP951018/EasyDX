@@ -1,7 +1,12 @@
 #include "Scene.hpp"
+#include "Camera.hpp"
 
 namespace dx
 {
+    Scene::~Scene()
+    {
+    }
+
     Camera& Scene::GetMainCamera() const noexcept
     {
         return *mainCamera_;
@@ -12,7 +17,7 @@ namespace dx
         mainCamera_ = std::move(mainCamera);
     }
 
-    void Scene::Start()
+    void Scene::Start(ID3D11Device&)
     {
     }
 

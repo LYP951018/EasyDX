@@ -53,7 +53,7 @@ namespace dx
 
         std::unique_ptr<GameWindow> mainWindow_;
         std::vector<std::shared_ptr<Scene>> scenes_;
-
+        std::uint32_t fps_;
         std::uint32_t mainSceneIndex_;
     };
 

@@ -3,7 +3,6 @@
 #include <EasyDX/Buffers.hpp>
 #include <EasyDx/GameWindow.hpp>
 #include <EasyDx/Mesh.hpp>
-#include <EasyDx/Camera.hpp>
 #include <EasyDx/Texture.hpp>
 #include <EasyDx/SimpleVertex.hpp>
 #include <gsl/span>
@@ -12,10 +11,20 @@
 #include <DirectXMath.h>
 #include <DirectXColors.h>
 
-struct ConstantBuffer
+struct alignas(16) CBChangedPerFrame
 {
-    DirectX::XMFLOAT4X4 World, View, Projection;
-    DirectX::XMFLOAT4 LightDir, LightColor;
+    DirectX::XMMATRIX World;
+    DirectX::XMFLOAT3 LightDir;
+};
+
+struct alignas(16) CBImmutablePerFrame
+{
+    DirectX::XMFLOAT4 LightColor;
+};
+
+struct alignas(16) CBMayChanged
+{
+    DirectX::XMMATRIX View, Projection;
 };
 
 void MainScene::Render(ID3D11DeviceContext& context, ID2D1DeviceContext&)
@@ -24,84 +33,40 @@ void MainScene::Render(ID3D11DeviceContext& context, ID2D1DeviceContext&)
 
     auto& game = dx::GetGame();
     auto mainWindow = game.GetMainWindow();
-
     mainWindow->Clear(Colors::White);
 
-    ConstantBuffer cb;
-    const auto& camera = GetMainCamera();
-    XMStoreFloat4x4(&cb.World, XMMatrixTranspose(cube_.ComputeWorld()));
-    XMStoreFloat4x4(&cb.View, XMMatrixTranspose(camera.GetView()));
-    XMStoreFloat4x4(&cb.Projection, XMMatrixTranspose(camera.GetProjection()));
-    cb.LightDir = { -0.577f, 0.577f, -0.577f, 1.0f };
-    cb.LightColor = { 0.5f, 0.5f, 0.5f, 1.0f };
-    //XMStoreFloat4(&cb.Color, DirectX::Colors::Black);
-    context.UpdateSubresource(constantBuffer_.Get(), 0, nullptr, &cb, 0, 0);
-
-    ID3D11Buffer* const cbs[] = { constantBuffer_.Get() };
-    context.VSSetConstantBuffers(0, 1, cbs);
-    context.PSSetConstantBuffers(0, 1, cbs);
-
+    CBChangedPerFrame cbc = {
+        XMMatrixTranspose(cube_.ComputeWorld()),
+        { -0.577f, 0.577f, -0.577f }
+    };
+    context.UpdateSubresource(cbChangedPerFrame.Get(), 0, nullptr, &cbc, 0, 0);
+    ID3D11Buffer* const cbs[] = { cbChangedPerFrame.Get(), cbImmutablePerFrame.Get(), cbMayChanged.Get()};
+    dx::SetupVSConstantBuffer(context, cbs);
+    dx::SetupPSConstantBuffer(context, cbs);
     cube_.Render(context);
-    XMStoreFloat4x4(&cb.World, XMMatrixTranspose(character_.ComputeWorld()));
-    context.UpdateSubresource(constantBuffer_.Get(), 0, nullptr, &cb, 0, 0);
-    character_.Render(context);
+
+    //cbc.World = XMMatrixTranspose(character_.ComputeWorld());
+    //context.UpdateSubresource(cbChangedPerFrame.Get(), 0, nullptr, &cbc, 0, 0);
+    //character_.Render(context);
 }
 
-void MainScene::Start()
+void MainScene::Start(ID3D11Device& device)
 {
-    using namespace DirectX;
-
-    auto camera = std::make_unique<dx::Camera>();
-
-    const XMFLOAT3 eye = { 0.f, 14.f, -10.f };
-    const XMFLOAT3 at = { 0.f, 1.f, 0.f };
-    const XMFLOAT3 up = { 0.f, 1.f, 0.f };
-
-    camera->SetUvn(eye, at, up);
-
-    SetMainCamera(std::move(camera));
-
-    auto& d3dDevice = dx::GetGame().GetDevice3D();
-    vs_ = dx::VertexShader::CompileFromFile(
-        d3dDevice,
-        L"Cube.hlsl",
-        "VS",
-        dx::SimpleVertex::GetLayout()
-    );
-    ps_ = dx::PixelShader::CompileFromFile(
-        d3dDevice,
-        L"Cube.hlsl",
-        "PS"
-    );
-
-    InitializeObjects();
-
-    auto& game = dx::GetGame();
-    auto mainWindow = game.GetMainWindow();
-
-    eventHandles_.push_back(mainWindow->WindowResize.Add([this](dx::ResizeEventArgs& e) noexcept
-    {
-        auto& camera = GetMainCamera();
-        camera.SetProjection(XM_PIDIV4, static_cast<float>(e.NewSize.Width) / e.NewSize.Height, 0.01f, 100.f);
-        camera.MainViewport = {
-            0.f, 0.f, static_cast<float>(e.NewSize.Width), static_cast<float>(e.NewSize.Height),
-            0.f, 1.f
-        };
-    }));
+    SetupCamera();
+    CompileShaders(device);
+    InitializeObjects(device);
+    InitializeCBs(device);
+    RegisterEvents();
 }
 
 void MainScene::Destroy() noexcept
 {
     auto mainWindow = dx::GetGame().GetMainWindow();
-    for (auto eventHandle : eventHandles_)
-    {
-        //FIXME: 要用户记录 Event 类型与索引之间的对应关系非常麻烦。
-        //好像没有什么太好的方案？
-        mainWindow->WindowResize.Remove(eventHandle);
-    }
+    mainWindow->WindowResize.Remove(resizeHandle_);
+    mainWindow->KeyDown.Remove(keyHandle_);
 }
 
-void MainScene::InitializeObjects()
+void MainScene::InitializeObjects(ID3D11Device& device)
 {
     using namespace DirectX;
 
@@ -137,7 +102,6 @@ void MainScene::InitializeObjects()
         { XMFLOAT3(-1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), { 1.f, 1.f } },
     };
 
-
     std::uint16_t indices[] = {
         3,1,0,
         2,1,3,
@@ -158,18 +122,15 @@ void MainScene::InitializeObjects()
         23,20,22
     };
 
-    auto& game = dx::GetGame();
-    auto& d3dDevice = game.GetDevice3D();
-
     material_ = std::make_shared<dx::Material>();
-    const auto texture = dx::Texture::Load2DFromWicFile(d3dDevice, LR"(..\Cube\Cat.png)");
+    const auto texture = dx::Texture::Load2DFromWicFile(device, LR"(..\Cube\Cat.png)");
 
-    character_ = dx::RenderableObject::LoadFromModel(d3dDevice, LR"(..\Cube\3DModel\figure.FBX)");
+    /*character_ = dx::RenderableObject::LoadFromModel(device, LR"(..\Cube\3DModel\figure.FBX)");
     for (auto& mesh : character_.GetMeshes())
     {
         mesh.AttachShaders(vs_, ps_);
     }
-    character_.Scale = { 0.5f, 0.5f, 0.5f };
+    character_.Scale = { 0.5f, 0.5f, 0.5f };*/
 
     D3D11_SAMPLER_DESC samplerDesc = {};
     samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
@@ -178,21 +139,106 @@ void MainScene::InitializeObjects()
     samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
 
     wrl::ComPtr<ID3D11SamplerState> sampler;
-    d3dDevice.CreateSamplerState(&samplerDesc, sampler.ReleaseAndGetAddressOf());
+    device.CreateSamplerState(&samplerDesc, sampler.ReleaseAndGetAddressOf());
 
-    material_->MainTexture = { dx::Texture::GetView(d3dDevice, *texture.Get()), sampler };
+    material_->MainTexture = { dx::Texture::GetView(device, *texture.Get()), sampler };
 
     dx::Mesh mesh{
-        d3dDevice,
+        device,
         gsl::make_span(vertices),
         gsl::make_span(indices),
         material_
     };
 
     mesh.AttachShaders(vs_, ps_);
-
     cube_ = { gsl::make_span(&mesh, 1) };
-    constantBuffer_ = dx::MakeConstantBuffer<ConstantBuffer>(d3dDevice);
 
-   DirectX::XMStoreFloat4(&cube_.Rotation, DirectX::XMQuaternionRotationRollPitchYaw(-XM_PIDIV2, XM_PIDIV4, 0.f));
+    DirectX::XMStoreFloat4(&cube_.Rotation, DirectX::XMQuaternionRotationRollPitchYaw(-XM_PIDIV2, XM_PIDIV4, 0.f));
+}
+
+void MainScene::InitializeCBs(ID3D11Device& device)
+{
+    cbChangedPerFrame = dx::MakeConstantBuffer<CBChangedPerFrame>(device);
+    CBImmutablePerFrame icb = { { 0.5f, 0.5f, 0.5f, 1.0f } };
+    cbImmutablePerFrame = dx::MakeConstantBuffer(device, &icb, dx::ResourceUsage::Immutable);
+    cbMayChanged = dx::MakeConstantBuffer<CBMayChanged>(device);
+}
+
+void MainScene::SetupCamera()
+{
+    using namespace DirectX;
+    auto camera = std::make_unique<dx::Camera>();
+    const XMFLOAT3 eye = { 0.f, 14.f, -10.f };
+    const XMFLOAT3 at = { 0.f, 1.f, 0.f };
+    const XMFLOAT3 up = { 0.f, 1.f, 0.f };
+    camera->SetLookAt(eye, at, up);
+    SetMainCamera(std::move(camera));
+}
+
+void MainScene::CompileShaders(ID3D11Device& device)
+{
+    vs_ = dx::VertexShader::CompileFromFile(
+        device,
+        L"Cube.hlsl",
+        "VS",
+        dx::SimpleVertex::GetLayout()
+    );
+    ps_ = dx::PixelShader::CompileFromFile(
+        device,
+        L"Cube.hlsl",
+        "PS"
+    );
+}
+
+void MainScene::RegisterEvents()
+{
+    auto& game = dx::GetGame();
+    auto mainWindow = game.GetMainWindow();
+
+    resizeHandle_ = mainWindow->WindowResize.Add([this](dx::ResizeEventArgs& e) noexcept
+    {
+        auto& camera = GetMainCamera();
+        camera.SetProjection(DirectX::XM_PIDIV4, static_cast<float>(e.NewSize.Width) / e.NewSize.Height, 0.01f, 100.f);
+        camera.MainViewport = {
+            0.f, 0.f, static_cast<float>(e.NewSize.Width), static_cast<float>(e.NewSize.Height),
+            0.f, 1.f
+        };
+        auto& game = dx::GetGame();
+        auto& context = game.GetContext3D();
+        CBMayChanged cbm = {
+            DirectX::XMMatrixTranspose(camera.GetView()),
+            DirectX::XMMatrixTranspose(camera.GetProjection())
+        };
+        context.UpdateSubresource(cbMayChanged.Get(), 0, nullptr, &cbm, 0, 0);
+    });
+
+    keyHandle_ = mainWindow->KeyDown.Add([this](dx::KeyEventArgs& e) {
+        this->ProcessKey(e);
+    });
+}
+
+void MainScene::ProcessKey(dx::KeyEventArgs& e)
+{
+    auto& camera = GetMainCamera();
+    auto& game = dx::GetGame();
+    auto& context = game.GetContext3D();
+    switch (e.Key)
+    {
+    case 0x57:
+        camera.Translate(0.f, 0.f, 0.5f);
+        break;
+    case 0x41:
+        camera.Translate(-0.1f, 0.f, 0.f);
+        break;
+    default:
+        break;
+    }
+    if (camera.HasChanged())
+    {
+        CBMayChanged cbm = {
+            DirectX::XMMatrixTranspose(camera.GetView()),
+            DirectX::XMMatrixTranspose(camera.GetProjection())
+        };
+        context.UpdateSubresource(cbMayChanged.Get(), 0, nullptr, &cbm, 0, 0);
+    }
 }

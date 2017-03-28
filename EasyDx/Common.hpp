@@ -50,4 +50,16 @@ namespace dx
         std::uint32_t LeftTopX, LeftTopY, Width, Height;
         static Rect FromRECT(const tagRECT& win32Rect) noexcept;
     };
+
+    void* AlignedAlloc(std::size_t size, std::size_t align);
+    void AlignedFree(void* ptr) noexcept;
+
+    template<typename T>
+    using aligned_unique_ptr = std::unique_ptr<T, void(&)(void*)>;
+
+    template<typename T>
+    aligned_unique_ptr<T> aligned_unique()
+    {
+        return { static_cast<std::add_pointer_t<T>>(AlignedAlloc(sizeof(T), alignof(T))), AlignedFree };
+    }
 }

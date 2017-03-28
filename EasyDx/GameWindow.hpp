@@ -18,8 +18,7 @@ namespace dx
         bool Windowed = true;
     };
 
-    //TODO: mark this class as final?
-    class GameWindow
+    class GameWindow final
     {
     public:
         GameWindow(const std::wstring& title = L"EasyDX",
@@ -52,19 +51,16 @@ namespace dx
         std::uint32_t GetHeight() const noexcept;
         float GetDpiX() const noexcept;
         float GetDpiY() const noexcept;
-
-        virtual ~GameWindow();
+        void Draw(ID3D11DeviceContext& context3D, ID2D1DeviceContext& context2D);
+        ~GameWindow();
 
         void Clear(DirectX::XMVECTOR color);
 
     protected:
         void Present();
-
-        virtual void Render(ID3D11DeviceContext& context3D, ID2D1DeviceContext& context2D);
-
         void ResetD3D();
+
     private:
-        void OnPaint();
         void PrepareForResize(std::uint32_t newWidth, std::uint32_t newHeight);
         void UpdateDpi(std::uint32_t dpiX, std::uint32_t dpiY, const Rect& newWindowRect);
         void CreateResources();

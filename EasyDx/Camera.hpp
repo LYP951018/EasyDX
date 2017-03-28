@@ -1,6 +1,7 @@
 #pragma once
 
 #include <DirectXMath.h>
+#include <cstdlib>
 
 namespace dx
 {
@@ -15,42 +16,33 @@ namespace dx
         WorldSpace
     };
 
-    //TODO: view matrix caching.
     class Camera
     {
     public:
-        Camera() noexcept = default;
+        Camera() noexcept;
 
-        //Why copy a camera?
-        Camera(const Camera&) = delete;
-        Camera& operator= (const Camera&) = delete;
-
-        void Translate(DirectX::XMVECTOR translation, Space space = Space::LocalSpace) noexcept;
+        void Translate(float x, float y, float z, Space space = Space::WorldSpace) noexcept;
         void Rotate(DirectX::XMVECTOR rotation) noexcept;
-
-        DirectX::XMVECTOR GetTranslation() const noexcept;
-        DirectX::XMVECTOR GetRotation() const noexcept;
-
+        void SetProjection(float fov, float aspectRatio, float nearZ, float farZ) noexcept;
+        void SetLookAt(const DirectX::XMFLOAT3& eye, const DirectX::XMFLOAT3& target, const DirectX::XMFLOAT3& up) noexcept;
+        void UpdateAspectRatio(float aspectRatio) noexcept;
+        bool HasChanged() const noexcept;
         DirectX::XMMATRIX GetView() const noexcept;
         DirectX::XMMATRIX GetProjection() const noexcept;
-
-        void SetProjection(float fov, float aspectRatio, float nearZ, float farZ) noexcept;
-        void SetUvn(const DirectX::XMFLOAT3& eye, const DirectX::XMFLOAT3& target, const DirectX::XMFLOAT3& up) noexcept;
-
-        void UpdateAspectRatio(float aspectRatio) noexcept;
 
         Viewport MainViewport;
 
     private:
+        DirectX::XMVECTOR LoadTranslation() const noexcept;
+        DirectX::XMVECTOR LoadRotation() const noexcept;
+
         float fov_;
         float aspectRatio_;
         float nearZ_, farZ_;
 
-        mutable bool isProjectionDirty_{};
-
-        mutable DirectX::XMFLOAT4X4 viewMatrix_;
-        mutable DirectX::XMFLOAT4X4 projectionMatrix_;
-        DirectX::XMFLOAT4 rotation_{ 0.f, 0.f, 0.f, 1.f };
-        DirectX::XMFLOAT4 translation_{ 0.f, 0.f, 0.f, 1.f };
+        mutable bool isProjectionDirty_, isViewDirty_;
+        DirectX::XMFLOAT4 rotation_;
+        DirectX::XMFLOAT4 translation_;
+        mutable DirectX::XMFLOAT4X4 view_, projection_;
     };
 }

@@ -28,6 +28,20 @@ namespace dx
             throw std::system_error{ {static_cast<int>(::GetLastError()), std::system_category()} };
     }
 
+    void* AlignedAlloc(std::size_t size, std::size_t align)
+    {
+#ifdef _MSC_VER 
+        const auto ptr = _aligned_malloc(size, align);
+        ThrowIf<std::bad_alloc>(ptr == nullptr);
+        return static_cast<unsigned char*>(ptr);
+#endif
+    }
+
+    void AlignedFree(void* ptr) noexcept
+    {
+        _aligned_free(ptr);
+    }
+
     [[noreturn]]
     void ThrowHRException(HRESULT hr)
     {

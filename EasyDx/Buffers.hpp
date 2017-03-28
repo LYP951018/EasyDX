@@ -42,4 +42,7 @@ namespace dx
     {
         return Internal::RawMakeD3DBuffer(device, cb, sizeof(*cb), BindFlag::ConstantBuffer, usage);
     }
+
+    void SetupVSConstantBuffer(ID3D11DeviceContext& deviceContext, gsl::span<ID3D11Buffer* const> cbuffers, std::uint32_t startSlot = 0);
+    void SetupPSConstantBuffer(ID3D11DeviceContext& deviceContext, gsl::span<ID3D11Buffer* const> cbuffers, std::uint32_t startSlot = 0);
 }
