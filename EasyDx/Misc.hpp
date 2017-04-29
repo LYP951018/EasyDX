@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <DirectXMath.h>
 
 namespace dx
 {
@@ -12,5 +13,13 @@ namespace dx
     struct Size
     {
         std::uint32_t Width, Height;
+
+        float GetAspectRatio() const noexcept
+        {
+            return static_cast<float>(Width) / static_cast<float>(Height);
+        }
     };
+
+    DirectX::XMFLOAT4 MakePosition(const DirectX::XMFLOAT3& position) noexcept;
+    DirectX::XMFLOAT4 MakeDirection(const DirectX::XMFLOAT3& direction) noexcept;
 }

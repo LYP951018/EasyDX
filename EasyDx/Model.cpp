@@ -1,0 +1,403 @@
+#include "Model.hpp"
+#include "Mesh.hpp"
+#include "Texture.hpp"
+#include "Material.hpp"
+#include "SimpleVertex.hpp"
+#include <cmath>
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
+#include <DirectXMath.h>
+#include <d3d11.h>
+
+namespace dx
+{
+    void CheckAiReturn(aiReturn code)
+    {
+        ThrowIf<std::runtime_error>(code != aiReturn::aiReturn_SUCCESS, "Assimp error");
+    }
+
+    void AiColorToFloat4(const aiColor3D& color, DirectX::XMFLOAT4& float4) noexcept
+    {
+        float4.x = color.r;
+        float4.y = color.g;
+        float4.z = color.b;
+        float4.w = 1.f;
+    }
+
+    void LoadAllMeshFromScene(ID3D11Device& device, const aiScene* scene, std::vector<Mesh>& meshes, gsl::span<const std::shared_ptr<Material>> materials)
+    {
+        const auto meshCount = scene->mNumMeshes;
+        meshes.reserve(meshCount);
+        std::vector<SimpleVertex> verticesInMesh;
+        std::vector<std::uint16_t> indicesInMesh;
+        for (unsigned j = 0; j < meshCount; ++j)
+        {
+            const auto mesh = scene->mMeshes[j];
+            verticesInMesh.clear();
+            indicesInMesh.clear();
+            const auto verticesNum = mesh->mNumVertices;
+            verticesInMesh.reserve(verticesNum);
+            for (unsigned i = 0; i < verticesNum; ++i)
+            {
+                const auto& pos = mesh->mVertices[i];
+                const auto& normal = mesh->mNormals[i];
+                const auto& tangent = mesh->mTangents[i];
+                const auto tex = mesh->mTextureCoords[j];
+
+                SimpleVertex vertex = {
+                    { pos.x, pos.y, pos.z },
+                    { normal.x, normal.y, normal.z },
+                    { tangent.x, tangent.y, tangent.z }
+                };
+
+                if (tex == nullptr)
+                {
+                    vertex.TexCoord = { 1.f, 1.f };
+                }
+                else
+                {
+                    vertex.TexCoord = { tex[i].x, tex[i].y };
+                }
+                verticesInMesh.push_back(vertex);
+
+                const auto faces = gsl::make_span(mesh->mFaces, mesh->mNumFaces);
+
+                indicesInMesh.reserve(faces.size() * 3);
+                for (const auto& face : faces)
+                {
+                    const auto faceIndices = gsl::make_span(face.mIndices, face.mNumIndices);
+                    if (faceIndices.size() != 3)
+                        continue;
+
+                    for (auto index : faceIndices)
+                    {
+                        indicesInMesh.push_back(static_cast<std::uint16_t>(index));
+                    }
+                    //.insert(indicesInMesh.end(), faceIndices.begin(), faceIndices.end());
+                }
+            }
+            meshes.emplace_back(device,
+                MeshDataView<SimpleVertex>{ gsl::make_span(verticesInMesh), gsl::make_span(indicesInMesh) },
+                materials[mesh->mMaterialIndex],
+                VertexShader{}, PixelShader{});
+        }
+    }
+
+    D3D11_TEXTURE_ADDRESS_MODE FromAssimpTexMapModeToDX(aiTextureMapMode mode)
+    {
+        switch (mode)
+        {
+        case aiTextureMapMode_Wrap:
+            return D3D11_TEXTURE_ADDRESS_WRAP;
+        case aiTextureMapMode_Clamp:
+            return D3D11_TEXTURE_ADDRESS_CLAMP;
+        case aiTextureMapMode_Mirror:
+            return D3D11_TEXTURE_ADDRESS_MIRROR;
+        case _aiTextureMapMode_Force32Bit:
+        case aiTextureMapMode_Decal:
+        default:
+            throw std::runtime_error{ "Unsupported map mode." };
+            break;
+        }
+    }
+
+    void LoadAllMaterialsFromScene(ID3D11Device& device, const aiScene* scene, const fs::path& parentPath, std::vector<std::shared_ptr<Material>>& materials)
+    {
+        const auto materialsInScene = gsl::make_span(scene->mMaterials, scene->mNumMaterials);
+        materials.clear();
+        materials.reserve(materialsInScene.size());
+        for (auto material : materialsInScene)
+        {
+            aiColor3D diffuse, specular, ambient;
+            CheckAiReturn(material->Get(AI_MATKEY_COLOR_DIFFUSE, diffuse));
+            CheckAiReturn(material->Get(AI_MATKEY_COLOR_SPECULAR, specular));
+            CheckAiReturn(material->Get(AI_MATKEY_COLOR_AMBIENT, ambient));
+            float specularPower;
+            CheckAiReturn(material->Get(AI_MATKEY_SHININESS, specularPower));
+            constexpr auto kTexType = aiTextureType::aiTextureType_DIFFUSE;
+            const auto texCount = material->GetTextureCount(kTexType);
+            Ensures(texCount <= 1); //only single texture is supported
+            std::vector<wrl::ComPtr<ID3D11Texture2D>> textures;
+            std::vector<wrl::ComPtr<ID3D11SamplerState>> samplerStates;
+            for (unsigned i = 0; i < texCount; ++i)
+            {
+                aiString texPath;
+                CheckAiReturn(material->Get(AI_MATKEY_TEXTURE(kTexType, i), texPath));
+                aiTextureMapMode uMapMode = aiTextureMapMode_Wrap, vMapMode = aiTextureMapMode_Wrap;
+                //FIXME
+                material->Get(AI_MATKEY_MAPPINGMODE_U(kTexType, i), uMapMode);
+                material->Get(AI_MATKEY_MAPPINGMODE_V(kTexType, i), vMapMode);
+                /*CheckAiReturn(material->Get(AI_MATKEY_MAPPINGMODE_U(kTexType, i), uMapMode));
+                CheckAiReturn(material->Get(AI_MATKEY_MAPPINGMODE_V(kTexType, i), vMapMode));*/
+                auto parent = parentPath;
+                auto texture = Texture::Load2DFromFile(device, parent.append(s2ws(texPath.C_Str())));
+                D3D11_SAMPLER_DESC samplerDesc = {};
+                //TODO: How to get this from assimp?
+                samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
+                samplerDesc.AddressU = FromAssimpTexMapModeToDX(uMapMode);
+                samplerDesc.AddressV = FromAssimpTexMapModeToDX(vMapMode);
+                samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+                wrl::ComPtr<ID3D11SamplerState> samplerState;
+                TryHR(device.CreateSamplerState(&samplerDesc, samplerState.ReleaseAndGetAddressOf()));
+                textures.push_back(std::move(texture));
+                samplerStates.push_back(std::move(samplerState));
+            }
+            auto resultMat = std::make_shared<Material>();
+            auto& smoothness = resultMat->Smooth;
+            AiColorToFloat4(ambient, smoothness.Amibient);
+            AiColorToFloat4(specular, smoothness.Specular);
+            AiColorToFloat4(diffuse, smoothness.Diffuse);
+            smoothness.SpecularPower = specularPower;
+            if (!textures.empty())
+            {
+                resultMat->Textures.push_back(Texture::GetView(device, Ref(textures.front())));
+                resultMat->Samplers.push_back(samplerStates.front());
+            }
+            materials.push_back(std::move(resultMat));
+        }
+    }
+
+    void LoadFromModel(ID3D11Device& device, const fs::path& filePath, std::vector<Mesh>& meshes)
+    {
+        const auto pathString = filePath.u8string();
+        Assimp::Importer importer;
+
+        const auto AssimpThrow = [&](auto ptr)
+        {
+            ThrowIf<std::runtime_error>(ptr == nullptr, importer.GetErrorString());
+            return ptr;
+        };
+        const auto scene = AssimpThrow(importer.ReadFile(pathString.c_str(), aiProcessPreset_TargetRealtime_MaxQuality));
+        std::vector<std::shared_ptr<Material>> materials;
+        LoadAllMaterialsFromScene(device, scene, filePath.parent_path(), materials);
+        meshes.clear();
+        LoadAllMeshFromScene(device, scene, meshes, gsl::make_span(materials));
+    }
+
+    void MakeCylinder(float bottomRadius, float topRadius, float height, 
+        std::uint32_t sliceCount, std::uint32_t stackCount, MeshData<SimpleVertex>& meshData)
+    {
+        using namespace DirectX;
+        auto& vertices = meshData.Vertices;
+        auto& indices = meshData.Indices;
+        vertices.clear();
+        const auto sliceRingCount = sliceCount + 1;
+        const auto stackRingCount = stackCount + 1;
+        vertices.reserve(stackRingCount * sliceRingCount + 2);
+        const float heightPerStack = height / stackCount;
+        const float angleDelta = DirectX::XM_2PI / sliceCount;
+        const auto radiusDelta = bottomRadius - topRadius;
+        const float radiusStep = radiusDelta / stackCount;
+        float currentHeight = 0.f;
+        float radius = 0.f;
+        //r(v) = bottomRadius + (bottomRadius - topRadius) * v
+        //v = y / h
+        //y(v) = h * v
+        //x(t) = r(v) * cos(t)
+        //y(t) = v
+        //z(t) = r(v) * sin(t)
+        //dx/dt = -r(v) * sin(t)
+        //dy/dt = 0
+        //dx/dv = (b - top) * cos(t)
+        //dz/dt = h
+        //dy/dv = (b - top) * sin(t)
+        for (std::uint32_t i = 0; i < stackRingCount; ++i)
+        {
+            currentHeight += heightPerStack;
+            radius -= radiusStep;
+            float angle = 0.f;
+            for (std::uint32_t j = 0; j <= sliceCount; ++j)
+            {
+                angle += angleDelta;
+                const auto c = std::cos(angle);
+                const auto s = std::sin(angle);
+                const auto pos = XMFLOAT3{radius * c, currentHeight,  radius * s};
+                const auto uv = XMFLOAT2{ 1.f - currentHeight / height, angle / DirectX::XM_2PI };
+                //unit length already.
+                const auto tangentU = XMFLOAT3{ -s, 0, c };
+                const auto biTangent = XMFLOAT3{ radiusDelta * std::cos(angle), height, radiusDelta * std::sin(angle) };
+                const auto tangentUVec = XMLoadFloat3(&tangentU);
+                const auto biTangentUVec = XMVector3Normalize(XMLoadFloat3(&biTangent));
+                const auto normalUVec = XMVector3Normalize(XMVector3Cross(tangentUVec, biTangentUVec));
+                XMFLOAT3 normalU;
+                XMStoreFloat3(&normalU, normalUVec);
+                vertices.push_back(SimpleVertex{ pos, normalU, tangentU, uv });
+            }
+        }
+
+        indices.clear();
+        //上下两面并成一面。
+        indices.reserve((stackRingCount - 1) * sliceCount * 3 * 2);
+
+        for (std::uint32_t i = 1; i <= stackRingCount - 2; ++i)
+        {
+            const auto row = i * (sliceCount + 1);
+            for (std::uint32_t j = 0; j < sliceCount; ++j)
+            {
+                const auto col = row + j;
+                const auto leftBottom = col;
+                const auto rightBottom = col + 1;
+                const auto leftTop = col + sliceCount;
+                const auto rightTop = leftTop + 1;
+
+                indices.push_back(leftBottom);
+                indices.push_back(leftTop);
+                indices.push_back(rightTop);
+                indices.push_back(leftBottom);
+                indices.push_back(rightTop);
+                indices.push_back(rightBottom);
+            }
+        }
+
+        {
+            const auto topPos = DirectX::XMFLOAT3{ 0.f, height, 0.f };
+            const auto topUV = DirectX::XMFLOAT2{ 0.5f, 0.5f };
+            const auto topTangentU = DirectX::XMFLOAT3{ 1.f, 0.f, 0.f };
+            const auto topNormal = DirectX::XMFLOAT3{ 0.f, 1.f, 0.f };
+            vertices.push_back(SimpleVertex{ topPos, topNormal, topTangentU, topUV });
+            const auto topVertexPos = static_cast<std::uint32_t>(vertices.size() - 1);
+            const auto firstLevelPos = topVertexPos + 1;
+            float angle = 0.f;
+            for (std::uint32_t i = 0; i <= sliceCount; ++i)
+            {
+                angle += angleDelta;
+                const auto x = radius * std::cos(angle);
+                const auto z = radius * std::sin(angle);
+                const auto pos = XMFLOAT3{ x, height, z };
+                const auto normal = XMFLOAT3{0.f, 1.f, 0.f };
+                const auto tangentU = XMFLOAT3{ 1.f, 0.f, 0.f };
+                //What the fuck?
+                const auto uv = DirectX::XMFLOAT2{ x / height, z / height };
+                vertices.push_back(SimpleVertex{ pos, normal, tangentU, uv });
+            }
+
+            for (std::uint32_t i = 0; i < sliceRingCount; ++i)
+            {
+                indices.push_back(topVertexPos);
+                indices.push_back(i + firstLevelPos);
+                indices.push_back(i + firstLevelPos + 1);
+            }
+        }
+
+        {
+            const auto bottomPos = XMFLOAT3{ 0.f, 0.f, 0.f };
+            const auto bottomUV = XMFLOAT2{ 1.f, 1.f };
+            const auto bottomTangentU = DirectX::XMFLOAT3{ 1.f, 0.f, 0.f };
+            const auto bottomNormal = DirectX::XMFLOAT3{ 0.f, -1.f, 0.f };
+            vertices.push_back(SimpleVertex{ bottomPos, bottomNormal, bottomTangentU, bottomUV });
+            const auto bottomVertexPos = static_cast<std::uint32_t>(vertices.size() - 1);
+            const auto lastLevelPos = bottomVertexPos + 1;
+            float angle = 0.f;
+            for (std::uint32_t i = 0; i <= sliceCount; ++i)
+            {
+                angle += angleDelta;
+                const auto x = topRadius * std::cos(angle);
+                const auto z = topRadius * std::sin(angle);
+                const auto pos = DirectX::XMFLOAT3{ x, 0.f, z};
+                const auto normal = bottomNormal;
+                const auto tangentU = bottomTangentU;
+                //What the fuck?
+                const auto uv = DirectX::XMFLOAT2{ x / height + 0.5f, z / height + 0.5f };
+                vertices.push_back(SimpleVertex{ pos, normal, tangentU, uv });
+            }
+
+            for (std::uint32_t i = 0; i < sliceRingCount; ++i)
+            {
+                indices.push_back(bottomVertexPos);
+                indices.push_back(i + lastLevelPos);
+                indices.push_back(i + lastLevelPos + 1);
+            }
+        }
+    }
+
+    void MakeUVSphere(float radius, std::uint32_t sliceCount, std::uint32_t stackCount, 
+        MeshData<SimpleVertex>& meshData)
+    {
+        using namespace DirectX;
+        auto& vertices = meshData.Vertices;
+        auto& indices = meshData.Indices;
+        vertices.clear();
+        const auto vertexCount = (sliceCount + 1) * (stackCount - 1) + 2;
+        const auto sliceRingCount = sliceCount + 1;
+
+        vertices.reserve(vertexCount);
+        {
+            const auto topPos = XMFLOAT3{ 0.f, radius, 0.f };
+            const auto topNormal = XMFLOAT3{ 0.f, 1.f, 0.f };
+            const auto topTangentU = XMFLOAT3{ 1.f, 0.f, 0.f };
+            const auto topUV = XMFLOAT2{ 0.f, 0.f };
+            vertices.push_back(SimpleVertex{ topPos, topNormal, topTangentU, topUV });
+        }
+        const float yAngleStep = DirectX::XM_PI / stackCount;
+        const float planeAngleStep = DirectX::XM_2PI / sliceCount;
+        float phi = 0.f;
+        //x(t) = rsin(phi)cos(theta)
+        //y(t) = rcos(phi)
+        //z(t) = rsin(phi)sin(theta)
+        for (std::uint32_t i = 1; i < stackCount; ++i)
+        {
+            phi += yAngleStep;
+            const float height = radius * std::cos(phi);
+            const float currentStackRadius = radius * std::sin(phi);
+            float theta = 0.f;
+            for (std::uint32_t j = 0; j <= sliceCount; ++j)
+            {
+                theta += planeAngleStep;
+                const auto pos = XMFLOAT3{ currentStackRadius * std::cos(theta), height, currentStackRadius * std::sin(theta) };
+                const auto uv = XMFLOAT2{ theta / DirectX::XM_2PI, phi / DirectX::XM_PI };
+                XMFLOAT3 normal;
+                XMStoreFloat3(&normal, XMVector3Normalize(XMLoadFloat3(&pos)));
+                const auto tangentU = XMFLOAT3{ -currentStackRadius * std::sin(theta), 0.f, currentStackRadius * std::cos(theta) };
+                vertices.push_back(SimpleVertex{ pos, normal, tangentU, uv });
+            }
+        }
+        {
+            const auto bottomPos = DirectX::XMFLOAT3{ 0.f, -radius, 0.f };
+            const auto bottomNormal = DirectX::XMFLOAT3{ 0.f, -1.f, 0.f };
+            const auto bottomUV = DirectX::XMFLOAT2{ 0.f, 1.f };
+            const auto bottomTangentU = XMFLOAT3{ 1.f, 0.f, 0.f };
+            vertices.push_back(SimpleVertex{ bottomPos, bottomNormal, bottomTangentU, bottomUV });
+        }
+        indices.clear();
+        //FIXME: indices.reserve(?)
+        for (std::uint32_t i = 1; i <= sliceCount; ++i)
+        {
+            indices.push_back(0);
+            indices.push_back(i + 1);
+            indices.push_back(i);
+        }
+
+        std::uint32_t baseIndex = 1;
+
+        for (std::uint32_t i = 1; i < stackCount - 1; ++i)
+        {
+            const auto row = i * sliceRingCount + baseIndex;
+            for (std::uint32_t j = 0; j < sliceCount; ++j)
+            {
+                const auto col = row + j;
+                const auto leftBottom = col;
+                const auto rightBottom = col + 1;
+                const auto leftTop = col - sliceRingCount;
+                const auto rightTop = leftTop + 1;
+
+                indices.push_back(leftBottom);
+                indices.push_back(leftTop);
+                indices.push_back(rightTop);
+                indices.push_back(leftBottom);
+                indices.push_back(rightTop);
+                indices.push_back(rightBottom);
+            }
+        }
+
+        const auto bottomIndex = static_cast<std::uint32_t>(vertices.size() - 1);
+        baseIndex = bottomIndex - sliceRingCount;
+
+        for (std::uint32_t i = 0; i < sliceCount; ++i)
+        {
+            indices.push_back(bottomIndex);
+            indices.push_back(baseIndex + i);
+            indices.push_back(baseIndex + i + 1);
+        }
+    }
+}

@@ -7,6 +7,11 @@ namespace dx
     {
     }
 
+    Scene::Scene()
+        : mainCamera_{std::make_unique<Camera>()}
+    {
+    }
+
     Camera& Scene::GetMainCamera() const noexcept
     {
         return *mainCamera_;
@@ -18,6 +23,10 @@ namespace dx
     }
 
     void Scene::Start(ID3D11Device&)
+    {
+    }
+
+    void Scene::Update(const UpdateArgs&)
     {
     }
 

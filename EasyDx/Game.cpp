@@ -20,7 +20,12 @@ namespace dx
             mainSceneIndex_ = InvalidSceneIndex;
         });
         mainWindow_->Show();
+        auto& context3D = GetContext3D();
+        auto& context2D = GetContext2D();
+        //FIXME: 应该确保 WM_SIZE 在第一次 Window->Draw 之前。
         auto prevTime = std::chrono::steady_clock::now();
+        using namespace std::chrono_literals;
+        auto totalTime = 0ms;
         while (true)
         {
             if (PeekMessage(&message, {}, {}, {}, PM_REMOVE) != 0)
@@ -34,12 +39,17 @@ namespace dx
             }
             else
             {
-                using namespace std::chrono_literals;
                 const auto nowTime = std::chrono::steady_clock::now();
-                if (nowTime - prevTime >= std::chrono::milliseconds(1000 / fps))
+                const auto delta = (std::max)(std::chrono::duration_cast<std::chrono::milliseconds>(nowTime - prevTime), 0ms);
+                if (delta >= std::chrono::milliseconds(1000 / fps))
                 {
+                    totalTime += delta;
+                    UpdateArgs updateArgs{ delta, totalTime, context3D, context2D };
                     prevTime = nowTime;
-                    mainWindow_->Draw(GetContext3D(), GetContext2D());
+                    auto& mainScene = *GetMainScene();
+                    mainScene.Update(updateArgs);
+                    mainScene.Render(context3D, context2D);
+                    GetMainWindow()->Present();
                 }
             }
         }
@@ -64,7 +74,8 @@ namespace dx
             scenes_[mainSceneIndex_]->Destroy();
         }
         mainSceneIndex_ = index;
-        scenes_[index]->Start(GetDevice3D());
+        auto mainScene = scenes_[index].get();
+        mainScene->Start(GetDevice3D());
     }
 
     std::shared_ptr<Scene> Game::GetMainScene() const

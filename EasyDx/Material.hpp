@@ -2,20 +2,23 @@
 
 #include "Common.hpp"
 #include <DirectXMath.h>
-#include <utility>
+#include <vector>
 
 namespace dx
 {
     struct Smoothness
     {
-        DirectX::XMFLOAT3 Amibient, Diffuse, Specular;
+        DirectX::XMFLOAT4 Amibient, Diffuse, Specular, Emissive;
         float SpecularPower;
     };
 
     struct Material
     {
         Smoothness Smooth;
-        std::pair<wrl::ComPtr<ID3D11ShaderResourceView>,
-            wrl::ComPtr<ID3D11SamplerState>> MainTexture;
+        bool UseTexture;
+        std::vector<wrl::ComPtr<ID3D11ShaderResourceView>> Textures;
+        std::vector<wrl::ComPtr<ID3D11SamplerState>> Samplers;
     };
+
+    void SetupTextures(ID3D11DeviceContext& context, const Material& material);
 }

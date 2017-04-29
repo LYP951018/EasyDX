@@ -1,21 +1,23 @@
 #include "Shaders.hpp"
+#include "StlUtilities.hpp"
 #include <gsl/gsl_assert>
+#include <unordered_map>
 #include <d3d11.h>
 #include <D3Dcompiler.h>
 
 namespace dx
 {
-    wrl::ComPtr<ID3D11VertexShader> CreateVertexShader(ID3D11Device & device, ID3D10Blob & blob)
+    wrl::ComPtr<ID3D11VertexShader> CreateVertexShader(ID3D11Device& device, gsl::span<const gsl::byte> byteCode)
     {
         wrl::ComPtr<ID3D11VertexShader> vs;
-        TryHR(device.CreateVertexShader(blob.GetBufferPointer(), blob.GetBufferSize(), nullptr, vs.GetAddressOf()));
+        TryHR(device.CreateVertexShader(byteCode.data(), byteCode.size(), nullptr, vs.GetAddressOf()));
         return vs;
     }
 
-    wrl::ComPtr<ID3D11PixelShader> CreatePixelShader(ID3D11Device & device, ID3D10Blob & blob)
+    wrl::ComPtr<ID3D11PixelShader> CreatePixelShader(ID3D11Device& device, gsl::span<const gsl::byte> byteCode)
     {
         wrl::ComPtr<ID3D11PixelShader> ps;
-        TryHR(device.CreatePixelShader(blob.GetBufferPointer(), blob.GetBufferSize(), nullptr, ps.GetAddressOf()));
+        TryHR(device.CreatePixelShader(byteCode.data(), byteCode.size(), nullptr, ps.GetAddressOf()));
         return ps;
     }
 
@@ -46,24 +48,39 @@ namespace dx
         gsl::span<const D3D11_INPUT_ELEMENT_DESC> layoutDesc)
     {
         auto byteCode = dx::CompileShaderFromFile(filePath.c_str(), entryName, "vs_5_0");
-        auto shader = CreateVertexShader(device, *byteCode.Get());
-        wrl::ComPtr<ID3D11InputLayout> vertexLayout;
-        TryHR(device.CreateInputLayout(layoutDesc.data(), layoutDesc.size(), byteCode->GetBufferPointer(),
-            byteCode->GetBufferSize(), vertexLayout.GetAddressOf()));
-        return {
-            std::move(shader),
-            std::move(vertexLayout)
-        };
+        return FromByteCode(device, BlobToSpan(Ref(byteCode)), layoutDesc);
     }
 
-    wrl::ComPtr<ID3D11VertexShader> VertexShader::GetShader() const
+    VertexShader VertexShader::FromByteCode(ID3D11Device& device, gsl::span<const gsl::byte> byteCode, gsl::span<const D3D11_INPUT_ELEMENT_DESC> layoutDesc)
     {
-        return shader_;
+        VertexShader vs;
+        TryHR(device.CreateVertexShader(byteCode.data(), byteCode.size(), nullptr, vs.shader_.ReleaseAndGetAddressOf()));
+        TryHR(device.CreateInputLayout(layoutDesc.data(), layoutDesc.size(), byteCode.data(),
+            byteCode.size(), vs.layout_.GetAddressOf()));
+        return vs;
     }
 
-    wrl::ComPtr<ID3D11InputLayout> VertexShader::GetLayout() const
+    void VertexShader::Bind(ID3D11DeviceContext& deviceContext) const
     {
-        return layout_;
+        deviceContext.IASetInputLayout(&GetLayout());
+        deviceContext.VSSetShader(&GetShader(), nullptr, 0);
+        const auto cbs = ComPtrsCast(gsl::make_span(ConstantBuffers));
+        deviceContext.VSSetConstantBuffers(0, cbs.size(), cbs.data());
+    }
+
+    ID3D11VertexShader& VertexShader::GetShader() const
+    {
+        return Ref(shader_);
+    }
+
+    ID3D11InputLayout& VertexShader::GetLayout() const
+    {
+        return Ref(layout_);
+    }
+
+    VertexShaderView VertexShader::Get() const noexcept
+    {
+        return { shader_.Get(), layout_.Get() };
     }
 
     VertexShader::VertexShader(wrl::ComPtr<ID3D11VertexShader> shader, wrl::ComPtr<ID3D11InputLayout> layout)
@@ -72,30 +89,66 @@ namespace dx
     {
     }
 
-    wrl::ComPtr<ID3D11PixelShader> PixelShader::CompileFromFile(ID3D11Device& device, const fs::path& filePath, const char* entryName)
+    PixelShader PixelShader::CompileFromFile(ID3D11Device& device, const fs::path& filePath, const char* entryName)
     {
         auto psByteCode = CompileShaderFromFile(
             filePath.c_str(),
             entryName,
             "ps_5_0"
         );
-        return dx::CreatePixelShader(device, *psByteCode.Get());
+        return FromByteCode(device, BlobToSpan(Ref(psByteCode)));
     }
 
-    void BindShader(ID3D11DeviceContext& deviceContext, VertexShader& vs)
+    PixelShader PixelShader::FromByteCode(ID3D11Device& device, gsl::span<const gsl::byte> byteCode)
     {
-        deviceContext.IASetInputLayout(vs.GetLayout().Get());
-        deviceContext.VSSetShader(vs.GetShader().Get(), nullptr, 0);
+        return { CreatePixelShader(device, byteCode) };
     }
 
-    void BindShader(ID3D11DeviceContext& deviceContext, ID3D11PixelShader& ps)
+    void PixelShader::Bind(ID3D11DeviceContext& deviceContext) const
     {
-        deviceContext.PSSetShader(&ps, nullptr, 0);
+        const auto cbs = ComPtrsCast(gsl::make_span(ConstantBuffers));
+        deviceContext.PSSetConstantBuffers(0, cbs.size(), cbs.data());
+        deviceContext.PSSetShader(&GetShader(), nullptr, 0);
     }
 
-    void BindShaders(ID3D11DeviceContext& deviceContext, VertexShader& vs, ID3D11PixelShader& ps)
+    ID3D11PixelShader& PixelShader::GetShader() const noexcept
     {
-        BindShader(deviceContext, vs);
-        BindShader(deviceContext, ps);
+        return Ref(shader_);
     }
+
+    PixelShaderView PixelShader::Get() const noexcept
+    {
+        return {
+            shader_.Get(),
+            ComPtrsCast(gsl::make_span(ConstantBuffers))
+        };
+    }
+
+    PixelShader::PixelShader(wrl::ComPtr<ID3D11PixelShader> shader)
+        : shader_{std::move(shader)}
+    {
+    }
+
+    /*std::unordered_map<std::uint32_t, VertexShader> VertexShaders;
+    std::unordered_map<std::uint32_t, wrl::ComPtr<ID3D11PixelShader>> PixelShaders;
+
+    const VertexShader* GetVertexShader(std::uint32_t index)
+    {
+        return stlext::FindOr(VertexShaders, index, {}, [](const VertexShader& shader) { return &shader; });
+    }
+
+    ID3D11PixelShader* GetPixelShader(std::uint32_t index)
+    {
+        return stlext::FindOr(PixelShaders, index, {}, [](const wrl::ComPtr<ID3D11PixelShader>& shader) { return shader.Get();  });
+    }
+
+    void RegisterVertexShader(std::uint32_t index, VertexShader vertexShader)
+    {
+        VertexShaders.insert({ index, std::move(vertexShader) });
+    }
+
+    void RegisterPixelShader(std::uint32_t index, wrl::ComPtr<ID3D11PixelShader> pixelShader)
+    {
+        PixelShaders.insert({ index, std::move(pixelShader) });
+    }*/
 }

@@ -113,5 +113,10 @@ namespace dx
             return DirectX::XMLoadFloat4x4(&projection_);
         }
     }
+
+    DirectX::XMFLOAT3 Camera::GetEyePos() const noexcept
+    {
+        return { translation_.x, translation_.y, translation_.z };
+    }
 }
 

@@ -9,8 +9,7 @@ Make DirectX easy to use.
 * ~~Events~~
 * Constant Buffer
 * Cameras (movement)
-* Basic3D vertex shader
 * Textures (2D textures is complete)
-* Lighting (prototyping & working)
+* Lighting (More tests required)
 
 Special thanks to the [aMazing Project](https://github.com/AntiMoron/aMazing).

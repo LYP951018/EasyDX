@@ -22,7 +22,7 @@
     <VCProjectVersion>15.0</VCProjectVersion>
     <ProjectGuid>{9F913061-047E-4076-BE63-6A50043ACE82}</ProjectGuid>
     <RootNamespace>EasyDx</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.14393.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.15063.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -127,39 +127,51 @@
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="AlignAllocator.h" />
     <ClInclude Include="Buffers.hpp" />
     <ClInclude Include="Camera.hpp" />
+    <ClInclude Include="CBStructs.hpp" />
     <ClInclude Include="Common.hpp" />
     <ClInclude Include="DXDef.hpp" />
     <ClInclude Include="Events.hpp" />
     <ClInclude Include="FileSystemAlias.hpp" />
     <ClInclude Include="Game.hpp" />
     <ClInclude Include="GameWindow.hpp" />
+    <ClInclude Include="Light.hpp" />
     <ClInclude Include="LinkWithDirectX.hpp" />
     <ClInclude Include="Material.hpp" />
     <ClInclude Include="Mesh.hpp" />
     <ClInclude Include="Misc.hpp" />
-    <ClInclude Include="RenderableObject.hpp" />
+    <ClInclude Include="Model.hpp" />
+    <ClInclude Include="Objects.hpp" />
     <ClInclude Include="Scene.hpp" />
     <ClInclude Include="Shaders.hpp" />
     <ClInclude Include="SimpleVertex.hpp" />
+    <ClInclude Include="StlUtilities.hpp" />
     <ClInclude Include="Texture.hpp" />
+    <ClInclude Include="Transformation.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="AlignAllocator.cpp" />
     <ClCompile Include="Buffers.cpp" />
     <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="CBStructs.cpp" />
     <ClCompile Include="Common.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="GameWindow.cpp" />
+    <ClCompile Include="Material.cpp" />
     <ClCompile Include="Mesh.cpp" />
-    <ClCompile Include="RenderableObject.cpp" />
+    <ClCompile Include="Misc.cpp" />
+    <ClCompile Include="Model.cpp" />
+    <ClCompile Include="Objects.cpp" />
     <ClCompile Include="Scene.cpp" />
     <ClCompile Include="Shaders.cpp" />
     <ClCompile Include="SimpleVertex.cpp" />
     <ClCompile Include="Texture.cpp" />
+    <ClCompile Include="Transformation.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="Shaders\Basic3D.hlsl">
+    <FxCompile Include="Shaders\Basic3D.hlsli">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Vertex</ShaderType>
@@ -169,6 +181,9 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </FxCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Shaders\BasicLighting.hlsli" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

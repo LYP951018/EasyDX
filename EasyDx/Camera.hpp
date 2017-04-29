@@ -29,7 +29,7 @@ namespace dx
         bool HasChanged() const noexcept;
         DirectX::XMMATRIX GetView() const noexcept;
         DirectX::XMMATRIX GetProjection() const noexcept;
-
+        DirectX::XMFLOAT3 GetEyePos() const noexcept;
         Viewport MainViewport;
 
     private:

@@ -6,15 +6,21 @@
 
 namespace dx
 {
-    wrl::ComPtr<ID3D11VertexShader> CreateVertexShader(ID3D11Device& device, ID3D10Blob& blob);
-    wrl::ComPtr<ID3D11PixelShader> CreatePixelShader(ID3D11Device& device, ID3D10Blob& blob);
+    wrl::ComPtr<ID3D11VertexShader> CreateVertexShader(ID3D11Device& device, gsl::span<const gsl::byte> byteCode);
+    wrl::ComPtr<ID3D11PixelShader> CreatePixelShader(ID3D11Device& device, gsl::span<const gsl::byte> byteCode);
 
     wrl::ComPtr<ID3D10Blob> CompileShaderFromFile(
         const wchar_t* fileName,
         const char* entryPoint,
         const char* shaderModel);
 
-    //对 InputLayout 与 VertexShader 的浅封装。无需使用 shared_ptr，直接 copy，因为其类成员都使用 wrl::ComPtr。
+    struct VertexShaderView
+    {
+        ID3D11VertexShader* Shader;
+        ID3D11InputLayout* Layout;
+        gsl::span<const Ptr<ID3D11Buffer>> ConstantBuffers;
+    };
+
     class VertexShader
     {
     public:
@@ -25,8 +31,18 @@ namespace dx
             const char* entryName,
             gsl::span<const D3D11_INPUT_ELEMENT_DESC> layoutDesc);
 
-        wrl::ComPtr<ID3D11VertexShader> GetShader() const;
-        wrl::ComPtr<ID3D11InputLayout> GetLayout() const;
+        static VertexShader FromByteCode(ID3D11Device& device,
+            gsl::span<const gsl::byte> byteCode,
+            gsl::span<const D3D11_INPUT_ELEMENT_DESC> layoutDesc);
+
+        void Bind(ID3D11DeviceContext& deviceContext) const;
+
+        ID3D11VertexShader& GetShader() const;
+        ID3D11InputLayout& GetLayout() const;
+
+        VertexShaderView Get() const noexcept;
+
+        std::vector<wrl::ComPtr<ID3D11Buffer>> ConstantBuffers;
 
     private:
         VertexShader(
@@ -37,17 +53,35 @@ namespace dx
         wrl::ComPtr<ID3D11InputLayout> layout_;
     };
 
-    struct PixelShader final
+    struct PixelShaderView
     {
-    public:
-        PixelShader() = delete;
-
-        static wrl::ComPtr<ID3D11PixelShader> CompileFromFile(ID3D11Device& device,
-            const fs::path& filePath,
-            const char* entryName);
+        ID3D11PixelShader* Shader;
+        gsl::span<const Ptr<ID3D11Buffer>> ConstantBuffers;
     };
 
-    void BindShader(ID3D11DeviceContext& deviceContext, VertexShader& vs);
-    void BindShader(ID3D11DeviceContext& deviceContext, ID3D11PixelShader& ps);
-    void BindShaders(ID3D11DeviceContext& deviceContext, VertexShader& vs, ID3D11PixelShader& ps);
+    struct PixelShader
+    {
+    public:
+        PixelShader() = default;
+
+        static PixelShader CompileFromFile(ID3D11Device& device,
+            const fs::path& filePath,
+            const char* entryName);
+
+        static PixelShader FromByteCode(ID3D11Device& device,
+            gsl::span<const gsl::byte> byteCode);
+
+        void Bind(ID3D11DeviceContext& deviceContext) const;
+
+        ID3D11PixelShader& GetShader() const noexcept;
+
+        PixelShaderView Get() const noexcept;
+
+        std::vector<wrl::ComPtr<ID3D11Buffer>> ConstantBuffers;
+
+    private:
+        PixelShader(wrl::ComPtr<ID3D11PixelShader> shader);
+
+        wrl::ComPtr<ID3D11PixelShader> shader_;
+    };
 }

@@ -75,8 +75,9 @@ namespace dx
 
     void GameWindow::Show()
     {
-        ::ShowWindow(GetWin32WindowHandle(*this), SW_SHOW);
-        ::UpdateWindow(GetWin32WindowHandle(*this));
+        const auto handle = GetWin32WindowHandle(*this);
+        ::ShowWindow(handle, SW_SHOW);
+        ::UpdateWindow(handle);
     }
 
     void GameWindow::Relocate(const Rect& rect)
@@ -132,13 +133,6 @@ namespace dx
 
     GameWindow::~GameWindow()
     {
-    }
-
-    void GameWindow::Draw(ID3D11DeviceContext& context3D, ID2D1DeviceContext& context2D)
-    {
-        auto mainScene = GetGame().GetMainScene();
-        mainScene->Render(context3D, context2D);
-        Present();
     }
 
     Point PosFromLParam(LPARAM lParam) noexcept

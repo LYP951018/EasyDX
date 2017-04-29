@@ -3,6 +3,7 @@
 #include <comdef.h>
 #include <stdexcept>
 #include <Windows.h>
+#include <d3d11.h>
 
 namespace dx
 {
@@ -28,18 +29,10 @@ namespace dx
             throw std::system_error{ {static_cast<int>(::GetLastError()), std::system_category()} };
     }
 
-    void* AlignedAlloc(std::size_t size, std::size_t align)
+    
+    gsl::span<gsl::byte> BlobToSpan(ID3D10Blob& blob) noexcept
     {
-#ifdef _MSC_VER 
-        const auto ptr = _aligned_malloc(size, align);
-        ThrowIf<std::bad_alloc>(ptr == nullptr);
-        return static_cast<unsigned char*>(ptr);
-#endif
-    }
-
-    void AlignedFree(void* ptr) noexcept
-    {
-        _aligned_free(ptr);
+        return { static_cast<gsl::byte*>(blob.GetBufferPointer()), static_cast<std::ptrdiff_t>(blob.GetBufferSize()) };
     }
 
     [[noreturn]]

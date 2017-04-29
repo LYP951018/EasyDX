@@ -51,12 +51,9 @@ namespace dx
         std::uint32_t GetHeight() const noexcept;
         float GetDpiX() const noexcept;
         float GetDpiY() const noexcept;
-        void Draw(ID3D11DeviceContext& context3D, ID2D1DeviceContext& context2D);
         ~GameWindow();
 
         void Clear(DirectX::XMVECTOR color);
-
-    protected:
         void Present();
         void ResetD3D();
 

@@ -16,13 +16,27 @@ namespace dx
             ResourceUsage usage);
     }
 
+    struct VertexBuffer
+    {
+        ID3D11Buffer* Buffer;
+        std::uint32_t VertexStride;
+    };
+
+    struct SharedVertexBuffer
+    {
+        wrl::ComPtr<ID3D11Buffer> Buffer;
+        std::uint32_t VertexStride;
+
+        VertexBuffer Get() const noexcept;
+    };
+
     template<typename VertexT>
-    wrl::ComPtr<ID3D11Buffer> MakeVertexBuffer(
+    SharedVertexBuffer MakeVertexBuffer(
         ID3D11Device& device,
         gsl::span<VertexT> vertices,
         ResourceUsage usage = ResourceUsage::Default)
     {
-        return Internal::RawMakeD3DBuffer(device, vertices.data(), vertices.length_bytes(), BindFlag::VertexBuffer, usage);
+        return {Internal::RawMakeD3DBuffer(device, vertices.data(), vertices.length_bytes(), BindFlag::VertexBuffer, usage), static_cast<std::uint32_t>(sizeof(VertexT))};
     }
 
     template<typename IndexT>
@@ -43,6 +57,6 @@ namespace dx
         return Internal::RawMakeD3DBuffer(device, cb, sizeof(*cb), BindFlag::ConstantBuffer, usage);
     }
 
-    void SetupVSConstantBuffer(ID3D11DeviceContext& deviceContext, gsl::span<ID3D11Buffer* const> cbuffers, std::uint32_t startSlot = 0);
-    void SetupPSConstantBuffer(ID3D11DeviceContext& deviceContext, gsl::span<ID3D11Buffer* const> cbuffers, std::uint32_t startSlot = 0);
+    void SetupVSConstantBuffer(ID3D11DeviceContext& deviceContext, gsl::span<const Ptr<ID3D11Buffer>> cbuffers, std::uint32_t startSlot = 0);
+    void SetupPSConstantBuffer(ID3D11DeviceContext& deviceContext, gsl::span<const Ptr<ID3D11Buffer>> cbuffers, std::uint32_t startSlot = 0);
 }
