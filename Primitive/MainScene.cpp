@@ -11,6 +11,7 @@
 #include <DirectXMath.h>
 #include <DirectXColors.h>
 #include <d3d11.h>
+#include <chrono>
 #include "VertexShader.hpp"
 #include "PixelShader.hpp"
 
@@ -56,7 +57,7 @@ void MainScene::Start(ID3D11Device& device3D)
         false
     };
     light_ = dx::PointLight {
-        { 1.f, 2.f, 1.f },
+        { 2.f, 3.f, 6.f },
         { 1.f, 1.f, 1.f, 1.f },
         { 1.f, 0.08f, 0.0f},
         1000.f,
@@ -130,12 +131,32 @@ void MainScene::Start(ID3D11Device& device3D)
         meshData,
         std::make_shared<dx::Material>(material), vs, ps }
     );*/
-    DirectX::XMStoreFloat4(&ball_.Transform.Rotation, DirectX::XMQuaternionRotationAxis(DirectX::XMVectorSet(0.f, 1.f, 0.f, 0.f), DirectX::XM_PI / 6.f));
+    //DirectX::XMStoreFloat4(&ball_.Transform.Rotation, DirectX::XMQuaternionRotationAxis(DirectX::XMVectorSet(1.f, 0.f, 0.f, 0.f), DirectX::XM_PI / 6.f));
     dx::SimpleMeshData meshData;
-    dx::MakeUVSphere(1.f, 20, 20, meshData);
+    //dx::MakeUVSphere(1.f, 20, 20, meshData);
+    dx::MakeCylinder(1.f, 0.5f, 2.f, 20, 20, meshData);
     ball_.Meshes.push_back(dx::Mesh{ device3D,
         dx::SimpleMeshDataView::FromMeshData(meshData),
         std::make_shared<dx::Material>(material), vs, ps });
+}
+
+void MainScene::Update(const dx::UpdateArgs & args)
+{
+    //FIXME: statics are ugly.
+    static float angle = 0.f;
+    static std::chrono::milliseconds lastTime;
+    using namespace std::chrono_literals;
+    if (args.TotalTime - lastTime > 1s)
+    {
+        lastTime = args.TotalTime;
+        if (angle > DirectX::XM_2PI)
+            angle = 0.f;
+        angle += DirectX::XM_PI / 120.f;
+        auto pos = dx::MakePosition(light_.Position);
+        DirectX::XMStoreFloat3(&light_.Position, DirectX::XMVector4Transform(DirectX::XMLoadFloat4(&pos),
+            DirectX::XMMatrixRotationY(angle)));
+    }
+    
 }
 
 
@@ -143,13 +164,15 @@ void MainScene::Render(ID3D11DeviceContext& context3D, ID2D1DeviceContext&)
 {
     dx::GetGame().GetMainWindow()->Clear(DirectX::Colors::White);
     const auto& camera = GetMainCamera();
-    const auto world = DirectX::XMMatrixRotationY(DirectX::XM_PI / 6.f);//dx::ComputeWorld(ball_.Transform);
+    const auto world = DirectX::XMMatrixIdentity();
+    //const auto world = DirectX::XMMatrixRotationX(DirectX::XM_PI / 6.f);//dx::ComputeWorld(ball_.Transform);
     const auto worldViewProj = world * camera.GetView() * camera.GetProjection();
     auto cb = CBPerObject{
         worldViewProj,
         world,
         DirectX::XMMatrixTranspose(DirectX::XMMatrixInverse({}, world)),
     };
+    //light_.Position = camera.GetEyePos();
     auto cbFrame = CBPerFrame{
         dx::MakePosition(camera.GetEyePos()),
         dx::cb::Light::FromPoint(light_)

@@ -10,6 +10,7 @@ class MainScene : public dx::Scene
 {
 protected:
     void Start(ID3D11Device&) override;
+    void Update(const dx::UpdateArgs& args) override;
     void Render(ID3D11DeviceContext&, ID2D1DeviceContext&) override;
     void Destroy() noexcept override;
 

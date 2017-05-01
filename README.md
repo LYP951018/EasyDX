@@ -11,5 +11,6 @@ Make DirectX easy to use.
 * Cameras (movement)
 * Textures (2D textures is complete)
 * Lighting (More tests required)
+* Remove `Scene::{Start, Destroy, Update}`. Replace {`Start`, `Destroy`} with constructor and destructor, `Update` with callbacks(`std::vector<std::function>>`).
 
 Special thanks to the [aMazing Project](https://github.com/AntiMoron/aMazing).

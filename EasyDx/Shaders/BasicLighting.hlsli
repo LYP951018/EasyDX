@@ -26,7 +26,7 @@ struct Material
     float3 Padding;
 };
 
-//lightDir Ö¸µÄÊÇ LightPos - Pos
+//lightDir means LightPos - Pos
 void ComputeDiffuse(Material material, Light light, float3 lightDir, float3 normal, out float4 diffuse)
 {
     diffuse = 0.f;
@@ -44,8 +44,8 @@ void ComputeAmbient(Material material, float4 globalAmbient, out float4 ambient)
 
 void ComputeSpec(Material material, Light light, float3 lightDir, float3 viewDir, float3 normal, out float4 spec)
 {
-    float3 reflected = reflect(-lightDir, normal);
-    float4 k = pow(max(dot(normalize(reflected), normalize(viewDir)), 0.f), material.SpecularPower);
+    float3 reflected = normalize(reflect(-lightDir, normal));
+    float4 k = pow(max(dot(reflected, normalize(viewDir)), 0.f), material.SpecularPower);
     spec = k * material.Specular * light.Color;
 }
 
