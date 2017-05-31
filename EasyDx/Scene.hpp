@@ -29,12 +29,22 @@ namespace dx
         void SetMainCamera(std::unique_ptr<Camera> mainCamera) noexcept;
 
     protected:
-        virtual void Start(ID3D11Device&);
         virtual void Update(const UpdateArgs& updateArgs);
         virtual void Render(ID3D11DeviceContext&, ID2D1DeviceContext&) = 0;
-        virtual void Destroy() noexcept;
 
     private:
         std::unique_ptr<Camera> mainCamera_;
+    };
+
+
+    template<typename SceneT>
+    struct BasicSceneCreator
+    {
+        static_assert(std::is_base_of_v<Scene, SceneT>, "SceneT should derive from dx::Scene");
+
+        std::unique_ptr<Scene> operator()(const Game& game, std::shared_ptr<void> arg)
+        {
+            return std::make_unique<SceneT>(game, std::move(arg));
+        }
     };
 }

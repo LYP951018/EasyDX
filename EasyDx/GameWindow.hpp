@@ -18,10 +18,12 @@ namespace dx
         bool Windowed = true;
     };
 
+    class Game;
+
     class GameWindow final
     {
     public:
-        GameWindow(const std::wstring& title = L"EasyDX",
+        GameWindow(const Game& game, const std::wstring& title = L"EasyDX",
             std::uint32_t width = UINT32_MAX,
             std::uint32_t height = UINT32_MAX,
             SwapChainOptions options = {});
@@ -67,6 +69,7 @@ namespace dx
         void* windowHandle_;
         std::uint32_t width_, height_;
         std::uint32_t dpiX_, dpiY_;
+        const Game& game_;
 
         SwapChainOptions swapChainOptions_;
         wrl::ComPtr<IDXGISwapChain> swapChain_;

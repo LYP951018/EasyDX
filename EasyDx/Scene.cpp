@@ -22,15 +22,7 @@ namespace dx
         mainCamera_ = std::move(mainCamera);
     }
 
-    void Scene::Start(ID3D11Device&)
-    {
-    }
-
     void Scene::Update(const UpdateArgs&)
-    {
-    }
-
-    void Scene::Destroy() noexcept
     {
     }
 }

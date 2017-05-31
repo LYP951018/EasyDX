@@ -1,8 +1,10 @@
 #pragma once
 
 #include "Common.hpp"
+#include <type_traits>
+#include <functional>
+#include <unordered_map>
 #include <memory>
-#include <vector>
 #include <cstdint>
 #include <climits>
 
@@ -10,15 +12,30 @@ namespace dx
 {
     class GameWindow;
     class Scene;
+    class Game;
+
+    using SceneCreator = std::function<std::unique_ptr<Scene>(const Game&, std::shared_ptr<void>)>;
 
     class Game
     {
-        friend void RunGame(Game&, std::unique_ptr<GameWindow>, std::uint32_t);
+        friend void RunGame(Game&, std::unique_ptr<GameWindow>, std::uint32_t, std::shared_ptr<void> arg);
 
     public:
-        void AddScene(std::shared_ptr<Scene> scene);
-        void SwitchToScene(std::uint32_t index);
-        std::shared_ptr<Scene> GetMainScene() const;
+        void AddSceneCreator(std::uint32_t index, SceneCreator creator);
+
+        template<typename EnumT, typename = std::enable_if_t<std::is_enum_v<EnumT>>>
+        void AddSceneCreator(EnumT index, SceneCreator creator)
+        {
+            using type = std::underlying_type_t<EnumT>;
+            static_assert(sizeof(type) < sizeof(std::uint32_t),
+                "The size of enum's underlying type should be less than sizeof(std::uint32_t).");
+            AddSceneCreator(static_cast<type>(index), std::move(creator));
+        }
+
+        //TODO: enum version.
+        void WantToSwitchSceneTo(std::uint32_t index, std::shared_ptr<void> arg);
+
+        Scene& GetMainScene() const;
         GameWindow* GetMainWindow() const;
 
         ID3D11Device& GetDevice3D() const;
@@ -41,6 +58,8 @@ namespace dx
         void InitializeDevices();
         void Run();
         void SetUp(std::unique_ptr<GameWindow> mainWindow);
+        void ReallySwitchToScene(std::uint32_t index, std::shared_ptr<void> arg);
+        void CheckAndSwitch();
 
         wrl::ComPtr<ID3D11Device> device3D_;
         wrl::ComPtr<ID3D11DeviceContext> context3D_;
@@ -50,13 +69,14 @@ namespace dx
         wrl::ComPtr<IDXGIDevice> dxgiDevice_;
 
         wrl::ComPtr<IDWriteFactory1> dwFactory_;
-
+        std::unordered_map<std::uint32_t, SceneCreator> sceneCreators_;
         std::unique_ptr<GameWindow> mainWindow_;
-        std::vector<std::shared_ptr<Scene>> scenes_;
+        std::unique_ptr<Scene> mainScene_;
         std::uint32_t fps_;
-        std::uint32_t mainSceneIndex_;
+        std::uint32_t nextSceneIndex_;
+        std::shared_ptr<void> nextSceneArg_;
     };
 
     Game& GetGame();
-    void RunGame(Game& game, std::unique_ptr<GameWindow> mainWindow, std::uint32_t mainSceneIndex);
+    void RunGame(Game& game, std::unique_ptr<GameWindow> mainWindow, std::uint32_t mainSceneIndex, std::shared_ptr<void> args = {});
 }

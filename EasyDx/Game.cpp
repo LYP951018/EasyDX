@@ -16,8 +16,8 @@ namespace dx
         MSG message = {};
         const auto fps = fps_;
         auto destroyMainScene = gsl::finally([this]() noexcept {
-            scenes_[mainSceneIndex_]->Destroy();
-            mainSceneIndex_ = InvalidSceneIndex;
+            mainScene_.reset();
+            nextSceneIndex_ = InvalidSceneIndex;
         });
         mainWindow_->Show();
         auto& context3D = GetContext3D();
@@ -28,6 +28,7 @@ namespace dx
         auto totalTime = 0ms;
         while (true)
         {
+            CheckAndSwitch();
             if (PeekMessage(&message, {}, {}, {}, PM_REMOVE) != 0)
             {
                 if (message.message == WM_QUIT)
@@ -46,7 +47,7 @@ namespace dx
                     totalTime += delta;
                     UpdateArgs updateArgs{ delta, totalTime, context3D, context2D };
                     prevTime = nowTime;
-                    auto& mainScene = *GetMainScene();
+                    auto& mainScene = GetMainScene();
                     mainScene.Update(updateArgs);
                     mainScene.Render(context3D, context2D);
                     GetMainWindow()->Present();
@@ -60,27 +61,43 @@ namespace dx
         mainWindow_ = std::move(mainWindow);
     }
 
-    void Game::AddScene(std::shared_ptr<Scene> scene)
+    void Game::ReallySwitchToScene(std::uint32_t index, std::shared_ptr<void> arg)
     {
-        scenes_.push_back(std::move(scene));
-    }
-
-    void Game::SwitchToScene(std::uint32_t index)
-    {
-        if (index >= scenes_.size())
-            throw std::logic_error{ "Invalid scene index!" };
-        if (mainSceneIndex_ != InvalidSceneIndex)
+        assert(index != InvalidSceneIndex);
+        const auto it = sceneCreators_.find(index);
+        if (it != sceneCreators_.end())
         {
-            scenes_[mainSceneIndex_]->Destroy();
+            const auto creator = std::move(it->second);
+            sceneCreators_.erase(it);
+            mainScene_ = creator(*this, std::move(arg));
         }
-        mainSceneIndex_ = index;
-        auto mainScene = scenes_[index].get();
-        mainScene->Start(GetDevice3D());
+        else
+            throw std::logic_error{ "Invalid index!" };
     }
 
-    std::shared_ptr<Scene> Game::GetMainScene() const
+    void Game::CheckAndSwitch()
     {
-        return scenes_[mainSceneIndex_];
+        if (nextSceneIndex_ != InvalidSceneIndex)
+        {
+            ReallySwitchToScene(nextSceneIndex_, std::move(nextSceneArg_));
+            nextSceneIndex_ = InvalidSceneIndex;
+        }
+    }
+
+    void Game::AddSceneCreator(std::uint32_t index, SceneCreator creator)
+    {
+        sceneCreators_.insert(std::make_pair(index, std::move(creator)));
+    }
+
+    void Game::WantToSwitchSceneTo(std::uint32_t index, std::shared_ptr<void> arg)
+    {
+        nextSceneIndex_ = index;
+        nextSceneArg_ = std::move(arg);
+    }
+
+    Scene& Game::GetMainScene() const
+    {
+        return *mainScene_;
     }
 
     GameWindow* Game::GetMainWindow() const
@@ -124,7 +141,7 @@ namespace dx
     }
 
     Game::Game()
-        : mainSceneIndex_{InvalidSceneIndex},
+        : nextSceneIndex_{InvalidSceneIndex},
         fps_{60}
     {
         TryHR(::CoInitialize(nullptr));
@@ -177,14 +194,14 @@ namespace dx
         return game;
     }
 
-    void RunGame(Game& game, std::unique_ptr<GameWindow> mainWindow, std::uint32_t mainSceneIndex)
+    void RunGame(Game& game, std::unique_ptr<GameWindow> mainWindow, std::uint32_t mainSceneIndex, std::shared_ptr<void> arg)
     {
         //Step 1: setup the main window.
         game.SetUp(std::move(mainWindow));
         //Step 2: switch to the main scene, in which Scene::Start will be called, which may depend on MainWindow.
         //There always be event registration in Scene::Start, so we must ensure GameWindow::Show be executed after
         //Start.
-        game.SwitchToScene(mainSceneIndex);
+        game.ReallySwitchToScene(mainSceneIndex, std::move(arg));
         //Step 3: run the game.
         game.Run();
     }

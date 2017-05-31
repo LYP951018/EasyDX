@@ -16,31 +16,45 @@ namespace dx
         GameWindow* Window = {};
     };
 
-    
-    enum class EventHandle: std::uint32_t
-    {};
+    template<typename Arg>
+    class Event;
+
+    template<typename EventT>
+    struct EventHandle
+    {
+    public:
+        EventHandle(EventT& event, std::uint32_t handle)
+            : event_{event}, handle_{handle}
+        {}
+
+        ~EventHandle();
+
+    private:
+        std::reference_wrapper<EventT> event_;
+        std::uint32_t handle_;
+    };
 
     template<typename Args>
     class Event
     {
         static_assert(std::is_base_of_v<EventArgs, std::remove_reference_t<Args>>, "Args should be base of EventArgs");
     public:
-        
         using Handler = std::function<void(Args)>;
+        using HandleType = EventHandle<Event<Args>>;
 
         Event() = default;
 
         Event(const Event&) = delete;
         Event& operator=(const Event&) = delete;
 
-        EventHandle Add(Handler handler)
+        HandleType Add(Handler handler)
         {
             const auto handle = AllocateHandle();
             handlers_.insert({handle, std::move(handler) });
-            return handle;
+            return { *this, handle };
         }
 
-        void Remove(EventHandle handle)
+        void Remove(std::uint32_t handle)
         {
             handlers_.erase(handle);
         }
@@ -54,14 +68,20 @@ namespace dx
         }
 
     private:
-        EventHandle AllocateHandle() noexcept
+        std::uint32_t AllocateHandle() noexcept
         {
-            return static_cast<EventHandle>(std::exchange(currentHandle_, currentHandle_ + 1));
+            return std::exchange(currentHandle_, currentHandle_ + 1);
         }
 
-        std::unordered_map<EventHandle, Handler> handlers_;
-        std::underlying_type_t<EventHandle> currentHandle_ = {};
+        std::unordered_map<std::uint32_t, Handler> handlers_;
+        std::uint32_t currentHandle_ = {};
     };
+
+    template<typename EventT>
+    EventHandle<EventT>::~EventHandle()
+    {
+        event_.get().Remove(handle_);
+    }
 
     struct KeyEventArgs : EventArgs
     {

@@ -1,3 +1,4 @@
+#define NOMINMAX
 #include "GameWindow.hpp"
 #include "Game.hpp"
 #include "Common.hpp"
@@ -50,9 +51,10 @@ namespace dx
         return ::DefWindowProc(windowHandle, messageId, wParam, lParam);
     }
 
-    GameWindow::GameWindow(const std::wstring& title, std::uint32_t width, std::uint32_t height,
+    GameWindow::GameWindow(const Game& game, const std::wstring& title, std::uint32_t width, std::uint32_t height,
         SwapChainOptions options)
-        : swapChainOptions_{options}
+        : swapChainOptions_{options},
+        game_{game}
     {
         ::WNDCLASSEX windowClass = {};
         windowClass.cbSize = sizeof(::WNDCLASSEX);
@@ -235,8 +237,8 @@ namespace dx
 
     void GameWindow::PrepareForResize(std::uint32_t newWidth, std::uint32_t newHeight)
     {
-        width_ = newWidth;
-        height_ = newHeight;
+        width_ = std::max(newWidth, std::uint32_t{ 1 });
+        height_ = std::max(newHeight, std::uint32_t{ 1 });
         ResetD3D();
         TryHR(swapChain_-> ResizeBuffers(2, newWidth, newHeight, DXGI_FORMAT_B8G8R8A8_UNORM, 0));
         CreateResources();
@@ -256,8 +258,7 @@ namespace dx
 
     void GameWindow::CreateResources()
     {
-        auto& game = GetGame();
-        auto& device = game.GetDevice3D();
+        auto& device = game_.GetDevice3D();
         wrl::ComPtr<ID3D11Texture2D> backBuffer;
         TryHR(swapChain_->GetBuffer(0, IID_PPV_ARGS(backBuffer.ReleaseAndGetAddressOf())));
         device.CreateRenderTargetView(backBuffer.Get(), {}, backBufferRenderTargetView_.ReleaseAndGetAddressOf());
@@ -276,7 +277,7 @@ namespace dx
         );
        wrl::ComPtr<IDXGISurface> surface;
        TryHR(swapChain_->GetBuffer(0, IID_PPV_ARGS(surface.ReleaseAndGetAddressOf())));
-       auto& context2D = game.GetContext2D();
+       auto& context2D = game_.GetContext2D();
        context2D.CreateBitmapFromDxgiSurface(surface.Get(), &props, targetBitmap_.ReleaseAndGetAddressOf());
        context2D.SetTarget(targetBitmap_.Get());
     }
@@ -284,9 +285,8 @@ namespace dx
     void GameWindow::ResetD3D()
     {
         ID3D11RenderTargetView* nullViews[] = { nullptr };
-        auto& game = GetGame();
-        auto& context3D = game.GetContext3D();
-        auto& context2D = game.GetContext2D();
+        auto& context3D = game_.GetContext3D();
+        auto& context2D = game_.GetContext2D();
         context3D.OMSetRenderTargets(std::size(nullViews), nullViews, nullptr);
         context2D.SetTarget(nullptr);
         targetBitmap_.Reset();
@@ -297,8 +297,7 @@ namespace dx
 
     void GameWindow::Clear(DirectX::XMVECTOR color)
     {
-        auto& game = GetGame();
-        auto& deviceContext = game.GetContext3D();
+        auto& deviceContext = game_.GetContext3D();
         DirectX::XMFLOAT4 colorFloats;
         DirectX::XMStoreFloat4(&colorFloats, color);
         deviceContext.ClearRenderTargetView(backBufferRenderTargetView_.Get(), reinterpret_cast<const float*>(&colorFloats));
@@ -307,7 +306,7 @@ namespace dx
         //FIXME: is this necessary?
         deviceContext.OMSetRenderTargets(std::size(views), views, depthBufferRenderTargetView_.Get());
         
-        const auto& mainViewport = game.GetMainScene()->GetMainCamera().MainViewport;
+        const auto& mainViewport = game_.GetMainScene().GetMainCamera().MainViewport;
         const D3D11_VIEWPORT viewport{
            mainViewport.TopLeftX,
            mainViewport.TopLeftY,
@@ -321,9 +320,8 @@ namespace dx
 
     void GameWindow::CreateSwapChain()
     {
-        auto& game = GetGame();
-        auto& dxgiDevice = game.GetDxgiDevice();
-        auto& d3dDevice = game.GetDevice3D();
+        auto& dxgiDevice = game_.GetDxgiDevice();
+        auto& d3dDevice = game_.GetDevice3D();
         wrl::ComPtr<IDXGIAdapter> adapter;
         TryHR(dxgiDevice.GetAdapter(adapter.ReleaseAndGetAddressOf()));
         wrl::ComPtr<IDXGIFactory> dxgiFactory;

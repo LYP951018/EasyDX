@@ -29,23 +29,15 @@ struct alignas(16) CBPerFrame
     dx::cb::Light Dlight;
 };
 
-void MainScene::Start(ID3D11Device& device3D)
+MainScene::MainScene(const dx::Game& game, std::shared_ptr<void> arg)
+    : resized_{AddResize()}
 {
-    auto& camera = GetMainCamera();
     using namespace DirectX;
+    auto& camera = GetMainCamera();
     const auto eye = XMFLOAT3{ 0.0f, 4.0f, -10.0f };
     const auto at = XMFLOAT3{ 0.f, 1.f, 0.f };
     const auto up = XMFLOAT3{ 0.f, 1.f, 0.f };
     camera.SetLookAt(eye, at, up);
-    auto mainWindow = dx::GetGame().GetMainWindow();
-    resized_ = mainWindow->WindowResize.Add([&](dx::ResizeEventArgs& e) {
-        camera.SetProjection(XM_PIDIV4, e.NewSize.GetAspectRatio(), 0.01f, 1000.f);
-        camera.MainViewport = {
-            0.f, 0.f, static_cast<float>(e.NewSize.Width), static_cast<float>(e.NewSize.Height),
-            0.f, 1.f
-        };
-    });
-   
     auto material = dx::Material{
         dx::Smoothness {
             { 0.07568f, 0.61424f, 0.07568f, 1.0f },
@@ -63,6 +55,7 @@ void MainScene::Start(ID3D11Device& device3D)
         1000.f,
         true
     };
+    auto& device3D = game.GetDevice3D();
     cbPerObject_ = dx::MakeConstantBuffer<CBPerObject>(device3D);
     cbPerFrame_ = dx::MakeConstantBuffer<CBPerFrame>(device3D);
     auto vs = dx::VertexShader::FromByteCode(device3D, dx::AsBytes(TheVertexShader), dx::SimpleVertex::GetLayout());
@@ -186,7 +179,15 @@ void MainScene::Render(ID3D11DeviceContext& context3D, ID2D1DeviceContext&)
     });
 }
 
-void MainScene::Destroy() noexcept
+dx::EventHandle<dx::WindowResizeEvent> MainScene::AddResize()
 {
-
+    auto& camera = GetMainCamera();
+    auto mainWindow = dx::GetGame().GetMainWindow();
+    return mainWindow->WindowResize.Add([&](dx::ResizeEventArgs& e) {
+        camera.SetProjection(DirectX::XM_PIDIV4, e.NewSize.GetAspectRatio(), 0.01f, 1000.f);
+        camera.MainViewport = {
+            0.f, 0.f, static_cast<float>(e.NewSize.Width), static_cast<float>(e.NewSize.Height),
+            0.f, 1.f
+        };
+    });
 }

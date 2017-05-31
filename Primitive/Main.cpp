@@ -8,6 +8,6 @@
 int main()
 {
     auto& game = dx::GetGame();
-    game.AddScene(std::make_shared<MainScene>());
-    dx::RunGame(game, std::make_unique<dx::GameWindow>(), 0);
+    game.AddSceneCreator(0, dx::BasicSceneCreator<MainScene>{});
+    dx::RunGame(game, std::make_unique<dx::GameWindow>(game), 0, {});
 }
