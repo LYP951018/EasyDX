@@ -1,7 +1,7 @@
+#include "pch.hpp"
 #define NOMINMAX
 #include "GameWindow.hpp"
 #include "Game.hpp"
-#include "Common.hpp"
 #include "Scene.hpp"
 #include "Misc.hpp"
 #include "Camera.hpp"
@@ -237,8 +237,8 @@ namespace dx
 
     void GameWindow::PrepareForResize(std::uint32_t newWidth, std::uint32_t newHeight)
     {
-        width_ = std::max(newWidth, std::uint32_t{ 1 });
-        height_ = std::max(newHeight, std::uint32_t{ 1 });
+        width_ = (std::max)(newWidth, std::uint32_t{ 1 });
+        height_ = (std::max)(newHeight, std::uint32_t{ 1 });
         ResetD3D();
         TryHR(swapChain_-> ResizeBuffers(2, newWidth, newHeight, DXGI_FORMAT_B8G8R8A8_UNORM, 0));
         CreateResources();

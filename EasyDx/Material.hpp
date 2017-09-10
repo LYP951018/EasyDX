@@ -1,24 +1,32 @@
 #pragma once
 
-#include "Common.hpp"
+#include "Component.hpp"
 #include <DirectXMath.h>
-#include <vector>
 
 namespace dx
 {
-    struct Smoothness
+    struct Smoothness : IComponent
     {
+        Smoothness(const DirectX::XMFLOAT4& ambient,
+            const DirectX::XMFLOAT4& diffuse, const DirectX::XMFLOAT4& specular, const DirectX::XMFLOAT4& emissive,
+            float power)
+            :Amibient{ambient}, Diffuse{diffuse}, Specular{specular}, Emissive{emissive},
+            SpecularPower{power}
+        {}
+
+        Smoothness() = default;
+
+        std::uint32_t GetId() const override
+        {
+            return ComponentId::kSmoothness;
+        }
+
+        static std::uint32_t GetStaticId()
+        {
+            return ComponentId::kSmoothness;
+        }
+
         DirectX::XMFLOAT4 Amibient, Diffuse, Specular, Emissive;
         float SpecularPower;
     };
-
-    struct Material
-    {
-        Smoothness Smooth;
-        bool UseTexture;
-        std::vector<wrl::ComPtr<ID3D11ShaderResourceView>> Textures;
-        std::vector<wrl::ComPtr<ID3D11SamplerState>> Samplers;
-    };
-
-    void SetupTextures(ID3D11DeviceContext& context, const Material& material);
 }

@@ -1,9 +1,6 @@
-#include <EasyDX/Game.hpp>
-#include <EasyDx/GameWindow.hpp>
-#include <memory>
-#include <EasyDX/LinkWithDirectX.hpp>
+#include <EasyDx/One.hpp>
+#include <EasyDx/LinkWithDirectX.hpp>
 #include "MainScene.hpp"
-
 
 int main()
 {

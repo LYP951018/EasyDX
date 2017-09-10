@@ -1,83 +1,94 @@
 #pragma once
 
-#include "Common.hpp"
 #include "Buffers.hpp"
 #include "Shaders.hpp"
 #include "SimpleVertex.hpp"
-#include <gsl/span>
-#include <vector>
+#include <variant>
 
 namespace dx
 {
-    struct Material;
+    template<typename T>
+    struct CpuMeshView;
 
     template<typename T>
-    struct MeshData
+    struct CpuMesh : IComponent
     {
         std::vector<T> Vertices;
         std::vector<std::uint16_t> Indices;
+
+        CpuMesh() = default;
+
+        CpuMesh(std::vector<T> vertices, std::vector<std::uint16_t> indices)
+            : Vertices{std::move(vertices)},
+            Indices{std::move(indices)}
+        {}
+
+        std::uint32_t GetId() const override
+        {
+            return ComponentId::kCpuMesh;
+        }
+
+        static std::uint32_t GetStaticId()
+        {
+            return ComponentId::kCpuMesh;
+        }
+
+        CpuMeshView<T> Get() const noexcept
+        {
+            return { gsl::make_span(Vertices), gsl::make_span(Indices) };
+        }
     };
 
     template<typename T>
-    struct MeshDataView
+    struct CpuMeshView
     {
         gsl::span<const T> Vertices;
         gsl::span<const std::uint16_t> Indices;
 
-        static MeshDataView FromMeshData(const MeshData<T>& meshData) noexcept
+        static CpuMeshView FromMeshData(const CpuMesh<T>& meshData) noexcept
         {
-            return MeshDataView{ gsl::make_span(meshData.Vertices), gsl::make_span(meshData.Indices) };
+            return CpuMeshView{ gsl::make_span(meshData.Vertices), gsl::make_span(meshData.Indices) };
         }
     };
 
-    using SimpleMeshData = MeshData<SimpleVertex>;
-    using SimpleMeshDataView = MeshDataView<SimpleVertex>;
+    using SimpleCpuMesh = CpuMesh<SimpleVertex>;
+    using SimpleCpuMeshView = CpuMeshView<SimpleVertex>;
 
-    extern template struct MeshData<SimpleVertex>;
-    extern template struct MeshDataView<SimpleVertex>;
+    extern template struct CpuMesh<SimpleVertex>;
+    extern template struct CpuMeshView<SimpleVertex>;
 
-    class Mesh
+    struct GpuMeshView
     {
-    public:
-        Mesh(std::uint32_t indicesNum,
-            SharedVertexBuffer vertexBuffer,
-            wrl::ComPtr<ID3D11Buffer> indexBuffer,
-            std::shared_ptr<Material> material,
-            VertexShader vs,
-            PixelShader ps);
+        VertexBufferView VertexBuffer;
+        ID3D11Buffer* IndexBuffer;
+        std::uint16_t IndexCount;
+    };
 
+    struct GpuMesh
+    {
         template<typename VertexT>
-        Mesh(ID3D11Device& device,
-            MeshDataView<VertexT> meshData,
-            std::shared_ptr<Material> material,
-            VertexShader vs,
-            PixelShader ps,
-            ResourceUsage usage = ResourceUsage::Default)
-            : Mesh{static_cast<std::uint32_t>(meshData.Indices.size()),
-            MakeVertexBuffer(device, meshData.Vertices, usage),
-            MakeIndexBuffer(device, meshData.Indices, usage),
-            std::move(material),
-            std::move(vs), std::move(ps)}
+        GpuMesh(ID3D11Device& device3D,
+            CpuMeshView<VertexT> meshData,
+            ResourceUsage usage = ResourceUsage::Immutable)
+            : vertexBuffer_{ MakeVertexBuffer(device3D, meshData.Vertices, usage) },
+            indexBuffer_{MakeIndexBuffer(device3D, meshData.Indices, usage)},
+            indexCount_{static_cast<std::uint16_t>(meshData.Indices.size())}
         {}
 
-        void DrawIndexed(ID3D11DeviceContext& context) const;
-        void DrawIndexedInstanced(ID3D11DeviceContext& context, VertexBuffer, std::uint32_t instanceCount) const;
-        VertexBuffer GetVertexBuffer() const noexcept;
-        ID3D11Buffer& GetIndexBuffer() const noexcept;
-        std::uint32_t GetIndicesCount() const noexcept;
-        const Material* GetMaterial() const noexcept;
-        VertexShaderView GetVertexShader() const noexcept;
-        PixelShaderView GetPixelShader() const noexcept;
+        GpuMeshView Get() const noexcept
+        {
+            return {
+                vertexBuffer_.Get(),
+                indexBuffer_.Get(),
+                indexCount_,
+            };
+        }
 
     private:
-        std::uint32_t indicesNum_;
         SharedVertexBuffer vertexBuffer_;
         wrl::ComPtr<ID3D11Buffer> indexBuffer_;
-        std::shared_ptr<Material> material_;
-        VertexShader vertexShader_;
-        PixelShader pixelShader_;
-
-        void SetupShaders(ID3D11DeviceContext& deviceContext) const;
-        void SetupIndexAndTopo(ID3D11DeviceContext& deviceContext) const;
+        std::uint16_t indexCount_;
     };
+
+    void SetupGpuMesh(ID3D11DeviceContext& context, GpuMeshView mesh);
 }

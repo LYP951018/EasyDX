@@ -23,5 +23,3 @@ namespace dx
         return ComputeWorld(transformation.Scale, transformation.Rotation, transformation.Translation);
     }
 }
-
-

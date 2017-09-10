@@ -1,7 +1,9 @@
-#include "AlignAllocator.h"
-#include "Common.hpp"
+#include "pch.hpp"
+#include "AlignedAllocator.hpp"
 #include <stdexcept>
+#ifdef _MSC_VER
 #include <malloc.h>
+#endif
 
 namespace stlext
 {

@@ -1,20 +1,20 @@
+#include "pch.hpp"
 #include "Shaders.hpp"
-#include "StlUtilities.hpp"
+#include "Game.hpp"
 #include <gsl/gsl_assert>
-#include <unordered_map>
 #include <d3d11.h>
 #include <D3Dcompiler.h>
 
 namespace dx
 {
-    wrl::ComPtr<ID3D11VertexShader> CreateVertexShader(ID3D11Device& device, gsl::span<const gsl::byte> byteCode)
+    wrl::ComPtr<ID3D11VertexShader> CreateVertexShader(ID3D11Device& device, gsl::span<const std::byte> byteCode)
     {
         wrl::ComPtr<ID3D11VertexShader> vs;
         TryHR(device.CreateVertexShader(byteCode.data(), byteCode.size(), nullptr, vs.GetAddressOf()));
         return vs;
     }
 
-    wrl::ComPtr<ID3D11PixelShader> CreatePixelShader(ID3D11Device& device, gsl::span<const gsl::byte> byteCode)
+    wrl::ComPtr<ID3D11PixelShader> CreatePixelShader(ID3D11Device& device, gsl::span<const std::byte> byteCode)
     {
         wrl::ComPtr<ID3D11PixelShader> ps;
         TryHR(device.CreatePixelShader(byteCode.data(), byteCode.size(), nullptr, ps.GetAddressOf()));
@@ -34,12 +34,26 @@ namespace dx
             compileFlags, {}, shaderBlob.GetAddressOf(), errorBlob.GetAddressOf());
         if (FAILED(hr))
         {
-            using namespace std::string_literals;
             const auto errorMessage =
                 "Compile error in shader " + ws2s(fileName) + ", " + static_cast<const char*>(errorBlob->GetBufferPointer());
             throw std::runtime_error{ errorMessage };
         }
         return shaderBlob;
+    }
+
+    void SetupShader(ID3D11DeviceContext& context3D, VertexShaderView vs)
+    {
+        context3D.IASetInputLayout(vs.Layout);
+        context3D.VSSetShader(vs.Shader, nullptr, 0);
+        const auto cbs = vs.Cbs;
+        context3D.VSSetConstantBuffers(0, static_cast<UINT>(cbs.size()), cbs.data());
+    }
+
+    void SetupShader(ID3D11DeviceContext& context3D, PixelShaderView ps)
+    {
+        context3D.PSSetShader(ps.Shader, nullptr, 0);
+        const auto cbs = ps.Cbs;
+        context3D.PSSetConstantBuffers(0, static_cast<UINT>(cbs.size()), cbs.data());
     }
 
     VertexShader VertexShader::CompileFromFile(ID3D11Device& device,
@@ -51,7 +65,7 @@ namespace dx
         return FromByteCode(device, BlobToSpan(Ref(byteCode)), layoutDesc);
     }
 
-    VertexShader VertexShader::FromByteCode(ID3D11Device& device, gsl::span<const gsl::byte> byteCode, gsl::span<const D3D11_INPUT_ELEMENT_DESC> layoutDesc)
+    VertexShader VertexShader::FromByteCode(ID3D11Device& device, gsl::span<const std::byte> byteCode, gsl::span<const D3D11_INPUT_ELEMENT_DESC> layoutDesc)
     {
         VertexShader vs;
         TryHR(device.CreateVertexShader(byteCode.data(), byteCode.size(), nullptr, vs.shader_.ReleaseAndGetAddressOf()));
@@ -60,12 +74,38 @@ namespace dx
         return vs;
     }
 
-    void VertexShader::Bind(ID3D11DeviceContext& deviceContext) const
+    std::optional<VertexShader> VertexShader::Find(std::uint32_t tag)
     {
-        deviceContext.IASetInputLayout(&GetLayout());
-        deviceContext.VSSetShader(&GetShader(), nullptr, 0);
-        const auto cbs = ComPtrsCast(gsl::make_span(ConstantBuffers));
-        deviceContext.VSSetConstantBuffers(0, cbs.size(), cbs.data());
+        const auto& vertexShaders = GetGame().vertexShaders_;
+        const auto it = vertexShaders.find(tag);
+        if (it != vertexShaders.end())
+        {
+            return it->second;
+        }
+        return std::nullopt;
+    }
+
+    void VertexShader::AddShader(std::uint32_t tag, VertexShader vs)
+    {
+        auto& vertexShaders = GetGame().vertexShaders_;
+        vertexShaders.insert({ tag, std::move(vs) });
+    }
+
+    std::optional<PixelShader> PixelShader::Find(std::uint32_t tag)
+    {
+        const auto& pixelShaders = GetGame().pixelShaders_;
+        const auto it = pixelShaders.find(tag);
+        if (it != pixelShaders.end())
+        {
+            return it->second;
+        }
+        return std::nullopt;
+    }
+
+    void PixelShader::AddShader(std::uint32_t tag, PixelShader ps)
+    {
+        auto& pixelShaders = GetGame().pixelShaders_;
+        pixelShaders.insert({ tag, std::move(ps) });
     }
 
     ID3D11VertexShader& VertexShader::GetShader() const
@@ -80,7 +120,11 @@ namespace dx
 
     VertexShaderView VertexShader::Get() const noexcept
     {
-        return { shader_.Get(), layout_.Get() };
+        return { shader_.Get(), layout_.Get(), ComPtrsCast(gsl::make_span(Cbs))};
+    }
+
+    VertexShader::~VertexShader()
+    {
     }
 
     VertexShader::VertexShader(wrl::ComPtr<ID3D11VertexShader> shader, wrl::ComPtr<ID3D11InputLayout> layout)
@@ -99,16 +143,9 @@ namespace dx
         return FromByteCode(device, BlobToSpan(Ref(psByteCode)));
     }
 
-    PixelShader PixelShader::FromByteCode(ID3D11Device& device, gsl::span<const gsl::byte> byteCode)
+    PixelShader PixelShader::FromByteCode(ID3D11Device& device, gsl::span<const std::byte> byteCode)
     {
         return { CreatePixelShader(device, byteCode) };
-    }
-
-    void PixelShader::Bind(ID3D11DeviceContext& deviceContext) const
-    {
-        const auto cbs = ComPtrsCast(gsl::make_span(ConstantBuffers));
-        deviceContext.PSSetConstantBuffers(0, cbs.size(), cbs.data());
-        deviceContext.PSSetShader(&GetShader(), nullptr, 0);
     }
 
     ID3D11PixelShader& PixelShader::GetShader() const noexcept
@@ -120,8 +157,12 @@ namespace dx
     {
         return {
             shader_.Get(),
-            ComPtrsCast(gsl::make_span(ConstantBuffers))
+            ComPtrsCast(gsl::make_span(Cbs))
         };
+    }
+
+    PixelShader::~PixelShader()
+    {
     }
 
     PixelShader::PixelShader(wrl::ComPtr<ID3D11PixelShader> shader)

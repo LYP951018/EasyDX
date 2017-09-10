@@ -1,4 +1,4 @@
-#include "Common.hpp"
+#include "pch.hpp"
 #include <codecvt>
 #include <comdef.h>
 #include <stdexcept>
@@ -30,9 +30,9 @@ namespace dx
     }
 
     
-    gsl::span<gsl::byte> BlobToSpan(ID3D10Blob& blob) noexcept
+    gsl::span<std::byte> BlobToSpan(ID3D10Blob& blob) noexcept
     {
-        return { static_cast<gsl::byte*>(blob.GetBufferPointer()), static_cast<std::ptrdiff_t>(blob.GetBufferSize()) };
+        return { static_cast<std::byte*>(blob.GetBufferPointer()), static_cast<std::ptrdiff_t>(blob.GetBufferSize()) };
     }
 
     [[noreturn]]

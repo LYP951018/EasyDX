@@ -1,7 +1,9 @@
+#include "pch.hpp"
 #include "Game.hpp"
 #include "GameWindow.hpp"
-#include "Common.hpp"
 #include "Scene.hpp"
+#include "BasicVS.hpp"
+#include "BasicPS.hpp"
 #include <chrono>
 #include <stdexcept>
 #include <gsl/gsl_assert>
@@ -49,7 +51,6 @@ namespace dx
                     prevTime = nowTime;
                     auto& mainScene = GetMainScene();
                     mainScene.Update(updateArgs);
-                    mainScene.Render(context3D, context2D);
                     GetMainWindow()->Present();
                 }
             }
@@ -146,6 +147,7 @@ namespace dx
     {
         TryHR(::CoInitialize(nullptr));
         InitializeDevices();
+        InitializeShaders();
     }
 
     void Game::InitializeDevices()
@@ -186,6 +188,13 @@ namespace dx
             DWRITE_FACTORY_TYPE_SHARED,
             __uuidof(IDWriteFactory1),
             reinterpret_cast<IUnknown**>(dwFactory_.ReleaseAndGetAddressOf())));
+    }
+
+    void Game::InitializeShaders()
+    {
+        auto& device3D = GetDevice3D();
+        vertexShaders_.insert({ 0, VertexShader::FromByteCode(device3D, BasicVertexShader) });
+        pixelShaders_.insert({ 0, PixelShader::FromByteCode(device3D, BasicPixelShader) });
     }
 
     Game& GetGame()

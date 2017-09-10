@@ -1,12 +1,9 @@
 ﻿#pragma once
 
 #include "DXDef.hpp"
-#include "AlignAllocator.h"
+#include "AlignedAllocator.hpp"
 #include <string>
-#include <gsl/span>
-#include <type_traits>
 #include <wrl/client.h>
-#include <vector>
 
 namespace wrl = Microsoft::WRL;
 
@@ -16,6 +13,15 @@ namespace dx
 {
     template<typename T>
     using Ptr = T*;
+
+    template<typename T>
+    using Rc = std::shared_ptr<T>;
+
+    template<typename T>
+    using Vec = std::vector<T>;
+
+    template<typename T>
+    using Box = std::unique_ptr<T>;
 
     std::string ws2s(const std::wstring& wstr);
     std::wstring s2ws(const std::string& str);
@@ -43,28 +49,30 @@ namespace dx
     }
 
     template<typename T>
-    gsl::byte* ToBytes(T* ptr) noexcept
+    gsl::span<std::byte> AsBytes(T& object) noexcept
     {
-        return reinterpret_cast<gsl::byte*>(ptr);
+        //static_assert(std::is_trivially_copyable_v<T>);
+        return gsl::make_span(reinterpret_cast<std::byte*>(std::addressof(object)), sizeof(T));
     }
 
     template<typename T>
-    const gsl::byte* ToBytes(const T* ptr) noexcept
+    gsl::span<const std::byte> AsBytes(const T& object) noexcept
     {
-        return reinterpret_cast<const gsl::byte*>(ptr);
+        //static_assert(std::is_trivially_copyable_v<T>);
+        return gsl::make_span(reinterpret_cast<const std::byte*>(std::addressof(object)), sizeof(T));
     }
 
     template<std::size_t N>
-    gsl::span<gsl::byte> AsBytes(unsigned char(& arr)[N])
+    gsl::span<std::byte> AsBytes(unsigned char(& arr)[N])
     {
-        const auto parr = reinterpret_cast<gsl::byte*>(arr);
+        const auto parr = reinterpret_cast<std::byte*>(arr);
         return gsl::make_span(parr, N);
     }
 
     template<std::size_t N>
-    gsl::span<const gsl::byte> AsBytes(const unsigned char(&arr)[N])
+    gsl::span<const std::byte> AsBytes(const unsigned char(&arr)[N])
     {
-        const auto parr = reinterpret_cast<const gsl::byte*>(arr);
+        const auto parr = reinterpret_cast<const std::byte*>(arr);
         return gsl::make_span(parr, N);
     }
 
@@ -103,7 +111,7 @@ namespace dx
         return { static_cast<std::add_pointer_t<T>>(stlext::AlignedAlloc(sizeof(T) * n, alignof(T))), stlext::AlignedFree };
     }
 
-    gsl::span<gsl::byte> BlobToSpan(ID3D10Blob& blob) noexcept;
+    gsl::span<std::byte> BlobToSpan(ID3D10Blob& blob) noexcept;
 
     struct Noncopyable
     {
@@ -113,6 +121,23 @@ namespace dx
         Noncopyable(Noncopyable&&) = default;
         Noncopyable& operator= (Noncopyable&&) = default;
     };
+
+    template<typename T, typename... Args>
+    std::shared_ptr<T> MakeShared(Args&&... args)
+    {
+        static_assert(std::is_constructible_v<T, Args&&...>);
+        return std::make_shared<T>(std::forward<Args>(args)...);
+    }
+
+    template<typename T, typename... Args>
+    auto MakeUnique(Args&&... args)->std::enable_if_t<std::is_constructible_v<T, Args&&...>,
+        std::unique_ptr<T>>
+    {
+        return std::unique_ptr<T>(std::forward<Args>(args)...);
+    }
+
+    template<typename... Args>
+    void Swallow(Args&&...) noexcept {}
 }
 
 namespace stlext

@@ -1,12 +1,9 @@
 #pragma once
 
-#include "Common.hpp"
-#include <type_traits>
-#include <functional>
 #include <unordered_map>
-#include <memory>
-#include <cstdint>
 #include <climits>
+#include <d3d11.h>
+#include "Shaders.hpp"
 
 namespace dx
 {
@@ -50,12 +47,15 @@ namespace dx
 
     private:
         friend Game& GetGame();
+        friend struct VertexShader;
+        friend struct PixelShader;
 
         static constexpr std::uint32_t InvalidSceneIndex = UINT32_MAX;
 
         Game();
 
         void InitializeDevices();
+        void InitializeShaders();
         void Run();
         void SetUp(std::unique_ptr<GameWindow> mainWindow);
         void ReallySwitchToScene(std::uint32_t index, std::shared_ptr<void> arg);
@@ -75,6 +75,9 @@ namespace dx
         std::uint32_t fps_;
         std::uint32_t nextSceneIndex_;
         std::shared_ptr<void> nextSceneArg_;
+        
+        std::unordered_map<std::uint32_t, VertexShader> vertexShaders_;
+        std::unordered_map<std::uint32_t, PixelShader> pixelShaders_;
     };
 
     Game& GetGame();

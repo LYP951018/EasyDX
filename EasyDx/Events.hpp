@@ -120,4 +120,6 @@ namespace dx
     using MouseUpEvent = Event<MouseEventArgs&>;
     using WindowResizeEvent = Event<ResizeEventArgs&>;
     using DpiChangedEvent = Event<DpiChangedEventArgs&>;
+
+    using WindowResizeEventHandle = dx::EventHandle<dx::WindowResizeEvent>;
 }

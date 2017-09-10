@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Light.hpp"
+#include "Buffers.hpp"
 #include <DirectXMath.h>
 #include <cstdint>
 
@@ -8,7 +9,65 @@ namespace dx
 {
     struct Smoothness;
 
-    namespace cb
+    struct IConstantBuffer
+    {
+        IConstantBuffer(wrl::ComPtr<ID3D11Buffer> gpuCb)
+            : gpuCb_{std::move(gpuCb)}
+        {}
+
+        virtual gsl::span<const std::byte> GetBuffer() = 0;
+
+        void Flush(ID3D11DeviceContext& context) noexcept
+        {
+            UpdateConstantBuffer(context, Ref(gpuCb_), GetBuffer());
+        }
+
+        virtual ~IConstantBuffer();
+
+    private:
+        wrl::ComPtr<ID3D11Buffer> gpuCb_;
+    };
+
+    template<typename CbDataT>
+    struct Cb : IConstantBuffer
+    {
+    public:
+        Cb(wrl::ComPtr<ID3D11Buffer> gpuCb)
+            : data_{ aligned_unique<CbDataT>() },
+            IConstantBuffer{std::move(gpuCb)}
+        {}
+
+        gsl::span<const std::byte> GetBuffer() override
+        {
+            return AsBytes(Data());
+        }
+
+        CbDataT& Data() noexcept
+        {
+            return *data_;
+        }
+
+        const CbDataT& Data() const noexcept
+        {
+            return *data_;
+        }
+
+    private:
+        aligned_unique_ptr<CbDataT> data_;
+        
+    };
+
+    template<typename CbDataT>
+    auto MakeCb(ID3D11Device& device) -> std::pair<Rc<Cb<CbDataT>>, wrl::ComPtr<ID3D11Buffer>>
+    {
+        auto gpuCb = MakeConstantBuffer<CbDataT>(device);
+        return {
+            MakeShared<Cb<CbDataT>>(gpuCb),
+            gpuCb
+        };
+    }
+
+    namespace cb::data
     {
         struct alignas(16) Light
         {
@@ -26,10 +85,10 @@ namespace dx
             float Range;
             std::uint32_t Padding;
 
-            static Light FromPlain(const dx::Light& light) noexcept;
-            static Light FromPoint(const dx::PointLight& pointLight) noexcept;
-            static Light FromDirectional(const dx::DirectionalLight& directionalLight) noexcept;
-            static Light FromSpot(const dx::SpotLight& spotLight) noexcept;
+            void FromPoint(const dx::PointLight& point) noexcept;
+            void FromDirectional(const dx::DirectionalLight& directional) noexcept;
+            void FromSpot(const dx::SpotLight& spot) noexcept;
+            void FromLight(const dx::Light& light) noexcept;
         };
 
         struct alignas(16) Material
@@ -42,7 +101,13 @@ namespace dx
             float SpecularPower;
             DirectX::XMFLOAT3 Padding;
 
-            static Material FromPlain(const dx::Smoothness& smoothness) noexcept;
+            void FromSmoothness(const Smoothness& smoothness) noexcept;
         };
+    }
+
+    namespace cb
+    {
+        using Light = Cb<data::Light>;
+        using Material = Cb<data::Material>;
     }
 }

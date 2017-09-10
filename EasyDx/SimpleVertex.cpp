@@ -1,3 +1,4 @@
+#include "pch.hpp"
 #include "SimpleVertex.hpp"
 #include <d3d11.h>
 

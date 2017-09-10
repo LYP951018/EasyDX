@@ -1,4 +1,6 @@
+#include "pch.hpp"
 #include "CBStructs.hpp"
+#include <d3d11.h>
 #include "Material.hpp"
 #include "Misc.hpp"
 
@@ -8,80 +10,85 @@ namespace dx::cb
     {
         return { float3.x, float3.y, float3.z, 1.f };
     }
+}
 
-    Material Material::FromPlain(const dx::Smoothness& smoothness) noexcept
+namespace dx
+{
+    IConstantBuffer::~IConstantBuffer()
     {
-        Material material;
-        material.Ambient = smoothness.Amibient;
-        material.Diffuse = smoothness.Diffuse;
-        material.Specular = smoothness.Specular;
-        material.Emissive = smoothness.Emissive;
-        material.SpecularPower = smoothness.SpecularPower;
-        return material;
-    }
-
-    struct LightVisitor
-    {
-        Light operator()(const PointLight& point) const noexcept
-        {
-            return Light::FromPoint(point);
-        }
-
-        Light operator()(const DirectionalLight& directional) const noexcept
-        {
-            return Light::FromDirectional(directional);
-        }
-
-        Light operator()(const SpotLight& spot) const noexcept
-        {
-            return Light::FromSpot(spot);
-        }
-    };
-
-    Light Light::FromPlain(const dx::Light& light) noexcept
-    {
-        return std::visit(LightVisitor{}, light);
-    }
-
-    Light Light::FromPoint(const dx::PointLight& pointLight) noexcept
-    {
-        Light light;
-        light.Type = LightType::PointLight;
-        light.Position = MakePosition(pointLight.Position);
-        const auto& att = pointLight.Attr;
-        light.ConstantAttenuation = att.x;
-        light.LinearAttenuation = att.y;
-        light.QuadraticAttenuation = att.z;
-        light.Color = pointLight.Color;
-        light.Range = pointLight.Range;
-        light.Enabled = pointLight.Enabled;
-        return light;
-    }
-
-    Light Light::FromDirectional(const dx::DirectionalLight& directionalLight) noexcept
-    {
-        Light light;
-        light.Type = LightType::DirectionalLight;
-        light.Direction = MakeDirection(directionalLight.Direction);
-        light.Color = directionalLight.Color;
-        light.Enabled = directionalLight.Enabled;
-        return light;
-    }
-
-    Light Light::FromSpot(const dx::SpotLight& spotLight) noexcept
-    {
-        Light light;
-        light.Type = LightType::SpotLight;
-        light.Position = MakePosition(spotLight.Position);
-        light.Color = spotLight.Color;
-        const auto& att = spotLight.Attr;
-        light.ConstantAttenuation = att.x;
-        light.LinearAttenuation = att.y;
-        light.QuadraticAttenuation = att.z;
-        light.Direction = MakeDirection(spotLight.Direction);
-        light.SpotAngle = spotLight.SpotAngle;
-        light.Range = spotLight.Range;
-        light.Enabled = spotLight.Enabled;
-        return light;
     }
 }
+
+namespace dx::cb::data
+{
+    void Light::FromPoint(const dx::PointLight & point) noexcept
+    {
+        Type = LightType::PointLight;
+        Position = MakePosition(point.Position);
+        const auto& att = point.Attr;
+        ConstantAttenuation = att.x;
+        LinearAttenuation = att.y;
+        QuadraticAttenuation = att.z;
+        Color = point.Color;
+        Range = point.Range;
+        Enabled = point.Enabled;
+    }
+
+    void Light::FromDirectional(const dx::DirectionalLight & directional) noexcept
+    {
+        Type = LightType::DirectionalLight;
+        Direction = MakeDirection(directional.Direction);
+        Color = directional.Color;
+        Enabled = directional.Enabled;
+    }
+
+    void Light::FromSpot(const dx::SpotLight& spot) noexcept
+    {
+        Type = LightType::SpotLight;
+        Position = MakePosition(spot.Position);
+        Color = spot.Color;
+        const auto& att = spot.Attr;
+        ConstantAttenuation = att.x;
+        LinearAttenuation = att.y;
+        QuadraticAttenuation = att.z;
+        Direction = MakeDirection(spot.Direction);
+        SpotAngle = spot.SpotAngle;
+        Range = spot.Range;
+        Enabled = spot.Enabled;
+    }
+
+    void Light::FromLight(const dx::Light & light) noexcept
+    {
+        struct Visitor
+        {
+            Light& Self;
+
+            void operator()(const PointLight& point) const noexcept
+            {
+                Self.FromPoint(point);
+            }
+
+            void operator()(const DirectionalLight& directional) const noexcept
+            {
+                Self.FromDirectional(directional);
+            }
+
+            void operator()(const SpotLight& spot) const noexcept
+            {
+                Self.FromSpot(spot);
+            }
+        };
+        std::visit(Visitor{ *this }, light);
+    }
+
+    void Material::FromSmoothness(const Smoothness & smoothness) noexcept
+    {
+        Ambient = smoothness.Amibient;
+        Diffuse = smoothness.Diffuse;
+        Specular = smoothness.Specular;
+        Emissive = smoothness.Emissive;
+        SpecularPower = smoothness.SpecularPower;
+    }
+}
+
+

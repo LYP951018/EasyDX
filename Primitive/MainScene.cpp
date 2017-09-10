@@ -1,72 +1,31 @@
+#include <EasyDx/One.hpp>
 #include "MainScene.hpp"
-#include <EasyDx/Camera.hpp>
-#include <EasyDx/Game.hpp>
-#include <EasyDx/GameWindow.hpp>
-#include <EasyDx/Model.hpp>
-#include <EasyDx/Mesh.hpp>
-#include <EasyDx/Material.hpp>
-#include <EasyDx/Shaders.hpp>
-#include <EasyDx/CBStructs.hpp>
-#include <EasyDx/Misc.hpp>
-#include <DirectXMath.h>
-#include <DirectXColors.h>
-#include <d3d11.h>
-#include <chrono>
+#include "Rotator.hpp"
 #include "VertexShader.hpp"
 #include "PixelShader.hpp"
+#include "Cb.hpp"
+#include "CbUpdator.hpp"
 
-struct alignas(16) CBPerObject
-{
-    DirectX::XMMATRIX WorldViewProjection;
-    DirectX::XMMATRIX World;
-    DirectX::XMMATRIX InvTransposeWorld;
-    dx::cb::Material MainMaterial;
-};
-
-struct alignas(16) CBPerFrame
-{
-    DirectX::XMFLOAT4 EyePos;
-    dx::cb::Light Dlight;
-};
+using namespace dx;
 
 MainScene::MainScene(const dx::Game& game, std::shared_ptr<void> arg)
     : resized_{AddResize()}
 {
+    lightGlobal_ = dx::PointLight{
+        { 2.f, 3.f, 6.f },
+        { 1.f, 1.f, 1.f, 1.f },
+        { 1.f, 0.08f, 0.0f },
+        1000.f,
+        true
+    };
     using namespace DirectX;
     auto& camera = GetMainCamera();
     const auto eye = XMFLOAT3{ 0.0f, 4.0f, -10.0f };
     const auto at = XMFLOAT3{ 0.f, 1.f, 0.f };
     const auto up = XMFLOAT3{ 0.f, 1.f, 0.f };
     camera.SetLookAt(eye, at, up);
-    auto material = dx::Material{
-        dx::Smoothness {
-            { 0.07568f, 0.61424f, 0.07568f, 1.0f },
-            { 0.07568f, 0.61424f, 0.07568f, 1.0f },
-            { 0.07568f, 0.61424f, 0.07568f, 1.0f },
-            {},
-            76.8f
-        },
-        false
-    };
-    light_ = dx::PointLight {
-        { 2.f, 3.f, 6.f },
-        { 1.f, 1.f, 1.f, 1.f },
-        { 1.f, 0.08f, 0.0f},
-        1000.f,
-        true
-    };
-    auto& device3D = game.GetDevice3D();
-    cbPerObject_ = dx::MakeConstantBuffer<CBPerObject>(device3D);
-    cbPerFrame_ = dx::MakeConstantBuffer<CBPerFrame>(device3D);
-    auto vs = dx::VertexShader::FromByteCode(device3D, dx::AsBytes(TheVertexShader), dx::SimpleVertex::GetLayout());
-    auto ps = dx::PixelShader::FromByteCode(device3D, dx::AsBytes(ThePixelShader));
-    for (auto cb : { cbPerObject_, cbPerFrame_ })
-    {
-        vs.ConstantBuffers.push_back(cb);
-        ps.ConstantBuffers.push_back(cb);
-    }
-
-   /* const dx::SimpleVertex vertices[] = {
+    SetupBall(game.GetDevice3D());
+    /* const dx::SimpleVertex vertices[] = {
         { XMFLOAT3(-1.0f, 1.0f, -1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), {}, { 0.f, 0.f } },
         { XMFLOAT3(1.0f, 1.0f, -1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), {}, { 0.f, 1.f } },
         { XMFLOAT3(1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), {},{ 1.f, 0.f } },
@@ -117,66 +76,20 @@ MainScene::MainScene(const dx::Game& game, std::shared_ptr<void> arg)
         22,20,21,
         23,20,22
     };*/
-
-    /*dx::SimpleMeshDataView meshData = { gsl::make_span(vertices), gsl::make_span(indices) };
-    ball_.Meshes.push_back(
-        dx::Mesh{ device3D,
-        meshData,
-        std::make_shared<dx::Material>(material), vs, ps }
-    );*/
-    //DirectX::XMStoreFloat4(&ball_.Transform.Rotation, DirectX::XMQuaternionRotationAxis(DirectX::XMVectorSet(1.f, 0.f, 0.f, 0.f), DirectX::XM_PI / 6.f));
-    dx::SimpleMeshData meshData;
-    //dx::MakeUVSphere(1.f, 20, 20, meshData);
-    dx::MakeCylinder(1.f, 0.5f, 2.f, 20, 20, meshData);
-    ball_.Meshes.push_back(dx::Mesh{ device3D,
-        dx::SimpleMeshDataView::FromMeshData(meshData),
-        std::make_shared<dx::Material>(material), vs, ps });
 }
 
-void MainScene::Update(const dx::UpdateArgs & args)
+void MainScene::Update(const dx::UpdateArgs& args)
 {
-    //FIXME: statics are ugly.
-    static float angle = 0.f;
-    static std::chrono::milliseconds lastTime;
-    using namespace std::chrono_literals;
-    if (args.TotalTime - lastTime > 1s)
-    {
-        lastTime = args.TotalTime;
-        if (angle > DirectX::XM_2PI)
-            angle = 0.f;
-        angle += DirectX::XM_PI / 120.f;
-        auto pos = dx::MakePosition(light_.Position);
-        DirectX::XMStoreFloat3(&light_.Position, DirectX::XMVector4Transform(DirectX::XMLoadFloat4(&pos),
-            DirectX::XMMatrixRotationY(angle)));
-    }
-    
-}
-
-
-void MainScene::Render(ID3D11DeviceContext& context3D, ID2D1DeviceContext&)
-{
-    dx::GetGame().GetMainWindow()->Clear(DirectX::Colors::White);
-    const auto& camera = GetMainCamera();
-    const auto world = DirectX::XMMatrixIdentity();
-    //const auto world = DirectX::XMMatrixRotationX(DirectX::XM_PI / 6.f);//dx::ComputeWorld(ball_.Transform);
-    const auto worldViewProj = world * camera.GetView() * camera.GetProjection();
-    auto cb = CBPerObject{
-        worldViewProj,
-        world,
-        DirectX::XMMatrixTranspose(DirectX::XMMatrixInverse({}, world)),
-    };
-    //light_.Position = camera.GetEyePos();
-    auto cbFrame = CBPerFrame{
-        dx::MakePosition(camera.GetEyePos()),
-        dx::cb::Light::FromPoint(light_)
-    };
-    context3D.UpdateSubresource(cbPerFrame_.Get(), {}, {}, &cbFrame, {}, {});
-    ball_.Render(context3D, [&, this](const dx::Mesh& mesh) 
-    {
-        const auto& material = *mesh.GetMaterial();
-        cb.MainMaterial = dx::cb::Material::FromPlain(material.Smooth);
-        context3D.UpdateSubresource(this->cbPerObject_.Get(), {}, {}, &cb, {}, {});
-    });
+    auto& ball = *ball_;
+    //1, update frame constant buffer.
+    auto& cbPerFrame = cpuCbPerFrame_->Data();
+    cbPerFrame.Dlight.FromPoint(lightGlobal_);
+    cbPerFrame.EyePos = dx::MakePosition(GetMainCamera().GetEyePos());
+    cpuCbPerFrame_->Flush(args.Context3D);
+    //2, invoke all behaviors
+    dx::BehaviorSystem(ball, args);
+    //3, render.
+    dx::RenderSystem(args.Context3D, ball);
 }
 
 dx::EventHandle<dx::WindowResizeEvent> MainScene::AddResize()
@@ -190,4 +103,38 @@ dx::EventHandle<dx::WindowResizeEvent> MainScene::AddResize()
             0.f, 1.f
         };
     });
+}
+
+void MainScene::SetupBall(ID3D11Device& device3D)
+{
+    auto ball = dx::MakeShared<dx::GameObject>();
+    auto vs = dx::VertexShader::FromByteCode(device3D, dx::AsBytes(TheVertexShader), dx::SimpleVertex::GetLayout());
+    auto ps = dx::PixelShader::FromByteCode(device3D, dx::AsBytes(ThePixelShader));
+
+    auto [cpuCbPerObject, gpuCbPerObject] = dx::MakeCb<data::CbPerObject>(device3D);
+    std::tie(cpuCbPerFrame_, gpuCbPerFrame_) = dx::MakeCb<data::CbPerFrame>(device3D);
+    for (auto cb : { gpuCbPerObject, gpuCbPerFrame_})
+    {
+        vs.Cbs.push_back(cb);
+        ps.Cbs.push_back(cb);
+    }
+
+    auto smoothness = dx::MakeShared<dx::Smoothness>(
+        DirectX::XMFLOAT4{ 0.07568f, 0.61424f, 0.07568f, 1.0f },
+        DirectX::XMFLOAT4{ 0.07568f, 0.61424f, 0.07568f, 1.0f },
+        DirectX::XMFLOAT4{ 0.07568f, 0.61424f, 0.07568f, 1.0f },
+        DirectX::XMFLOAT4{}, 76.8f);
+
+    auto light = dx::MakeShared<dx::LightComponent>(lightGlobal_);
+
+    dx::SimpleCpuMesh meshData;
+    //dx::MakeUVSphere(1.f, 20, 20, meshData);
+    dx::MakeCylinder(1.f, 0.5f, 2.f, 20, 20, meshData);
+    auto mesh = GpuMesh{ device3D, meshData.Get() };
+    auto update = MakeShared<dx::FuncBehavior>(Rotator{});
+    auto cbUpdator = MakeShared<dx::FuncBehavior>(CbPerObjectUpdator{ GetMainCamera() }, Behavior::kCbUpdate);
+    auto renderable = MakeShared<dx::Renderable>(std::move(vs), std::move(ps), std::move(mesh), cpuCbPerObject);
+    ball->AddComponents(std::move(smoothness), std::move(light), std::move(renderable));
+    ball->AddBehaviors(std::move(update), std::move(cbUpdator));
+    ball_ = ball;
 }

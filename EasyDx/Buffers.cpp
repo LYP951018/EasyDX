@@ -1,3 +1,4 @@
+#include "pch.hpp"
 #include "Buffers.hpp"
 #include <gsl/gsl_assert>
 #include <d3d11.h>
@@ -26,6 +27,11 @@ namespace dx
         }
     }
 
+    void UpdateConstantBuffer(ID3D11DeviceContext& context, ID3D11Buffer& buffer, gsl::span<const std::byte> bytes)
+    {
+        context.UpdateSubresource(&buffer, 0, nullptr, bytes.data(), 0, 0);
+    }
+
     void SetupVSConstantBuffer(ID3D11DeviceContext& deviceContext, gsl::span<const Ptr<ID3D11Buffer>> cbuffers, std::uint32_t startSlot)
     {
         deviceContext.VSSetConstantBuffers(static_cast<UINT>(startSlot), static_cast<UINT>(cbuffers.size()), cbuffers.data());
@@ -36,8 +42,23 @@ namespace dx
         deviceContext.PSSetConstantBuffers(static_cast<UINT>(startSlot), static_cast<UINT>(cbuffers.size()), cbuffers.data());
     }
 
-    VertexBuffer SharedVertexBuffer::Get() const noexcept
+    void SetupVertexBuffer(ID3D11DeviceContext& deviceContext, VertexBufferView vb)
     {
-        return { Buffer.Get(), VertexStride };
+        Ptr<ID3D11Buffer> buffers[] = { vb.Buffer };
+        UINT offsets[] = { 0 };
+        UINT strides[] = { vb.VertexStride };
+        deviceContext.IASetVertexBuffers(0, 1, buffers, strides, offsets);
     }
+
+    VertexBufferView SharedVertexBuffer::Get() const noexcept
+    {
+        return { Buffer.Get(), VertexStride, VertexCount };
+    }
+
+    SharedVertexBuffer::SharedVertexBuffer(wrl::ComPtr<ID3D11Buffer> buffer,
+        std::uint32_t vertexStride, std::uint16_t vertexCount) noexcept
+        : Buffer{ std::move(buffer) },
+        VertexStride{ vertexStride },
+        VertexCount{ vertexCount }
+    {}
 }

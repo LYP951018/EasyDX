@@ -1,7 +1,6 @@
 #pragma once
 
 #include "DXDef.hpp"
-#include <memory>
 #include <chrono>
 
 namespace dx
@@ -30,7 +29,6 @@ namespace dx
 
     protected:
         virtual void Update(const UpdateArgs& updateArgs);
-        virtual void Render(ID3D11DeviceContext&, ID2D1DeviceContext&) = 0;
 
     private:
         std::unique_ptr<Camera> mainCamera_;

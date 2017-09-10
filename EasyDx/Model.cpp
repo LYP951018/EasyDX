@@ -1,8 +1,12 @@
-﻿#include "Model.hpp"
+﻿#include "pch.hpp"
+#include "Model.hpp"
 #include "Mesh.hpp"
 #include "Texture.hpp"
 #include "Material.hpp"
+#include "Shaders.hpp"
+#include "GameObject.hpp"
 #include "SimpleVertex.hpp"
+#include "Renderable.hpp"
 #include <cmath>
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
@@ -25,10 +29,13 @@ namespace dx
         float4.w = 1.f;
     }
 
-    void LoadAllMeshFromScene(ID3D11Device& device, const aiScene* scene, std::vector<Mesh>& meshes, gsl::span<const std::shared_ptr<Material>> materials)
+    void LoadAllObjectsFromScene(const aiScene* scene,
+        std::vector<std::shared_ptr<GameObject>>& objects,
+        gsl::span<const std::shared_ptr<Smoothness>> smoothnesses,
+        gsl::span<const std::shared_ptr<Texture>> textures)
     {
         const auto meshCount = scene->mNumMeshes;
-        meshes.reserve(meshCount);
+        objects.reserve(meshCount);
         std::vector<SimpleVertex> verticesInMesh;
         std::vector<std::uint16_t> indicesInMesh;
         for (unsigned j = 0; j < meshCount; ++j)
@@ -40,6 +47,8 @@ namespace dx
             verticesInMesh.reserve(verticesNum);
             for (unsigned i = 0; i < verticesNum; ++i)
             {
+                auto object = MakeShared<GameObject>();
+
                 const auto& pos = mesh->mVertices[i];
                 const auto& normal = mesh->mNormals[i];
                 const auto& tangent = mesh->mTangents[i];
@@ -74,13 +83,12 @@ namespace dx
                     {
                         indicesInMesh.push_back(static_cast<std::uint16_t>(index));
                     }
-                    //.insert(indicesInMesh.end(), faceIndices.begin(), faceIndices.end());
                 }
+                object->AddComponent(MakeShared<SimpleCpuMesh>(std::move(verticesInMesh), std::move(indicesInMesh)));
+                object->AddComponent(std::move(smoothnesses[mesh->mMaterialIndex]));
+                object->AddComponent(std::move(textures[mesh->mMaterialIndex]));
+                objects.push_back(std::move(object));
             }
-            meshes.emplace_back(device,
-                MeshDataView<SimpleVertex>{ gsl::make_span(verticesInMesh), gsl::make_span(indicesInMesh) },
-                materials[mesh->mMaterialIndex],
-                VertexShader{}, PixelShader{});
         }
     }
 
@@ -102,11 +110,14 @@ namespace dx
         }
     }
 
-    void LoadAllMaterialsFromScene(ID3D11Device& device, const aiScene* scene, const fs::path& parentPath, std::vector<std::shared_ptr<Material>>& materials)
+    void LoadAllMaterialsFromScene(ID3D11Device& device, const aiScene* scene, 
+        const fs::path& parentPath, 
+        std::vector<std::shared_ptr<Smoothness>>& smoothnesses,
+        std::vector<std::shared_ptr<Texture>>& textures)
     {
         const auto materialsInScene = gsl::make_span(scene->mMaterials, scene->mNumMaterials);
-        materials.clear();
-        materials.reserve(materialsInScene.size());
+        smoothnesses.clear();
+        smoothnesses.reserve(materialsInScene.size());
         for (auto material : materialsInScene)
         {
             aiColor3D diffuse, specular, ambient;
@@ -118,8 +129,6 @@ namespace dx
             constexpr auto kTexType = aiTextureType::aiTextureType_DIFFUSE;
             const auto texCount = material->GetTextureCount(kTexType);
             Ensures(texCount <= 1); //only single texture is supported
-            std::vector<wrl::ComPtr<ID3D11Texture2D>> textures;
-            std::vector<wrl::ComPtr<ID3D11SamplerState>> samplerStates;
             for (unsigned i = 0; i < texCount; ++i)
             {
                 aiString texPath;
@@ -131,7 +140,7 @@ namespace dx
                 /*CheckAiReturn(material->Get(AI_MATKEY_MAPPINGMODE_U(kTexType, i), uMapMode));
                 CheckAiReturn(material->Get(AI_MATKEY_MAPPINGMODE_V(kTexType, i), vMapMode));*/
                 auto parent = parentPath;
-                auto texture = Texture::Load2DFromFile(device, parent.append(s2ws(texPath.C_Str())));
+                auto texture = Load2DTexFromFile(device, parent.append(s2ws(texPath.C_Str())));
                 D3D11_SAMPLER_DESC samplerDesc = {};
                 //TODO: How to get this from assimp?
                 samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
@@ -140,25 +149,19 @@ namespace dx
                 samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
                 wrl::ComPtr<ID3D11SamplerState> samplerState;
                 TryHR(device.CreateSamplerState(&samplerDesc, samplerState.ReleaseAndGetAddressOf()));
-                textures.push_back(std::move(texture));
-                samplerStates.push_back(std::move(samplerState));
+                textures.push_back(MakeShared<Texture>(device, std::move(texture), std::move(samplerState)));
             }
-            auto resultMat = std::make_shared<Material>();
-            auto& smoothness = resultMat->Smooth;
+            Smoothness smoothness;
             AiColorToFloat4(ambient, smoothness.Amibient);
             AiColorToFloat4(specular, smoothness.Specular);
             AiColorToFloat4(diffuse, smoothness.Diffuse);
             smoothness.SpecularPower = specularPower;
-            if (!textures.empty())
-            {
-                resultMat->Textures.push_back(Texture::GetView(device, Ref(textures.front())));
-                resultMat->Samplers.push_back(samplerStates.front());
-            }
-            materials.push_back(std::move(resultMat));
+            smoothnesses.push_back(MakeShared<Smoothness>(smoothness));
         }
     }
 
-    void LoadFromModel(ID3D11Device& device, const fs::path& filePath, std::vector<Mesh>& meshes)
+    void LoadFromModel(ID3D11Device& device, const fs::path& filePath,
+        std::vector<std::shared_ptr<GameObject>>& objects)
     {
         const auto pathString = filePath.u8string();
         Assimp::Importer importer;
@@ -169,14 +172,15 @@ namespace dx
             return ptr;
         };
         const auto scene = AssimpThrow(importer.ReadFile(pathString.c_str(), aiProcessPreset_TargetRealtime_MaxQuality));
-        std::vector<std::shared_ptr<Material>> materials;
-        LoadAllMaterialsFromScene(device, scene, filePath.parent_path(), materials);
-        meshes.clear();
-        LoadAllMeshFromScene(device, scene, meshes, gsl::make_span(materials));
+        std::vector<std::shared_ptr<Smoothness>> materials;
+        std::vector<std::shared_ptr<Texture>> textures;
+        LoadAllMaterialsFromScene(device, scene, filePath.parent_path(), materials, textures);
+        objects.clear();
+        LoadAllObjectsFromScene(scene, objects, gsl::make_span(materials), gsl::make_span(textures));
     }
 
-    void MakeCylinder(float bottomRadius, float topRadius, float height, 
-        std::uint16_t sliceCount, std::uint16_t stackCount, MeshData<SimpleVertex>& meshData)
+    void MakeCylinder(float bottomRadius, float topRadius, float height,
+        std::uint16_t sliceCount, std::uint16_t stackCount, CpuMesh<SimpleVertex>& meshData)
     {
         using namespace DirectX;
         auto& vertices = meshData.Vertices;
@@ -185,7 +189,7 @@ namespace dx
         const std::uint16_t sliceRingCount = sliceCount + 1;
         const std::uint16_t stackRingCount = stackCount + 1;
         const std::uint16_t verticesCount = (stackRingCount + 2) * sliceRingCount + 2;
-        
+
         vertices.reserve(verticesCount);
         const float heightPerStack = height / stackCount;
         const float angleStep = DirectX::XM_2PI / sliceCount;
@@ -211,7 +215,7 @@ namespace dx
             {
                 const auto c = std::cos(angle);
                 const auto s = std::sin(angle);
-                const auto pos = XMFLOAT3{radius * c, currentHeight,  radius * s};
+                const auto pos = XMFLOAT3{ radius * c, currentHeight,  radius * s };
                 const auto uv = XMFLOAT2{ 1.f - currentHeight / height, angle / DirectX::XM_2PI };
                 //unit length already.
                 const auto tangentU = XMFLOAT3{ -s, 0, c };
@@ -243,7 +247,7 @@ namespace dx
                 const uint16_t rightBottom = col + 1;
                 const uint16_t leftTop = col + sliceRingCount;
                 const uint16_t rightTop = leftTop + 1;
-                
+
                 indices.push_back(leftBottom);
                 indices.push_back(leftTop);
                 indices.push_back(rightTop);
@@ -268,7 +272,7 @@ namespace dx
                 const auto x = topRadius * std::cos(angle);
                 const auto z = topRadius * std::sin(angle);
                 const auto pos = XMFLOAT3{ x, height, z };
-                const auto normal = XMFLOAT3{0.f, 1.f, 0.f };
+                const auto normal = XMFLOAT3{ 0.f, 1.f, 0.f };
                 const auto tangentU = XMFLOAT3{ 1.f, 0.f, 0.f };
                 //What the fuck?
                 const auto uv = DirectX::XMFLOAT2{ x / height, z / height };
@@ -296,7 +300,7 @@ namespace dx
                 angle += angleStep;
                 const auto x = bottomRadius * std::cos(angle);
                 const auto z = bottomRadius * std::sin(angle);
-                const auto pos = DirectX::XMFLOAT3{ x, 0.f, z};
+                const auto pos = DirectX::XMFLOAT3{ x, 0.f, z };
                 const auto normal = bottomNormal;
                 const auto tangentU = bottomTangentU;
                 //What the fuck?
@@ -316,8 +320,8 @@ namespace dx
         Ensures(indices.size() == indicesCount);
     }
 
-    void MakeUVSphere(float radius, std::uint16_t sliceCount, std::uint16_t stackCount, 
-        MeshData<SimpleVertex>& meshData)
+    void MakeUVSphere(float radius, std::uint16_t sliceCount, std::uint16_t stackCount,
+        CpuMesh<SimpleVertex>& meshData)
     {
         using namespace DirectX;
         auto& vertices = meshData.Vertices;

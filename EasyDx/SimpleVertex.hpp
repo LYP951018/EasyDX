@@ -2,7 +2,6 @@
 
 #include "DXDef.hpp"
 #include <DirectXMath.h>
-#include <gsl/span>
 
 namespace dx
 {

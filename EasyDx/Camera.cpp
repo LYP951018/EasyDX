@@ -1,3 +1,4 @@
+#include "pch.hpp"
 #include "Camera.hpp"
 #include "Buffers.hpp"
 #include <d3d11.h>

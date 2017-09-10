@@ -1,10 +1,7 @@
 #pragma once
 
-#include "Common.hpp"
 #include "Events.hpp"
-#include <cstdint>
 #include <string>
-#include <gsl/span>
 #include <DirectXMath.h>
 
 namespace dx
