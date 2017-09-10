@@ -260,7 +260,7 @@ paket-files/
 __pycache__/
 *.pyc
 
-Cube/
-Lighting/
+EasyDx/BasicVS.hpp
+EasyDx/BasicPS.hpp
 Primitive/PixelShader.hpp
 Primitive/VertexShader.hpp
