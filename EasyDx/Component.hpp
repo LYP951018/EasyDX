@@ -15,10 +15,8 @@ namespace dx
         {
             kRenderable = 0,
             kCpuMesh = 1,
-            kLight = 2,
-            kBehavior = 3,
-            kSmoothness = 4,
-            kTexture = 5
+            kSmoothness = 2,
+            kTexture = 3
         };
     };
 }

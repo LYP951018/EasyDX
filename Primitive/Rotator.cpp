@@ -10,9 +10,8 @@ void Rotator::operator()(dx::GameObject & object, const dx::UpdateArgs & args)
         if (angle_ > DirectX::XM_2PI)
             angle_ = 0.f;
         angle_ += DirectX::XM_PI / 120.f;
-        auto& light = std::get<dx::PointLight>(dx::GetComponent<dx::LightComponent>(object)->Light_);
-        auto pos = dx::MakePosition(light.Position);
-        DirectX::XMStoreFloat3(&light.Position, DirectX::XMVector4Transform(DirectX::XMLoadFloat4(&pos),
+        auto& light = Light;
+        DirectX::XMStoreFloat3(&light.Position, DirectX::XMVector4Transform(DirectX::XMLoadFloat3(&light.Position),
             DirectX::XMMatrixRotationY(angle_)));
     }
 }

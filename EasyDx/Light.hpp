@@ -41,36 +41,4 @@ namespace dx
     };
 
     using Light = std::variant<PointLight, DirectionalLight, SpotLight>;
-
-    struct LightComponent : IComponent
-    {
-        LightComponent(const PointLight& pl)
-            : Light_{pl}
-        {}
-
-        LightComponent(const DirectionalLight& dl)
-            : Light_{dl}
-        {}
-
-        LightComponent(const SpotLight& sl)
-            : Light_{sl}
-        {}
-
-        enum LightPos : std::uint32_t
-        {
-            kPoint, kDirectional, kSpot
-        };
-
-        std::uint32_t GetId() const override
-        {
-            return ComponentId::kLight;
-        }
-
-        static std::uint32_t GetStaticId()
-        {
-            return ComponentId::kLight;
-        }
-
-        Light Light_;
-    };
 }
