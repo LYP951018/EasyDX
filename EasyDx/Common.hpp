@@ -138,6 +138,8 @@ namespace dx
 
     template<typename... Args>
     void Swallow(Args&&...) noexcept {}
+
+    using TexPair = std::pair<wrl::ComPtr<ID3D11Texture2D>, wrl::ComPtr<ID3D11ShaderResourceView>>;
 }
 
 namespace stlext

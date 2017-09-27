@@ -9,6 +9,8 @@ namespace dx
 {
     struct Smoothness;
 
+    using GpuCb = wrl::ComPtr<ID3D11Buffer>;
+
     struct IConstantBuffer
     {
         IConstantBuffer(wrl::ComPtr<ID3D11Buffer> gpuCb)
@@ -58,7 +60,10 @@ namespace dx
     };
 
     template<typename CbDataT>
-    auto MakeCb(ID3D11Device& device) -> std::pair<Rc<Cb<CbDataT>>, wrl::ComPtr<ID3D11Buffer>>
+    using CbPair = std::pair<Rc<Cb<CbDataT>>, wrl::ComPtr<ID3D11Buffer>>;
+
+    template<typename CbDataT>
+    auto MakeCb(ID3D11Device& device) -> CbPair<CbDataT>
     {
         auto gpuCb = MakeConstantBuffer<CbDataT>(device);
         return {
@@ -103,11 +108,19 @@ namespace dx
 
             void FromSmoothness(const Smoothness& smoothness) noexcept;
         };
+
+        struct alignas(16) BasicCb
+        {
+            DirectX::XMMATRIX WorldViewProj;
+            DirectX::XMMATRIX World;
+            DirectX::XMMATRIX WorldInvTranspose;
+        };
     }
 
     namespace cb
     {
         using Light = Cb<data::Light>;
         using Material = Cb<data::Material>;
+        using Basic = Cb<data::BasicCb>;
     }
 }

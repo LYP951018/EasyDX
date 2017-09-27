@@ -110,6 +110,9 @@
       <Command>
       </Command>
     </PreBuildEvent>
+    <FxCompile>
+      <AdditionalIncludeDirectories>$(SolutionDir)EasyDx\Shaders;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </FxCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>

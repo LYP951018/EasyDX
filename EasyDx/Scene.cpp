@@ -8,8 +8,9 @@ namespace dx
     {
     }
 
-    Scene::Scene()
-        : mainCamera_{std::make_unique<Camera>()}
+    Scene::Scene(const Game& game)
+        : mainCamera_{std::make_unique<Camera>()},
+          game_{game}
     {
     }
 

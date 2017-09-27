@@ -106,6 +106,11 @@ namespace dx
         return mainWindow_.get();
     }
 
+    const Predefined& Game::GetPredefined() const
+    {
+        return *predefined_;
+    }
+
     ID3D11Device& Game::GetDevice3D() const
     {
         return Ref(device3D_);
@@ -147,7 +152,6 @@ namespace dx
     {
         TryHR(::CoInitialize(nullptr));
         InitializeDevices();
-        InitializeShaders();
     }
 
     void Game::InitializeDevices()
@@ -188,19 +192,6 @@ namespace dx
             DWRITE_FACTORY_TYPE_SHARED,
             __uuidof(IDWriteFactory1),
             reinterpret_cast<IUnknown**>(dwFactory_.ReleaseAndGetAddressOf())));
-    }
-
-    void Game::InitializeShaders()
-    {
-        auto& device3D = GetDevice3D();
-        vertexShaders_.insert({ 0, VertexShader::FromByteCode(device3D, BasicVertexShader) });
-        pixelShaders_.insert({ 0, PixelShader::FromByteCode(device3D, BasicPixelShader) });
-    }
-
-    Game& GetGame()
-    {
-        static Game game;
-        return game;
     }
 
     void RunGame(Game& game, std::unique_ptr<GameWindow> mainWindow, std::uint32_t mainSceneIndex, std::shared_ptr<void> arg)

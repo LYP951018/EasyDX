@@ -3,7 +3,7 @@
 #include <unordered_map>
 #include <climits>
 #include <d3d11.h>
-#include "Shaders.hpp"
+#include "Predefined.hpp"
 
 namespace dx
 {
@@ -34,6 +34,7 @@ namespace dx
 
         Scene& GetMainScene() const;
         GameWindow* GetMainWindow() const;
+        const Predefined& GetPredefined() const;
 
         ID3D11Device& GetDevice3D() const;
         ID3D11DeviceContext& GetContext3D() const;
@@ -46,7 +47,6 @@ namespace dx
         IDWriteFactory1& GetDWriteFactory() const;
 
     private:
-        friend Game& GetGame();
         friend struct VertexShader;
         friend struct PixelShader;
 
@@ -55,7 +55,6 @@ namespace dx
         Game();
 
         void InitializeDevices();
-        void InitializeShaders();
         void Run();
         void SetUp(std::unique_ptr<GameWindow> mainWindow);
         void ReallySwitchToScene(std::uint32_t index, std::shared_ptr<void> arg);
@@ -67,6 +66,7 @@ namespace dx
         wrl::ComPtr<ID2D1Device> device2D_;
         wrl::ComPtr<ID2D1DeviceContext> context2D_;
         wrl::ComPtr<IDXGIDevice> dxgiDevice_;
+        std::unique_ptr<Predefined> predefined_;
 
         wrl::ComPtr<IDWriteFactory1> dwFactory_;
         std::unordered_map<std::uint32_t, SceneCreator> sceneCreators_;
@@ -75,11 +75,7 @@ namespace dx
         std::uint32_t fps_;
         std::uint32_t nextSceneIndex_;
         std::shared_ptr<void> nextSceneArg_;
-        
-        std::unordered_map<std::uint32_t, VertexShader> vertexShaders_;
-        std::unordered_map<std::uint32_t, PixelShader> pixelShaders_;
     };
 
-    Game& GetGame();
     void RunGame(Game& game, std::unique_ptr<GameWindow> mainWindow, std::uint32_t mainSceneIndex, std::shared_ptr<void> args = {});
 }

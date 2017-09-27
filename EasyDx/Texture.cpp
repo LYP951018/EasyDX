@@ -35,6 +35,14 @@ namespace dx
         return MakeTexture2D(device, image, metaData, usage);
     }
 
+    wrl::ComPtr<ID3D11Texture2D> Load2DTexFromDdsFile(ID3D11Device& device, const fs::path& filePath, ResourceUsage usage, std::uint32_t ddsFlags)
+    {
+        DirectX::ScratchImage image;
+        DirectX::TexMetadata metaData;
+        TryHR(DirectX::LoadFromDDSFile(filePath.c_str(), ddsFlags, &metaData, image));
+        return MakeTexture2D(device, image, metaData, usage);
+    }
+
     wrl::ComPtr<ID3D11Texture2D> Load2DTexFromMemory(ID3D11Device& device, const unsigned char* buffer, std::uint32_t width, std::uint32_t height, ResourceUsage usage)
     {
         D3D11_TEXTURE2D_DESC textureDesc = {};
@@ -66,6 +74,10 @@ namespace dx
         if (format == L".tga")
         {
             return Load2DTexFromTgaFile(device, filePath, usage);
+        }
+        else if (format == L".dds")
+        {
+            return Load2DTexFromDdsFile(device, filePath, usage, DirectX::DDS_FLAGS_NONE);
         }
         else
         {

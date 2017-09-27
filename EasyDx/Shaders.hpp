@@ -119,6 +119,8 @@ namespace dx
     void SetupShader(ID3D11DeviceContext& context3D, VertexShaderView vs);
     void SetupShader(ID3D11DeviceContext& context3D, PixelShaderView ps);
 
+    using ShaderPair = std::pair<VertexShader, PixelShader>;
+
     struct PixelShaderKind
     {
         enum : std::uint32_t

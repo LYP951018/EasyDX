@@ -22,16 +22,19 @@ namespace dx
         friend class Game;
 
     public:
+        Scene(const Game& game);
         virtual ~Scene();
-        Scene();
+
         Camera& GetMainCamera() const noexcept;
         void SetMainCamera(std::unique_ptr<Camera> mainCamera) noexcept;
+        const Game& GetGame() const { return game_; }
 
     protected:
         virtual void Update(const UpdateArgs& updateArgs);
 
     private:
         std::unique_ptr<Camera> mainCamera_;
+        const Game& game_;
     };
 
 

@@ -13,13 +13,13 @@ namespace dx
         VertexShader VS;
         PixelShader PS;
         GpuMesh Mesh;
-        Rc<IConstantBuffer> Cb;
+        std::vector<Rc<IConstantBuffer>> CpuCbs;
 
-        Renderable(VertexShader vs, PixelShader ps, GpuMesh mesh, Rc<IConstantBuffer> cb)
+        Renderable(VertexShader vs, PixelShader ps, GpuMesh mesh, std::vector<Rc<IConstantBuffer>> cbs)
             : VS{std::move(vs)},
             PS{std::move(ps)},
             Mesh{std::move(mesh)},
-            Cb{std::move(cb)}
+            CpuCbs{std::move(cbs)}
         {}
 
         std::uint32_t GetId() const override

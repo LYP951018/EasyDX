@@ -11,7 +11,11 @@ namespace dx
     class GameObject
     {
     public:
-        GameObject() = default;
+        template<typename... ComponentsT>
+        GameObject(Rc<ComponentsT>... components)
+        {
+            this->AddComponents(std::move(components)...);
+        }
 
         void AddComponent(std::shared_ptr<IComponent>);
 
