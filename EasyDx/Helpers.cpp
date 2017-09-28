@@ -5,6 +5,7 @@
 #include "SimpleVertex.hpp"
 #include "Renderable.hpp"
 #include "CBStructs.hpp"
+#include "GameObject.hpp"
 
 namespace dx
 {
@@ -13,6 +14,7 @@ namespace dx
         gsl::span<const SimpleVertex> vertices,
         gsl::span<const std::uint16_t> indices,
         Rc<Smoothness> smoothness,
+        const Transformation& transform,
         Rc<Texture> texture)
     {
         auto object = MakeShared<GameObject>();
@@ -24,6 +26,7 @@ namespace dx
         object->AddComponents(std::move(renderable), std::move(smoothness));
         object->AddBehaviors(predefined.GetBasicCbUpdator());
         object->AddComponent(texture ? texture : predefined.GetWhite());
+        object->Transform = transform;
         return object;
     }
 }

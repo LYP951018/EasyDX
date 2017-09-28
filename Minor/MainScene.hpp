@@ -5,6 +5,7 @@
 #include <EasyDx/Common.hpp>
 #include <EasyDx/Light.hpp>
 #include <EasyDx/Predefined.hpp>
+#include <array>
 
 class MainScene : public dx::Scene
 {
@@ -14,7 +15,8 @@ public:
 
 private:
     dx::Rc<dx::GameObject> sphere_, mirror_, wall_, floor_, reflectedSphere_;
-    dx::Light globalLight_;
+    std::array<dx::DirectionalLight, 3> dirLights_;
 
     void BuildRoom(ID3D11Device& device, const dx::Predefined& predefined);
+    void BuildLights();
 };

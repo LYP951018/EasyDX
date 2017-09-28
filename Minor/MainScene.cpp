@@ -12,6 +12,7 @@ MainScene::MainScene(const dx::Game& game, dx::Rc<void> args)
 {
     auto& device = game.GetDevice3D();
     BuildRoom(device, game.GetPredefined());
+    BuildLights();
 }
 
 
@@ -23,6 +24,7 @@ void MainScene::BuildRoom(ID3D11Device& device, const dx::Predefined& predefined
         XMFLOAT4{ 1.0f, 1.0f, 1.0f, 1.0f },
         XMFLOAT4{ 0.4f, 0.4f, 0.4f, 1.0f },
         XMFLOAT4{ 1.0f, 1.0f, 1.0f, 1.0f }, 16.0f);
+
     {
         auto floorTex = dx::Load2DTexFromFile(device, fs::current_path() / "Tex" / "checkboard.dds");
 
@@ -116,6 +118,19 @@ void MainScene::BuildRoom(ID3D11Device& device, const dx::Predefined& predefined
     }
 }
 
+void MainScene::BuildLights()
+{
+    dirLights_ = {};
+    dirLights_[0].Direction = { 0.57735f, -0.57735f, 0.57735f };
+    dirLights_[1].Direction = { -0.57735f, -0.57735f, 0.57735f };
+    dirLights_[2].Direction = { 0.0f, -0.707f, -0.707f };
+    for (auto& light : dirLights_)
+    {
+        light.Color = { 1.0f, 1.0f, 1.0f, 1.0f };
+        light.Enabled = true;
+    }
+}
+
 
 void MainScene::Update(const dx::UpdateArgs& args)
 {
@@ -145,8 +160,17 @@ void MainScene::Update(const dx::UpdateArgs& args)
 
     //3. Draw the reflected sphere.
     {
-        //TODO: reflect the lighing. changing culling direction
+        //TODO: changing culling direction
+        auto cachedLightings = dirLights_;
+        for (auto& light : dirLights_)
+        {
+            auto dir = dx::MakeDirection(light.Direction);
+            auto reflection = DirectX::XMMatrixReflect(DirectX::XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f));
+            auto dirVec = DirectX::XMLoadFloat4(&dir);
+            DirectX::XMStoreFloat3(&light.Direction, DirectX::XMVector4Transform(dirVec, reflection));
+        }
         dx::BasicSystem(context, args, *reflectedSphere_);
+        dirLights_ = cachedLightings;
     }
 
     //4. Draw the mirror with alpha blending.
