@@ -30,6 +30,12 @@ namespace dx
         wrl::ComPtr<ID3D11Buffer> gpuCb_;
     };
 
+    template<typename... CbT>
+    Vec<Rc<IConstantBuffer>> MakeCbs(Rc<CbT>... cbs)
+    {
+        return Vec<Rc<IConstantBuffer>>{std::move(cbs)...};
+    }
+
     template<typename CbDataT>
     struct Cb : IConstantBuffer
     {
@@ -109,18 +115,12 @@ namespace dx
             void FromSmoothness(const Smoothness& smoothness) noexcept;
         };
 
-        struct alignas(16) BasicCb
-        {
-            DirectX::XMMATRIX WorldViewProj;
-            DirectX::XMMATRIX World;
-            DirectX::XMMATRIX WorldInvTranspose;
-        };
     }
 
     namespace cb
     {
         using Light = Cb<data::Light>;
         using Material = Cb<data::Material>;
-        using Basic = Cb<data::BasicCb>;
+        
     }
 }

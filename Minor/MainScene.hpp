@@ -13,7 +13,7 @@ public:
     void Update(const dx::UpdateArgs& updateArgs) override;
 
 private:
-    dx::Rc<dx::GameObject> sphere_, mirror_, wall_, floor_;
+    dx::Rc<dx::GameObject> sphere_, mirror_, wall_, floor_, reflectedSphere_;
     dx::Light globalLight_;
 
     void BuildRoom(ID3D11Device& device, const dx::Predefined& predefined);

@@ -1,18 +1,30 @@
 #include "pch.hpp"
 #include "Helpers.hpp"
 #include "Camera.hpp"
+#include "Predefined.hpp"
+#include "SimpleVertex.hpp"
+#include "Renderable.hpp"
+#include "CBStructs.hpp"
 
 namespace dx
 {
-    void BasicCbUpdator::Update(GameObject& object, const UpdateArgs &)
+    Rc<GameObject> MakeBasicGameObject(ID3D11Device& device, 
+        const Predefined& predefined,
+        gsl::span<const SimpleVertex> vertices,
+        gsl::span<const std::uint16_t> indices,
+        Rc<Smoothness> smoothness,
+        Rc<Texture> texture)
     {
-        auto renderable = GetComponent<Renderable>(object);
-        auto cb = std::dynamic_pointer_cast<cb::Basic>(renderable->Cb);
-        auto& data = cb->Data();
-        const auto world = ComputeWorld(object.Transform);
-        data.World = world;
-        data.WorldInvTranspose = DirectX::XMMatrixInverse({}, DirectX::XMMatrixTranspose(world));
-        data.WorldViewProj = world * Camera_.GetView() * Camera_.GetProjection();
+        auto object = MakeShared<GameObject>();
+        auto vs = predefined.GetBasicVS();
+        auto ps = predefined.GetBasicPS();
+        auto renderable = MakeRenderable(std::move(vs), std::move(ps),
+            GpuMesh{ device, SimpleCpuMeshView{ vertices, indices } }, 
+            MakeCbs(predefined.GetBasicVSCpuCb(), predefined.GetBasicLightingCpuCb()));
+        object->AddComponents(std::move(renderable), std::move(smoothness));
+        object->AddBehaviors(predefined.GetBasicCbUpdator());
+        object->AddComponent(texture ? texture : predefined.GetWhite());
+        return object;
     }
 }
 

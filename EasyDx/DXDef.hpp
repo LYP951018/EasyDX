@@ -16,6 +16,8 @@ struct ID3D11ShaderResourceView;
 struct ID3D11Texture2D;
 struct ID3D11Resource;
 struct ID3D11SamplerState;
+struct ID3D11DepthStencilState;
+struct ID3D11BlendState;
 
 struct ID2D1Factory1;
 struct ID2D1Device;

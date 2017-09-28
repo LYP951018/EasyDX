@@ -32,4 +32,9 @@ namespace dx
             return ComponentId::kRenderable;
         }
     };
+
+    Rc<Renderable> MakeRenderable(VertexShader vs, PixelShader ps, GpuMesh mesh, std::vector<Rc<IConstantBuffer>> cbs)
+    {
+        return MakeShared<Renderable>(std::move(vs), std::move(ps), std::move(mesh), std::move(cbs));
+    }
 }
