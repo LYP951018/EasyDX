@@ -120,15 +120,16 @@ void MainScene::BuildRoom(ID3D11Device& device, const dx::Predefined& predefined
 
 void MainScene::BuildLights()
 {
-    dirLights_ = {};
-    dirLights_[0].Direction = { 0.57735f, -0.57735f, 0.57735f };
-    dirLights_[1].Direction = { -0.57735f, -0.57735f, 0.57735f };
-    dirLights_[2].Direction = { 0.0f, -0.707f, -0.707f };
-    for (auto& light : dirLights_)
+    std::array<dx::DirectionalLight, 3> dirLights = {};
+    dirLights[0].Direction = { 0.57735f, -0.57735f, 0.57735f };
+    dirLights[1].Direction = { -0.57735f, -0.57735f, 0.57735f };
+    dirLights[2].Direction = { 0.0f, -0.707f, -0.707f };
+    for (auto& light : dirLights)
     {
         light.Color = { 1.0f, 1.0f, 1.0f, 1.0f };
         light.Enabled = true;
     }
+    std::copy(dirLights.begin(), dirLights.end(), dirLights_);
 }
 
 
@@ -175,7 +176,7 @@ void MainScene::Update(const dx::UpdateArgs& args)
 
     //4. Draw the mirror with alpha blending.
     {
-
+        dx::BasicSystem(context, args, *mirror_);
     }
 
     //5. Draw the shadow.

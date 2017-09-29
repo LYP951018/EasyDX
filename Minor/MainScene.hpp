@@ -15,7 +15,7 @@ public:
 
 private:
     dx::Rc<dx::GameObject> sphere_, mirror_, wall_, floor_, reflectedSphere_;
-    std::array<dx::DirectionalLight, 3> dirLights_;
+    std::array<dx::Light, 3> dirLights_;
 
     void BuildRoom(ID3D11Device& device, const dx::Predefined& predefined);
     void BuildLights();

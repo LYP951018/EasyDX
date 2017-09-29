@@ -136,4 +136,13 @@ namespace dx
             data.Smoothness.FromSmoothness(*smoothness);
         }
     }
+
+    void PerObjectLightingCbUpdator::Update(GameObject & object, const UpdateArgs &)
+    {
+        auto renderable = GetComponent<Renderable>(object);
+        auto lightingCb = std::dynamic_pointer_cast<cb::CbPerObjectLightingInfo>(renderable->CpuCbs[1]);
+        auto& data = lightingCb->Data();
+        auto smoothness = GetComponent<Smoothness>(object);
+        data.Smoothness.FromSmoothness(*smoothness);
+    }
 }
