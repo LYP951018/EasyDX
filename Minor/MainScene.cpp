@@ -13,6 +13,14 @@ MainScene::MainScene(const dx::Game& game, dx::Rc<void> args)
     auto& device = game.GetDevice3D();
     BuildRoom(device, game.GetPredefined());
     BuildLights();
+    auto& camera = GetMainCamera();
+    const auto theta = 1.24 * DirectX::XM_PI;
+    const auto phi = 0.42 * DirectX::XM_PI;
+    const auto radius = 12.0f;
+    float x = radius*sinf(phi)*cosf(theta);
+    float z = radius*sinf(phi)*sinf(theta);
+    float y = radius*cosf(phi);
+    camera.SetLookAt({ x, y, z }, {}, { 0.0f, 1.0f, 0.0f });
 }
 
 
@@ -40,10 +48,16 @@ void MainScene::BuildRoom(ID3D11Device& device, const dx::Predefined& predefined
         const std::uint16_t FloorIndices[] = {
             0, 1, 2, 3, 4, 5
         };
-        floor_ = dx::MakeBasicGameObject(device, predefined, gsl::make_span(FloorVertices), gsl::make_span(FloorIndices), roomSmoothness);
+        floor_ = dx::MakeBasicGameObject(device, predefined, 
+            gsl::make_span(FloorVertices), 
+            gsl::make_span(FloorIndices), 
+            roomSmoothness, {},
+            dx::MakeShared<dx::Texture>(device, floorTex, predefined.GetDefaultSampler()));
     }
     
     {
+        auto wallTex = dx::Load2DTexFromFile(device, fs::current_path() / "Tex" / "brick01.dds");
+
         const dx::SimpleVertex WallVertices[] = {
             { { -3.5f, 0.0f, 0.0f }, { -1.0f, 0.0f, 2.0f }, {}, { 0.0f, 0.0f }},
             { { -3.5f, 4.0f, 0.0f }, { -1.0f, 0.0f, 0.0f }, {}, { 0.0f, 0.0f }},
@@ -73,10 +87,12 @@ void MainScene::BuildRoom(ID3D11Device& device, const dx::Predefined& predefined
             predefined, 
             gsl::make_span(WallVertices), 
             gsl::make_span<const std::uint16_t>(wallIndices),
-            roomSmoothness);
+            roomSmoothness, {}, dx::MakeShared<dx::Texture>(device, wallTex, predefined.GetDefaultSampler()));
     }
 
     {
+        auto mirrorTex = dx::Load2DTexFromFile(device, fs::current_path() / "Tex" / "ice.dds");
+
         auto mirrorSmoothness = dx::MakeShared<dx::Smoothness>(
             XMFLOAT4{ 0.5f, 0.5f, 0.5f, 1.0f },
             XMFLOAT4{ 1.0f, 1.0f, 1.0f, 0.5f },
@@ -97,7 +113,10 @@ void MainScene::BuildRoom(ID3D11Device& device, const dx::Predefined& predefined
             1, 2, 3, 4, 5, 6
         };
 
-        mirror_ = dx::MakeBasicGameObject(device, predefined, gsl::make_span(MirrorVertices), gsl::make_span(MirrorIndices), std::move(mirrorSmoothness));
+        mirror_ = dx::MakeBasicGameObject(device, predefined, 
+            gsl::make_span(MirrorVertices), 
+            gsl::make_span(MirrorIndices), std::move(mirrorSmoothness), {},
+            dx::MakeShared<dx::Texture>(device, mirrorTex, predefined.GetDefaultSampler()));
     }
     
     {
@@ -161,21 +180,18 @@ void MainScene::Update(const dx::UpdateArgs& args)
 
     //3. Draw the reflected sphere.
     {
-        //TODO: changing culling direction
-        auto cachedLightings = dirLights_;
-        for (auto& light : dirLights_)
-        {
-            auto dir = dx::MakeDirection(light.Direction);
-            auto reflection = DirectX::XMMatrixReflect(DirectX::XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f));
-            auto dirVec = DirectX::XMLoadFloat4(&dir);
-            DirectX::XMStoreFloat3(&light.Direction, DirectX::XMVector4Transform(dirVec, reflection));
-        }
+        context.RSSetState(predefined.GetCullClockwise());
+        context.OMSetDepthStencilState(predefined.GetDrawnOnly().Get(), 1);
+        //auto cachedLights = std::array<Light
         dx::BasicSystem(context, args, *reflectedSphere_);
-        dirLights_ = cachedLightings;
+        context.RSSetState(nullptr);
+        context.OMSetDepthStencilState(nullptr, 0);
     }
 
     //4. Draw the mirror with alpha blending.
     {
+        float blendFactor[4] = {};
+        context.OMSetBlendState(predefined.GetTransparent().Get(), blendFactor, static_cast<UINT>(-1));
         dx::BasicSystem(context, args, *mirror_);
     }
 

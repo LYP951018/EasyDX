@@ -66,16 +66,22 @@ namespace dx
         Predefined(ID3D11Device&);
         void SetupCamera(const Camera&);
 
+        //TODO: 从生命周期的角度应该返回裸指针，这样用起来也方便。
         Rc<Texture> GetWhite() const { return white_; }
         Rc<Renderable> GetRenderable(gsl::span<SimpleVertex> vertices, gsl::span<std::uint16_t> indices) const;
         Rc<Cb<cb::data::BasicCb>> GetBasicVSCpuCb() const { return vsCb_.first; }
         Rc<Cb<cb::data::PerObjectLightingInfo>> GetBasicLightingCpuCb() const noexcept { return psPerObjectLightingCb_.first; }
         Rc<BasicCbUpdator> GetBasicCbUpdator() const;
-        Rc<PerObjectLightingCbUpdator> GetPerObjectLightingCbUpdator() const;
+        Rc<PerObjectLightingCbUpdator> GetPerObjectLightingCbUpdator() const { return perObjectLightingCbUpdator_; }
         VertexShader GetBasicVS() const { return basicVS_; }
         PixelShader GetBasicPS() const { return basicPS_; }
         wrl::ComPtr<ID3D11DepthStencilState> GetStencilAlways() const { return stencilAlways_; }
+        wrl::ComPtr<ID3D11DepthStencilState> GetDrawnOnly() const { return drawnOnly_; }
         wrl::ComPtr<ID3D11BlendState> GetNoWriteToRT() const { return noWriteToRt_; }
+        wrl::ComPtr<ID3D11BlendState> GetTransparent() const { return transparent_; }
+
+        ID3D11RasterizerState* GetCullClockwise() const { return cullClockWise_.Get(); }
+        wrl::ComPtr<ID3D11SamplerState> GetDefaultSampler() const { return defaultSampler_; }
 
     private:
         void MakeWhiteTex(ID3D11Device&);
@@ -83,19 +89,22 @@ namespace dx
         void MakeBasicPS(ID3D11Device&);
         void MakeStencilStates(ID3D11Device&);
         void MakeBlendingStates(ID3D11Device&);
+        void MakeRasterizerStates(ID3D11Device&);
 
         static VertexShader MakeVS(ID3D11Device& device, const char* fileName);
         static PixelShader MakePS(ID3D11Device& device, const char* fileName);
 
         Rc<Texture> white_;
+        wrl::ComPtr<ID3D11SamplerState> defaultSampler_;
         VertexShader basicVS_;
         PixelShader basicPS_;
         CbPair<cb::data::BasicCb> vsCb_;
         CbPair<cb::data::PerObjectLightingInfo> psPerObjectLightingCb_;
         Rc<BasicCbUpdator> basicCbUpdator_;
         Rc<PerObjectLightingCbUpdator> perObjectLightingCbUpdator_;
-        wrl::ComPtr<ID3D11DepthStencilState> stencilAlways_;
-        wrl::ComPtr<ID3D11BlendState> noWriteToRt_;
+        wrl::ComPtr<ID3D11DepthStencilState> stencilAlways_, drawnOnly_;
+        wrl::ComPtr<ID3D11BlendState> noWriteToRt_, transparent_;
+        wrl::ComPtr<ID3D11RasterizerState> cullClockWise_;
     };
 
     
