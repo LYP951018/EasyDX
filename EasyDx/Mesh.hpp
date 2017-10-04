@@ -3,7 +3,6 @@
 #include "Buffers.hpp"
 #include "Shaders.hpp"
 #include "SimpleVertex.hpp"
-#include <variant>
 
 namespace dx
 {
@@ -11,7 +10,7 @@ namespace dx
     struct CpuMeshView;
 
     template<typename T>
-    struct CpuMesh : IComponent
+    struct CpuMesh 
     {
         std::vector<T> Vertices;
         std::vector<std::uint16_t> Indices;
@@ -22,16 +21,6 @@ namespace dx
             : Vertices{std::move(vertices)},
             Indices{std::move(indices)}
         {}
-
-        std::uint32_t GetId() const override
-        {
-            return ComponentId::kCpuMesh;
-        }
-
-        static std::uint32_t GetStaticId()
-        {
-            return ComponentId::kCpuMesh;
-        }
 
         CpuMeshView<T> Get() const noexcept
         {
@@ -45,10 +34,16 @@ namespace dx
         gsl::span<const T> Vertices;
         gsl::span<const std::uint16_t> Indices;
 
-        static CpuMeshView FromMeshData(const CpuMesh<T>& meshData) noexcept
-        {
-            return CpuMeshView{ gsl::make_span(meshData.Vertices), gsl::make_span(meshData.Indices) };
-        }
+        CpuMeshView(gsl::span<const T> vertices, gsl::span<const std::uint16_t> indices)
+            : Vertices{vertices},
+            Indices{indices}
+        {}
+
+        template<std::size_t VN, std::size_t IN_>
+        CpuMeshView(const T (&vertices)[VN], const std::uint16_t (&indices)[IN_])
+            : Vertices{gsl::make_span(vertices)},
+            Indices{gsl::make_span(indices)}
+        {}
     };
 
     using SimpleCpuMesh = CpuMesh<SimpleVertex>;
@@ -66,6 +61,8 @@ namespace dx
 
     struct GpuMesh
     {
+        GpuMesh() = default;
+
         template<typename VertexT>
         GpuMesh(ID3D11Device& device3D,
             CpuMeshView<VertexT> meshData,

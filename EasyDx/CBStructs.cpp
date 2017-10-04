@@ -12,16 +12,9 @@ namespace dx::cb
     }
 }
 
-namespace dx
+namespace dx::cb
 {
-    IConstantBuffer::~IConstantBuffer()
-    {
-    }
-}
-
-namespace dx::cb::data
-{
-    void Light::FromPoint(const dx::PointLight & point) noexcept
+    Light::Light(const dx::PointLight & point) noexcept
     {
         Type = LightType::PointLight;
         Position = MakePosition(point.Position);
@@ -34,7 +27,7 @@ namespace dx::cb::data
         Enabled = point.Enabled;
     }
 
-    void Light::FromDirectional(const dx::DirectionalLight & directional) noexcept
+    Light::Light(const dx::DirectionalLight & directional) noexcept
     {
         Type = LightType::DirectionalLight;
         Direction = MakeDirection(directional.Direction);
@@ -42,7 +35,7 @@ namespace dx::cb::data
         Enabled = directional.Enabled;
     }
 
-    void Light::FromSpot(const dx::SpotLight& spot) noexcept
+    Light::Light(const dx::SpotLight& spot) noexcept
     {
         Type = LightType::SpotLight;
         Position = MakePosition(spot.Position);
@@ -57,31 +50,29 @@ namespace dx::cb::data
         Enabled = spot.Enabled;
     }
 
-    void Light::FromLight(const dx::Light & light) noexcept
+    Light::Light(const dx::Light& light) noexcept
     {
         struct Visitor
         {
-            Light& Self;
-
-            void operator()(const PointLight& point) const noexcept
+            Light operator()(const PointLight& point) const noexcept
             {
-                Self.FromPoint(point);
+                return Light{ point };
             }
 
-            void operator()(const DirectionalLight& directional) const noexcept
+            Light operator()(const DirectionalLight& directional) const noexcept
             {
-                Self.FromDirectional(directional);
+                return Light{ directional };
             }
 
-            void operator()(const SpotLight& spot) const noexcept
+            Light operator()(const SpotLight& spot) const noexcept
             {
-                Self.FromSpot(spot);
+                return Light{ spot };
             }
         };
-        std::visit(Visitor{ *this }, light);
+        *this = std::visit(Visitor{}, light);
     }
 
-    void Material::FromSmoothness(const Smoothness & smoothness) noexcept
+    Material::Material(const Smoothness& smoothness) noexcept
     {
         Ambient = smoothness.Amibient;
         Diffuse = smoothness.Diffuse;

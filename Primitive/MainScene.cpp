@@ -95,7 +95,7 @@ void MainScene::Update(const dx::UpdateArgs& args)
 dx::EventHandle<dx::WindowResizeEvent> MainScene::AddResize()
 {
     auto& camera = GetMainCamera();
-    auto mainWindow = dx::GetGame().GetMainWindow();
+    auto mainWindow = GetGame().GetMainWindow();
     return mainWindow->WindowResize.Add([&](dx::ResizeEventArgs& e) {
         camera.SetProjection(DirectX::XM_PIDIV4, e.NewSize.GetAspectRatio(), 0.01f, 1000.f);
         camera.MainViewport = {

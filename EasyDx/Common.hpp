@@ -51,14 +51,14 @@ namespace dx
     template<typename T>
     gsl::span<std::byte> AsBytes(T& object) noexcept
     {
-        //static_assert(std::is_trivially_copyable_v<T>);
+        static_assert(std::is_standard_layout_v<T>);
         return gsl::make_span(reinterpret_cast<std::byte*>(std::addressof(object)), sizeof(T));
     }
 
     template<typename T>
     gsl::span<const std::byte> AsBytes(const T& object) noexcept
     {
-        //static_assert(std::is_trivially_copyable_v<T>);
+        static_assert(std::is_standard_layout_v<T>);
         return gsl::make_span(reinterpret_cast<const std::byte*>(std::addressof(object)), sizeof(T));
     }
 

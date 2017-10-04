@@ -18,6 +18,9 @@ namespace dx
         friend void RunGame(Game&, std::unique_ptr<GameWindow>, std::uint32_t, std::shared_ptr<void> arg);
 
     public:
+        Game();
+        ~Game();
+
         void AddSceneCreator(std::uint32_t index, SceneCreator creator);
 
         template<typename EnumT, typename = std::enable_if_t<std::is_enum_v<EnumT>>>
@@ -51,8 +54,6 @@ namespace dx
         friend struct PixelShader;
 
         static constexpr std::uint32_t InvalidSceneIndex = UINT32_MAX;
-
-        Game();
 
         void InitializeDevices();
         void Run();

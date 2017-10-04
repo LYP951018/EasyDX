@@ -121,4 +121,7 @@ void ComputeLighting(float3 eyePos, float3 position, float3 normal, Light light,
         default:
             break;
     }
+
+    diffuse.w = 1.0f;
+    spec.w = 1.0f;
 }

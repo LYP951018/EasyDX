@@ -97,12 +97,4 @@ namespace dx
         TryHR(device.CreateShaderResourceView(&texture, &desc, view.ReleaseAndGetAddressOf()));
         return view;
     }
-
-    Texture::Texture(ID3D11Device& device,
-        wrl::ComPtr<ID3D11Texture2D> tex,
-        wrl::ComPtr<ID3D11SamplerState> sampler)
-        : tex_{ std::move(tex) },
-        view_{ Get2DTexView(device, Ref(tex_)) },
-        sampler_{ std::move(sampler) }
-    {}
 }

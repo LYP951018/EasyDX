@@ -4,9 +4,7 @@
 #include "Texture.hpp"
 #include "Material.hpp"
 #include "Shaders.hpp"
-#include "GameObject.hpp"
 #include "SimpleVertex.hpp"
-#include "Renderable.hpp"
 #include <cmath>
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
@@ -29,69 +27,6 @@ namespace dx
         float4.w = 1.f;
     }
 
-    void LoadAllObjectsFromScene(const aiScene* scene,
-        std::vector<std::shared_ptr<GameObject>>& objects,
-        gsl::span<const std::shared_ptr<Smoothness>> smoothnesses,
-        gsl::span<const std::shared_ptr<Texture>> textures)
-    {
-        const auto meshCount = scene->mNumMeshes;
-        objects.reserve(meshCount);
-        std::vector<SimpleVertex> verticesInMesh;
-        std::vector<std::uint16_t> indicesInMesh;
-        for (unsigned j = 0; j < meshCount; ++j)
-        {
-            const auto mesh = scene->mMeshes[j];
-            verticesInMesh.clear();
-            indicesInMesh.clear();
-            const auto verticesNum = mesh->mNumVertices;
-            verticesInMesh.reserve(verticesNum);
-            for (unsigned i = 0; i < verticesNum; ++i)
-            {
-                auto object = MakeShared<GameObject>();
-
-                const auto& pos = mesh->mVertices[i];
-                const auto& normal = mesh->mNormals[i];
-                const auto& tangent = mesh->mTangents[i];
-                const auto tex = mesh->mTextureCoords[j];
-
-                SimpleVertex vertex = {
-                    { pos.x, pos.y, pos.z },
-                    { normal.x, normal.y, normal.z },
-                    { tangent.x, tangent.y, tangent.z }
-                };
-
-                if (tex == nullptr)
-                {
-                    vertex.TexCoord = { 1.f, 1.f };
-                }
-                else
-                {
-                    vertex.TexCoord = { tex[i].x, tex[i].y };
-                }
-                verticesInMesh.push_back(vertex);
-
-                const auto faces = gsl::make_span(mesh->mFaces, mesh->mNumFaces);
-
-                indicesInMesh.reserve(faces.size() * 3);
-                for (const auto& face : faces)
-                {
-                    const auto faceIndices = gsl::make_span(face.mIndices, face.mNumIndices);
-                    if (faceIndices.size() != 3)
-                        continue;
-
-                    for (auto index : faceIndices)
-                    {
-                        indicesInMesh.push_back(static_cast<std::uint16_t>(index));
-                    }
-                }
-                object->AddComponent(MakeShared<SimpleCpuMesh>(std::move(verticesInMesh), std::move(indicesInMesh)));
-                object->AddComponent(std::move(smoothnesses[mesh->mMaterialIndex]));
-                object->AddComponent(std::move(textures[mesh->mMaterialIndex]));
-                objects.push_back(std::move(object));
-            }
-        }
-    }
-
     D3D11_TEXTURE_ADDRESS_MODE FromAssimpTexMapModeToDX(aiTextureMapMode mode)
     {
         switch (mode)
@@ -110,10 +45,10 @@ namespace dx
         }
     }
 
-    void LoadAllMaterialsFromScene(ID3D11Device& device, const aiScene* scene, 
-        const fs::path& parentPath, 
-        std::vector<std::shared_ptr<Smoothness>>& smoothnesses,
-        std::vector<std::shared_ptr<Texture>>& textures)
+    void LoadAllMaterialsFromScene(ID3D11Device& device, const aiScene* scene,
+        const fs::path& parentPath,
+        std::vector<Smoothness>& smoothnesses,
+        std::vector<TextureSampler>& textures)
     {
         const auto materialsInScene = gsl::make_span(scene->mMaterials, scene->mNumMaterials);
         smoothnesses.clear();
@@ -149,19 +84,20 @@ namespace dx
                 samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
                 wrl::ComPtr<ID3D11SamplerState> samplerState;
                 TryHR(device.CreateSamplerState(&samplerDesc, samplerState.ReleaseAndGetAddressOf()));
-                textures.push_back(MakeShared<Texture>(device, std::move(texture), std::move(samplerState)));
+                textures.push_back({ Get2DTexView(device, Ref(texture)), std::move(samplerState) });
             }
             Smoothness smoothness;
             AiColorToFloat4(ambient, smoothness.Amibient);
             AiColorToFloat4(specular, smoothness.Specular);
             AiColorToFloat4(diffuse, smoothness.Diffuse);
             smoothness.SpecularPower = specularPower;
-            smoothnesses.push_back(MakeShared<Smoothness>(smoothness));
+            smoothnesses.push_back(smoothness);
         }
     }
 
-    void LoadFromModel(ID3D11Device& device, const fs::path& filePath,
-        std::vector<std::shared_ptr<GameObject>>& objects)
+    auto LoadFromModel(ID3D11Device& device, const fs::path& filePath) ->
+        std::experimental::generator<
+        std::tuple<SimpleCpuMesh, TextureSampler, Smoothness>>
     {
         const auto pathString = filePath.u8string();
         Assimp::Importer importer;
@@ -172,11 +108,59 @@ namespace dx
             return ptr;
         };
         const auto scene = AssimpThrow(importer.ReadFile(pathString.c_str(), aiProcessPreset_TargetRealtime_MaxQuality));
-        std::vector<std::shared_ptr<Smoothness>> materials;
-        std::vector<std::shared_ptr<Texture>> textures;
+        std::vector<Smoothness> materials;
+        std::vector<TextureSampler> textures;
         LoadAllMaterialsFromScene(device, scene, filePath.parent_path(), materials, textures);
-        objects.clear();
-        LoadAllObjectsFromScene(scene, objects, gsl::make_span(materials), gsl::make_span(textures));
+        const auto meshCount = scene->mNumMeshes;
+        std::vector<SimpleVertex> verticesInMesh;
+        std::vector<std::uint16_t> indicesInMesh;
+        for (unsigned j = 0; j < meshCount; ++j)
+        {
+            const auto mesh = scene->mMeshes[j];
+            verticesInMesh.clear();
+            indicesInMesh.clear();
+            const auto verticesNum = mesh->mNumVertices;
+            verticesInMesh.reserve(verticesNum);
+            for (unsigned i = 0; i < verticesNum; ++i)
+            {
+                const auto& pos = mesh->mVertices[i];
+                const auto& normal = mesh->mNormals[i];
+                const auto& tangent = mesh->mTangents[i];
+                const auto tex = mesh->mTextureCoords[j];
+
+                SimpleVertex vertex = {
+                    { pos.x, pos.y, pos.z },
+                    { normal.x, normal.y, normal.z },
+                    { tangent.x, tangent.y, tangent.z }
+                };
+
+                if (tex == nullptr)
+                {
+                    vertex.TexCoord = { 1.f, 1.f };
+                }
+                else
+                {
+                    vertex.TexCoord = { tex[i].x, tex[i].y };
+                }
+                verticesInMesh.push_back(vertex);
+
+                const auto faces = gsl::make_span(mesh->mFaces, mesh->mNumFaces);
+
+                indicesInMesh.reserve(faces.size() * 3);
+                for (const auto& face : faces)
+                {
+                    const auto faceIndices = gsl::make_span(face.mIndices, face.mNumIndices);
+                    if (faceIndices.size() != 3)
+                        continue;
+
+                    for (auto index : faceIndices)
+                    {
+                        indicesInMesh.push_back(static_cast<std::uint16_t>(index));
+                    }
+                }
+                co_yield std::make_tuple(SimpleCpuMesh(std::move(verticesInMesh), std::move(indicesInMesh)), textures[mesh->mMaterialIndex], materials[mesh->mMaterialIndex]);
+            }
+        }
     }
 
     void MakeCylinder(float bottomRadius, float topRadius, float height,

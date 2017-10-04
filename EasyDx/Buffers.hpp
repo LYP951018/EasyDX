@@ -1,7 +1,5 @@
 #pragma once
 
-#include "Component.hpp"
-
 namespace dx
 {
     namespace Internal
@@ -25,6 +23,8 @@ namespace dx
     {
         SharedVertexBuffer(wrl::ComPtr<ID3D11Buffer> buffer,
             std::uint32_t vertexStride, std::uint16_t vertexCount) noexcept;
+
+        SharedVertexBuffer() = default;
 
         wrl::ComPtr<ID3D11Buffer> Buffer;
         //TODO: 16£¿
@@ -66,12 +66,25 @@ namespace dx
     }
 
     template<typename T>
-    wrl::ComPtr<ID3D11Buffer> MakeConstantBuffer(
+    struct ConstantBuffer
+    {
+        static_assert(sizeof(T) % 16 == 0);
+        wrl::ComPtr<ID3D11Buffer> GpuCb;
+    };
+
+    template<typename T>
+    ConstantBuffer<T> MakeConstantBuffer(
         ID3D11Device& device,
         T* cb = nullptr,
         ResourceUsage usage = ResourceUsage::Default)
     {
-        return Internal::RawMakeD3DBuffer(device, cb, sizeof(*cb), BindFlag::ConstantBuffer, usage);
+        return { Internal::RawMakeD3DBuffer(device, cb, sizeof(*cb), BindFlag::ConstantBuffer, usage) };
+    }
+
+    template<typename T>
+    void UpdateCb(ID3D11DeviceContext& context, const ConstantBuffer<T>& cb, const T& data)
+    {
+        UpdateConstantBuffer(context, Ref(cb.GpuCb), AsBytes(data));
     }
 
     void UpdateConstantBuffer(ID3D11DeviceContext& context, ID3D11Buffer& buffer, gsl::span<const std::byte> bytes);

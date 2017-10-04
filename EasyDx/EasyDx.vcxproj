@@ -81,6 +81,7 @@
       <PrecompiledHeaderFile>pch.hpp</PrecompiledHeaderFile>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <DiagnosticsFormat>Caret</DiagnosticsFormat>
+      <AdditionalOptions>/await %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Manifest>
       <AdditionalManifestFiles>DeclareDPIAware.manifest %(AdditionalManifestFiles)</AdditionalManifestFiles>
@@ -97,6 +98,7 @@
       <PrecompiledHeaderFile>pch.hpp</PrecompiledHeaderFile>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <DiagnosticsFormat>Caret</DiagnosticsFormat>
+      <AdditionalOptions>/await %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Manifest>
       <AdditionalManifestFiles>DeclareDPIAware.manifest %(AdditionalManifestFiles)</AdditionalManifestFiles>
@@ -114,6 +116,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.hpp</PrecompiledHeaderFile>
       <DiagnosticsFormat>Caret</DiagnosticsFormat>
+      <AdditionalOptions>/await %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -135,6 +138,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.hpp</PrecompiledHeaderFile>
       <DiagnosticsFormat>Caret</DiagnosticsFormat>
+      <AdditionalOptions>/await %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -146,19 +150,15 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="AlignedAllocator.hpp" />
-    <ClInclude Include="Behavior.hpp" />
-    <ClInclude Include="BehaviorFwd.hpp" />
     <ClInclude Include="Buffers.hpp" />
     <ClInclude Include="Camera.hpp" />
     <ClInclude Include="CBStructs.hpp" />
     <ClInclude Include="Common.hpp" />
-    <ClInclude Include="Component.hpp" />
     <ClInclude Include="DXDef.hpp" />
     <ClInclude Include="Events.hpp" />
     <ClInclude Include="FileSystemAlias.hpp" />
     <ClInclude Include="Game.hpp" />
     <ClInclude Include="GameWindow.hpp" />
-    <ClInclude Include="Helpers.hpp" />
     <ClInclude Include="Light.hpp" />
     <ClInclude Include="LinkWithDirectX.hpp" />
     <ClInclude Include="Material.hpp" />
@@ -166,22 +166,18 @@
     <ClInclude Include="MinimalWinDef.hpp" />
     <ClInclude Include="Misc.hpp" />
     <ClInclude Include="Model.hpp" />
-    <ClInclude Include="GameObject.hpp" />
     <ClInclude Include="One.hpp" />
     <ClInclude Include="pch.hpp" />
     <ClInclude Include="Predefined.hpp" />
-    <ClInclude Include="Renderable.hpp" />
     <ClInclude Include="Scene.hpp" />
     <ClInclude Include="Shaders.hpp" />
     <ClInclude Include="SimpleVertex.hpp" />
     <ClInclude Include="StlUtilities.hpp" />
-    <ClInclude Include="Systems.hpp" />
     <ClInclude Include="Texture.hpp" />
     <ClInclude Include="Transformation.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AlignedAllocator.cpp" />
-    <ClCompile Include="Behavior.cpp" />
     <ClCompile Include="Buffers.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="CBStructs.cpp" />
@@ -191,11 +187,8 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="Component.cpp" />
     <ClCompile Include="Game.cpp" />
-    <ClCompile Include="GameObject.cpp" />
     <ClCompile Include="GameWindow.cpp" />
-    <ClCompile Include="Helpers.cpp" />
     <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="Misc.cpp" />
     <ClCompile Include="Model.cpp" />
@@ -206,11 +199,9 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="Predefined.cpp" />
-    <ClCompile Include="Renderable.cpp" />
     <ClCompile Include="Scene.cpp" />
     <ClCompile Include="Shaders.cpp" />
     <ClCompile Include="SimpleVertex.cpp" />
-    <ClCompile Include="Systems.cpp" />
     <ClCompile Include="Texture.cpp" />
     <ClCompile Include="Transformation.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>

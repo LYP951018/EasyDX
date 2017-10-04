@@ -1,27 +1,27 @@
 #pragma once
 
 #include "Shaders.hpp"
-#include "Texture.hpp"
 #include "CBStructs.hpp"
-#include "Behavior.hpp"
+#include "Mesh.hpp"
+#include "Material.hpp"
+#include "Transformation.hpp"
 
 namespace dx
 {
-    struct Renderable;
     class Camera;
 
-    namespace cb::data
+    namespace cb
     {
         struct alignas(16) GlobalLightingInfo
         {
             DirectX::XMFLOAT3 EyePos;
-            float Padding;
-            ::dx::cb::data::Light Lights[10];
+            int LightCount;
+            Light Lights[10];
         };
 
         struct alignas(16) PerObjectLightingInfo
         {
-            ::dx::cb::data::Material Smoothness;
+            Material Smoothness;
         };
 
         struct alignas(16) BasicCb
@@ -32,30 +32,6 @@ namespace dx
         };
     }
 
-    namespace cb
-    {
-        using Basic = Cb<data::BasicCb>;
-        using CbGlobalLightingInfo = dx::Cb<cb::data::GlobalLightingInfo>;
-        using CbPerObjectLightingInfo = dx::Cb<cb::data::PerObjectLightingInfo>;
-
-    }
-
-    struct BasicCbUpdator : Behavior
-    {
-        const Camera& Camera_;
-
-        BasicCbUpdator(const Camera& camera)
-            : Camera_{ camera }, Behavior{ Behavior::kCbUpdate }
-        {}
-
-        void Update(GameObject&, const UpdateArgs&) override;
-    };
-
-    struct PerObjectLightingCbUpdator : Behavior
-    {
-        void Update(GameObject&, const UpdateArgs&) override;
-    };
-
 
     class Predefined
     {
@@ -64,24 +40,24 @@ namespace dx
         static constexpr std::uint32_t kDefaultTexHeight = 100;
 
         Predefined(ID3D11Device&);
-        void SetupCamera(const Camera&);
+        ~Predefined();
 
-        //TODO: 从生命周期的角度应该返回裸指针，这样用起来也方便。
-        Rc<Texture> GetWhite() const { return white_; }
-        Rc<Renderable> GetRenderable(gsl::span<SimpleVertex> vertices, gsl::span<std::uint16_t> indices) const;
-        Rc<Cb<cb::data::BasicCb>> GetBasicVSCpuCb() const { return vsCb_.first; }
-        Rc<Cb<cb::data::PerObjectLightingInfo>> GetBasicLightingCpuCb() const noexcept { return psPerObjectLightingCb_.first; }
-        Rc<BasicCbUpdator> GetBasicCbUpdator() const;
-        Rc<PerObjectLightingCbUpdator> GetPerObjectLightingCbUpdator() const { return perObjectLightingCbUpdator_; }
+        wrl::ComPtr<ID3D11ShaderResourceView> GetWhite() const { return white_; }
+
         VertexShader GetBasicVS() const { return basicVS_; }
         PixelShader GetBasicPS() const { return basicPS_; }
-        wrl::ComPtr<ID3D11DepthStencilState> GetStencilAlways() const { return stencilAlways_; }
-        wrl::ComPtr<ID3D11DepthStencilState> GetDrawnOnly() const { return drawnOnly_; }
-        wrl::ComPtr<ID3D11BlendState> GetNoWriteToRT() const { return noWriteToRt_; }
-        wrl::ComPtr<ID3D11BlendState> GetTransparent() const { return transparent_; }
+
+        wrl::ComPtr<ID3D11DepthStencilState> GetStencilAlways() const;
+        wrl::ComPtr<ID3D11DepthStencilState> GetDrawnOnly() const;
+        wrl::ComPtr<ID3D11DepthStencilState> GetNoDoubleBlending() const;
+
+        wrl::ComPtr<ID3D11BlendState> GetNoWriteToRT() const;
+        wrl::ComPtr<ID3D11BlendState> GetTransparent() const;
 
         ID3D11RasterizerState* GetCullClockwise() const { return cullClockWise_.Get(); }
-        wrl::ComPtr<ID3D11SamplerState> GetDefaultSampler() const { return defaultSampler_; }
+
+        wrl::ComPtr<ID3D11SamplerState> GetDefaultSampler() const;
+        wrl::ComPtr<ID3D11SamplerState> GetRepeatSampler() const;
 
     private:
         void MakeWhiteTex(ID3D11Device&);
@@ -91,22 +67,87 @@ namespace dx
         void MakeBlendingStates(ID3D11Device&);
         void MakeRasterizerStates(ID3D11Device&);
 
-        static VertexShader MakeVS(ID3D11Device& device, const char* fileName);
-        static PixelShader MakePS(ID3D11Device& device, const char* fileName);
+        //Default white texture
+        wrl::ComPtr<ID3D11ShaderResourceView> white_;
 
-        Rc<Texture> white_;
         wrl::ComPtr<ID3D11SamplerState> defaultSampler_;
+        wrl::ComPtr<ID3D11SamplerState> repeatSampler_;
+
+        //default shaders
         VertexShader basicVS_;
         PixelShader basicPS_;
-        CbPair<cb::data::BasicCb> vsCb_;
-        CbPair<cb::data::PerObjectLightingInfo> psPerObjectLightingCb_;
-        Rc<BasicCbUpdator> basicCbUpdator_;
-        Rc<PerObjectLightingCbUpdator> perObjectLightingCbUpdator_;
-        wrl::ComPtr<ID3D11DepthStencilState> stencilAlways_, drawnOnly_;
+
+        wrl::ComPtr<ID3D11DepthStencilState> stencilAlways_, drawnOnly_, noDoubleBlending_;
         wrl::ComPtr<ID3D11BlendState> noWriteToRt_, transparent_;
         wrl::ComPtr<ID3D11RasterizerState> cullClockWise_;
     };
 
-    
-    
+    struct BasicRenderable
+    {
+        BasicRenderable() = default;
+
+        template<typename VertexT, std::size_t VN, std::size_t IN_>
+        BasicRenderable(ID3D11Device& device,
+            const Predefined& predefined,
+            const VertexT(&vertices)[VN],
+            const std::uint16_t (&indices)[IN_],
+            wrl::ComPtr<ID3D11ShaderResourceView> texture,
+            wrl::ComPtr<ID3D11SamplerState> sampler)
+            : BasicRenderable{ device, predefined, CpuMeshView<VertexT>{gsl::make_span(vertices), gsl::make_span(indices)}, std::move(texture), std::move(sampler) }
+        {}
+
+        template<typename VertexT>
+        BasicRenderable(ID3D11Device& device,
+            const Predefined& predefined,
+            CpuMeshView<VertexT> cpuMesh,
+            wrl::ComPtr<ID3D11ShaderResourceView> texture,
+            wrl::ComPtr<ID3D11SamplerState> sampler)
+            : Mesh{ device, cpuMesh },
+            VS{ predefined.GetBasicVS() },
+            PS{ predefined.GetBasicPS() },
+            Texture{ texture ? texture : predefined.GetWhite() },
+            Sampler {sampler ? sampler : predefined.GetDefaultSampler()},
+            BasicCb{ MakeConstantBuffer<cb::BasicCb>(device) },
+            GlobalLightingCb{ MakeConstantBuffer<cb::GlobalLightingInfo>(device) },
+            PerObjectCb{ MakeConstantBuffer<cb::PerObjectLightingInfo>(device) }
+        {}
+
+        GpuMesh Mesh;
+        VertexShader VS;
+        PixelShader PS;
+        wrl::ComPtr<ID3D11ShaderResourceView> Texture;
+        wrl::ComPtr<ID3D11SamplerState> Sampler;
+        ConstantBuffer<cb::BasicCb> BasicCb;
+        ConstantBuffer<cb::GlobalLightingInfo> GlobalLightingCb;
+        ConstantBuffer<cb::PerObjectLightingInfo> PerObjectCb;
+    };
+
+    struct BasicObject
+    {
+        BasicObject() = default;
+        BasicObject(BasicRenderable renderable,
+            Smoothness material,
+            DirectX::XMMATRIX matrix);
+
+        DirectX::XMMATRIX GetWorld() const noexcept
+        {
+            return DirectX::XMLoadFloat4x4(&Transform);
+        }
+
+        BasicRenderable Renderable;
+        Smoothness Material;
+        DirectX::XMFLOAT4X4 Transform;
+    };
+
+    struct BasicDrawContext
+    {
+        ID3D11DeviceContext& Context;
+        const Camera& Camera;
+        gsl::span<dx::Light> Lights;
+    };
+
+    void UpdateAndDraw(const BasicDrawContext& drawContext, const BasicObject& object);
+    void DrawBasic(ID3D11DeviceContext&, const BasicRenderable&);
+
+
 }

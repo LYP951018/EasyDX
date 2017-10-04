@@ -45,15 +45,11 @@ namespace dx
     {
         context3D.IASetInputLayout(vs.Layout);
         context3D.VSSetShader(vs.Shader, nullptr, 0);
-        const auto cbs = vs.Cbs;
-        context3D.VSSetConstantBuffers(0, static_cast<UINT>(cbs.size()), cbs.data());
     }
 
     void SetupShader(ID3D11DeviceContext& context3D, PixelShaderView ps)
     {
-        context3D.PSSetShader(ps.Shader, nullptr, 0);
-        const auto cbs = ps.Cbs;
-        context3D.PSSetConstantBuffers(0, static_cast<UINT>(cbs.size()), cbs.data());
+        context3D.PSSetShader(ps, {}, {});
     }
 
     VertexShader VertexShader::CompileFromFile(ID3D11Device& device,
@@ -69,43 +65,9 @@ namespace dx
     {
         VertexShader vs;
         TryHR(device.CreateVertexShader(byteCode.data(), byteCode.size(), nullptr, vs.shader_.ReleaseAndGetAddressOf()));
-        TryHR(device.CreateInputLayout(layoutDesc.data(), layoutDesc.size(), byteCode.data(),
+        TryHR(device.CreateInputLayout(layoutDesc.data(), static_cast<UINT>(layoutDesc.size()), byteCode.data(),
             byteCode.size(), vs.layout_.GetAddressOf()));
         return vs;
-    }
-
-    std::optional<VertexShader> VertexShader::Find(std::uint32_t tag)
-    {
-        const auto& vertexShaders = GetGame().vertexShaders_;
-        const auto it = vertexShaders.find(tag);
-        if (it != vertexShaders.end())
-        {
-            return it->second;
-        }
-        return std::nullopt;
-    }
-
-    void VertexShader::AddShader(std::uint32_t tag, VertexShader vs)
-    {
-        auto& vertexShaders = GetGame().vertexShaders_;
-        vertexShaders.insert({ tag, std::move(vs) });
-    }
-
-    std::optional<PixelShader> PixelShader::Find(std::uint32_t tag)
-    {
-        const auto& pixelShaders = GetGame().pixelShaders_;
-        const auto it = pixelShaders.find(tag);
-        if (it != pixelShaders.end())
-        {
-            return it->second;
-        }
-        return std::nullopt;
-    }
-
-    void PixelShader::AddShader(std::uint32_t tag, PixelShader ps)
-    {
-        auto& pixelShaders = GetGame().pixelShaders_;
-        pixelShaders.insert({ tag, std::move(ps) });
     }
 
     ID3D11VertexShader& VertexShader::GetShader() const
@@ -120,7 +82,7 @@ namespace dx
 
     VertexShaderView VertexShader::Get() const noexcept
     {
-        return { shader_.Get(), layout_.Get(), ComPtrsCast(gsl::make_span(Cbs))};
+        return { shader_.Get(), layout_.Get() };
     }
 
     VertexShader::~VertexShader()
@@ -155,10 +117,7 @@ namespace dx
 
     PixelShaderView PixelShader::Get() const noexcept
     {
-        return {
-            shader_.Get(),
-            ComPtrsCast(gsl::make_span(Cbs))
-        };
+        return shader_.Get();
     }
 
     PixelShader::~PixelShader()
@@ -169,27 +128,4 @@ namespace dx
         : shader_{std::move(shader)}
     {
     }
-
-    /*std::unordered_map<std::uint32_t, VertexShader> VertexShaders;
-    std::unordered_map<std::uint32_t, wrl::ComPtr<ID3D11PixelShader>> PixelShaders;
-
-    const VertexShader* GetVertexShader(std::uint32_t index)
-    {
-        return stlext::FindOr(VertexShaders, index, {}, [](const VertexShader& shader) { return &shader; });
-    }
-
-    ID3D11PixelShader* GetPixelShader(std::uint32_t index)
-    {
-        return stlext::FindOr(PixelShaders, index, {}, [](const wrl::ComPtr<ID3D11PixelShader>& shader) { return shader.Get();  });
-    }
-
-    void RegisterVertexShader(std::uint32_t index, VertexShader vertexShader)
-    {
-        VertexShaders.insert({ index, std::move(vertexShader) });
-    }
-
-    void RegisterPixelShader(std::uint32_t index, wrl::ComPtr<ID3D11PixelShader> pixelShader)
-    {
-        PixelShaders.insert({ index, std::move(pixelShader) });
-    }*/
 }

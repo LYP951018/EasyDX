@@ -11,6 +11,7 @@ namespace dx
         DirectX::XMFLOAT3 Translation;
 
         Transformation() noexcept;
+        Transformation(DirectX::XMMATRIX world);
     };
 
     DirectX::XMMATRIX ComputeWorld(const DirectX::XMFLOAT3& scale, const DirectX::XMFLOAT4& rotation,

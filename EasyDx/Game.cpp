@@ -152,6 +152,11 @@ namespace dx
     {
         TryHR(::CoInitialize(nullptr));
         InitializeDevices();
+        predefined_ = std::make_unique<Predefined>(GetDevice3D());
+    }
+
+    Game::~Game()
+    {
     }
 
     void Game::InitializeDevices()

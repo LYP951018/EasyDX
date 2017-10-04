@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Component.hpp"
 #include <DirectXMath.h>
 #include <variant>
 

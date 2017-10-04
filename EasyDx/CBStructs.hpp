@@ -9,76 +9,7 @@ namespace dx
 {
     struct Smoothness;
 
-    using GpuCb = wrl::ComPtr<ID3D11Buffer>;
-
-    struct IConstantBuffer
-    {
-        IConstantBuffer(wrl::ComPtr<ID3D11Buffer> gpuCb)
-            : gpuCb_{std::move(gpuCb)}
-        {}
-
-        virtual gsl::span<const std::byte> GetBuffer() = 0;
-
-        void Flush(ID3D11DeviceContext& context) noexcept
-        {
-            UpdateConstantBuffer(context, Ref(gpuCb_), GetBuffer());
-        }
-
-        virtual ~IConstantBuffer();
-
-    private:
-        wrl::ComPtr<ID3D11Buffer> gpuCb_;
-    };
-
-    template<typename... CbT>
-    Vec<Rc<IConstantBuffer>> MakeCbs(Rc<CbT>... cbs)
-    {
-        return Vec<Rc<IConstantBuffer>>{std::move(cbs)...};
-    }
-
-    template<typename CbDataT>
-    struct Cb : IConstantBuffer
-    {
-    public:
-        Cb(wrl::ComPtr<ID3D11Buffer> gpuCb)
-            : data_{ aligned_unique<CbDataT>() },
-            IConstantBuffer{std::move(gpuCb)}
-        {}
-
-        gsl::span<const std::byte> GetBuffer() override
-        {
-            return AsBytes(Data());
-        }
-
-        CbDataT& Data() noexcept
-        {
-            return *data_;
-        }
-
-        const CbDataT& Data() const noexcept
-        {
-            return *data_;
-        }
-
-    private:
-        aligned_unique_ptr<CbDataT> data_;
-        
-    };
-
-    template<typename CbDataT>
-    using CbPair = std::pair<Rc<Cb<CbDataT>>, wrl::ComPtr<ID3D11Buffer>>;
-
-    template<typename CbDataT>
-    auto MakeCb(ID3D11Device& device) -> CbPair<CbDataT>
-    {
-        auto gpuCb = MakeConstantBuffer<CbDataT>(device);
-        return {
-            MakeShared<Cb<CbDataT>>(gpuCb),
-            gpuCb
-        };
-    }
-
-    namespace cb::data
+    namespace cb
     {
         struct alignas(16) Light
         {
@@ -92,14 +23,15 @@ namespace dx
             float QuadraticAttenuation;
 
             LightType Type;
-            bool Enabled;
+            std::int32_t Enabled;
             float Range;
             std::uint32_t Padding;
 
-            void FromPoint(const dx::PointLight& point) noexcept;
-            void FromDirectional(const dx::DirectionalLight& directional) noexcept;
-            void FromSpot(const dx::SpotLight& spot) noexcept;
-            void FromLight(const dx::Light& light) noexcept;
+            Light(const PointLight& point) noexcept;
+            Light(const DirectionalLight& directional) noexcept;
+            Light(const SpotLight& spot) noexcept;
+            Light(const dx::Light& light) noexcept;
+            Light() = default;
         };
 
         struct alignas(16) Material
@@ -112,15 +44,7 @@ namespace dx
             float SpecularPower;
             DirectX::XMFLOAT3 Padding;
 
-            void FromSmoothness(const Smoothness& smoothness) noexcept;
+            Material(const Smoothness& smoothness) noexcept;
         };
-
-    }
-
-    namespace cb
-    {
-        using Light = Cb<data::Light>;
-        using Material = Cb<data::Material>;
-        
     }
 }

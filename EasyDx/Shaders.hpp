@@ -18,17 +18,6 @@ namespace dx
     {
         ID3D11VertexShader* Shader;
         ID3D11InputLayout* Layout;
-        gsl::span<const Ptr<ID3D11Buffer>> Cbs;
-    };
-
-    struct VertexShaderKind
-    {
-        enum : std::uint32_t
-        {
-            kBasic = 0
-        };
-
-        VertexShaderKind() = delete;
     };
 
     struct VertexShader
@@ -54,15 +43,10 @@ namespace dx
                 static_cast<std::ptrdiff_t>(N)), SimpleVertex::GetLayout());
         }
 
-        static std::optional<VertexShader> Find(std::uint32_t tag);
-        static void AddShader(std::uint32_t tag, VertexShader vs);
-
         ID3D11VertexShader& GetShader() const;
         ID3D11InputLayout& GetLayout() const;
 
         VertexShaderView Get() const noexcept;
-
-        std::vector<wrl::ComPtr<ID3D11Buffer>> Cbs;
         ~VertexShader();
 
     private:
@@ -73,11 +57,7 @@ namespace dx
         wrl::ComPtr<ID3D11InputLayout> layout_;
     };
 
-    struct PixelShaderView
-    {
-        ID3D11PixelShader* Shader;
-        gsl::span<const Ptr<ID3D11Buffer>> Cbs;
-    };
+    using PixelShaderView = ID3D11PixelShader*;
 
     struct PixelShader
     {
@@ -100,15 +80,10 @@ namespace dx
                 static_cast<std::ptrdiff_t>(N)));
         }
 
-        static std::optional<PixelShader> Find(std::uint32_t tag);
-        static void AddShader(std::uint32_t tag, PixelShader ps);
-
         ID3D11PixelShader& GetShader() const noexcept;
         PixelShaderView Get() const noexcept;
 
         ~PixelShader();
-
-        std::vector<wrl::ComPtr<ID3D11Buffer>> Cbs;
 
     private:
         PixelShader(wrl::ComPtr<ID3D11PixelShader> shader);
@@ -120,14 +95,4 @@ namespace dx
     void SetupShader(ID3D11DeviceContext& context3D, PixelShaderView ps);
 
     using ShaderPair = std::pair<VertexShader, PixelShader>;
-
-    struct PixelShaderKind
-    {
-        enum : std::uint32_t
-        {
-            kBasic = 0
-        };
-
-        PixelShaderKind() = delete;
-    };
 }

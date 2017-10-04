@@ -9,6 +9,21 @@ namespace dx
     {
     }
 
+    Transformation::Transformation(DirectX::XMMATRIX world)
+    {
+        DirectX::XMVECTOR scale, rotation, translation;
+        if (DirectX::XMMatrixDecompose(&scale, &rotation, &translation, world))
+        {
+            DirectX::XMStoreFloat3(&Scale, scale);
+            DirectX::XMStoreFloat4(&Rotation, rotation);
+            DirectX::XMStoreFloat3(&Translation, translation);
+        }
+        else
+        {
+            assert(false);
+        }
+    }
+
     DirectX::XMMATRIX ComputeWorld(const DirectX::XMFLOAT3& scale, const DirectX::XMFLOAT4& rotation, const DirectX::XMFLOAT3& translation) noexcept
     {
         using namespace DirectX;
