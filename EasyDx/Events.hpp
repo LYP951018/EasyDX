@@ -59,7 +59,7 @@ namespace dx
             handlers_.erase(handle);
         }
 
-        void operator()(Args args)
+        void operator()(Args args) const
         {
             for (auto& kv : handlers_)
             {

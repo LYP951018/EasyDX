@@ -76,7 +76,7 @@ namespace dx
 
     void Predefined::MakeBasicVS(ID3D11Device& device)
     {
-        basicVS_ = VertexShader::FromByteCode(device, BasicVertexShader);
+        basicVS_ = VertexShader::FromByteCode(device, BasicVertexShader, SimpleVertex::GetLayout());
     }
 
     void Predefined::MakeBasicPS(ID3D11Device& device)
@@ -203,6 +203,16 @@ namespace dx
             cullClockwiseDesc.DepthClipEnable = true;
             TryHR(device.CreateRasterizerState(&cullClockwiseDesc, cullClockWise_.GetAddressOf()));
         }
+
+        {
+            D3D11_RASTERIZER_DESC wireframeDesc{};
+            wireframeDesc.FillMode = D3D11_FILL_WIREFRAME;
+            wireframeDesc.CullMode = D3D11_CULL_BACK;
+            wireframeDesc.FrontCounterClockwise = false;
+            wireframeDesc.DepthClipEnable = true;
+
+            TryHR(device.CreateRasterizerState(&wireframeDesc, wireFrameOnly_.GetAddressOf()));
+        }
     }
 
     void UpdateAndDraw(const BasicDrawContext& drawContext, const BasicObject& object)
@@ -238,8 +248,11 @@ namespace dx
         context.IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
         SetupGpuMesh(context, renderable.Mesh.Get());
-        SetupShader(context, renderable.VS.Get());
-        SetupShader(context, renderable.PS.Get());
+
+        ShaderViewGroup shaderGroup;
+        shaderGroup.VS = renderable.VS.Get();
+        shaderGroup.PS = renderable.PS.Get();
+        SetShaders(context, shaderGroup);
         const std::array<ID3D11ShaderResourceView*, 1> resources = {
             renderable.Texture.Get()
         };

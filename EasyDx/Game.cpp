@@ -96,70 +96,30 @@ namespace dx
         nextSceneArg_ = std::move(arg);
     }
 
-    Scene& Game::GetMainScene() const
-    {
-        return *mainScene_;
-    }
-
-    GameWindow* Game::GetMainWindow() const
-    {
-        return mainWindow_.get();
-    }
-
-    const Predefined& Game::GetPredefined() const
-    {
-        return *predefined_;
-    }
-
-    ID3D11Device& Game::GetDevice3D() const
-    {
-        return Ref(device3D_);
-    }
-
-    ID3D11DeviceContext& Game::GetContext3D() const
-    {
-        return Ref(context3D_);
-    }
-
-    IDXGIDevice& Game::GetDxgiDevice() const
-    {
-        return Ref(dxgiDevice_);
-    }
-
-    ID2D1Device& Game::GetDevice2D() const
-    {
-        return Ref(device2D_);
-    }
-
-    ID2D1Factory1& Game::GetFactory2D() const
-    {
-        return Ref(d2dFactory_);
-    }
-
-    ID2D1DeviceContext& Game::GetContext2D() const
-    {
-        return Ref(context2D_);
-    }
-
-    IDWriteFactory1& Game::GetDWriteFactory() const
-    {
-        return Ref(dwFactory_);
-    }
-
-    Game::Game()
+    Game::Game(std::uint32_t fps)
         : nextSceneIndex_{InvalidSceneIndex},
-        fps_{60}
+        fps_{fps}
     {
         TryHR(::CoInitialize(nullptr));
-        InitializeDevices();
-        predefined_ = std::make_unique<Predefined>(GetDevice3D());
     }
 
     Game::~Game()
     {
     }
 
-    void Game::InitializeDevices()
+    void RunGame(Game& game, std::unique_ptr<GameWindow> mainWindow, std::uint32_t mainSceneIndex, std::shared_ptr<void> arg)
+    {
+        //Step 1: setup the main window.
+        game.SetUp(std::move(mainWindow));
+        //Step 2: switch to the main scene, in which Scene::Start will be called, which may depend on MainWindow.
+        //There always be event registration in Scene::Start, so we must ensure GameWindow::Show be executed after
+        //Start.
+        game.ReallySwitchToScene(mainSceneIndex, std::move(arg));
+        //Step 3: run the game.
+        game.Run();
+    }
+
+    GraphicsResources::GraphicsResources()
     {
         UINT creationFlags = {};
 #ifdef _DEBUG
@@ -179,35 +139,27 @@ namespace dx
             D3D11_SDK_VERSION,
             device3D_.ReleaseAndGetAddressOf(),
             nullptr,
-            context3D_.ReleaseAndGetAddressOf()
+            Context3D.ReleaseAndGetAddressOf()
         ));
 
-        TryHR(device3D_->QueryInterface(dxgiDevice_.ReleaseAndGetAddressOf()));
+        TryHR(device3D_->QueryInterface(DxgiDevice.ReleaseAndGetAddressOf()));
 
         D2D1_FACTORY_OPTIONS options = {};
 #ifdef _DEBUG
         options.debugLevel = D2D1_DEBUG_LEVEL_INFORMATION;
 #endif
 
-        TryHR(D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, options, d2dFactory_.ReleaseAndGetAddressOf()));
-        TryHR(d2dFactory_->CreateDevice(dxgiDevice_.Get(), device2D_.ReleaseAndGetAddressOf()));
-        TryHR(device2D_->CreateDeviceContext(D2D1_DEVICE_CONTEXT_OPTIONS_NONE, context2D_.ReleaseAndGetAddressOf()));
+        TryHR(D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, options, Factory2D.ReleaseAndGetAddressOf()));
+        TryHR(Factory2D->CreateDevice(DxgiDevice.Get(), Device2D.ReleaseAndGetAddressOf()));
+        TryHR(Device2D->CreateDeviceContext(D2D1_DEVICE_CONTEXT_OPTIONS_NONE, Context2D.ReleaseAndGetAddressOf()));
 
         TryHR(DWriteCreateFactory(
             DWRITE_FACTORY_TYPE_SHARED,
             __uuidof(IDWriteFactory1),
-            reinterpret_cast<IUnknown**>(dwFactory_.ReleaseAndGetAddressOf())));
+            reinterpret_cast<IUnknown**>(DwFactory.ReleaseAndGetAddressOf())));
     }
 
-    void RunGame(Game& game, std::unique_ptr<GameWindow> mainWindow, std::uint32_t mainSceneIndex, std::shared_ptr<void> arg)
+    GraphicsResources::~GraphicsResources()
     {
-        //Step 1: setup the main window.
-        game.SetUp(std::move(mainWindow));
-        //Step 2: switch to the main scene, in which Scene::Start will be called, which may depend on MainWindow.
-        //There always be event registration in Scene::Start, so we must ensure GameWindow::Show be executed after
-        //Start.
-        game.ReallySwitchToScene(mainSceneIndex, std::move(arg));
-        //Step 3: run the game.
-        game.Run();
     }
 }

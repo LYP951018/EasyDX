@@ -72,6 +72,14 @@ namespace dx
             indexCount_{static_cast<std::uint16_t>(meshData.Indices.size())}
         {}
 
+        template<typename VertexT, std::size_t N, std::size_t I>
+        GpuMesh(ID3D11Device& device,
+            const VertexT(&vertices)[N],
+            const std::uint16_t(&indices)[I],
+            ResourceUsage usage = ResourceUsage::Immutable)
+            : GpuMesh{device, CpuMeshView<VertexT>{vertices, indices}, usage}
+        {}
+
         GpuMeshView Get() const noexcept
         {
             return {

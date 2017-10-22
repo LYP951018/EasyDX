@@ -1,6 +1,7 @@
 #pragma once
 
 #include "DXDef.hpp"
+#include "Events.hpp"
 #include <chrono>
 
 namespace dx
@@ -33,8 +34,10 @@ namespace dx
         virtual void Update(const UpdateArgs& updateArgs);
 
     private:
-        std::unique_ptr<Camera> mainCamera_;
+        dx::EventHandle<dx::WindowResizeEvent> AddResize();
         const Game& game_;
+        std::unique_ptr<Camera> mainCamera_;
+        dx::EventHandle<dx::WindowResizeEvent> resize_;
     };
 
 

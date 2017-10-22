@@ -7,19 +7,18 @@
 
 namespace dx
 {
-    wrl::ComPtr<ID3D11VertexShader> CreateVertexShader(ID3D11Device& device, gsl::span<const std::byte> byteCode)
-    {
-        wrl::ComPtr<ID3D11VertexShader> vs;
-        TryHR(device.CreateVertexShader(byteCode.data(), byteCode.size(), nullptr, vs.GetAddressOf()));
-        return vs;
-    }
+#define CREATE_SHADER_DEFINE(shaderName) \
+    wrl::ComPtr<ID3D11##shaderName> Create##shaderName(ID3D11Device& device, gsl::span<const std::byte> byteCode)\
+    {\
+        wrl::ComPtr<ID3D11##shaderName> shader;\
+        TryHR(device.Create##shaderName(byteCode.data(), byteCode.size(), nullptr, shader.GetAddressOf()));\
+        return shader;\
+    }\
 
-    wrl::ComPtr<ID3D11PixelShader> CreatePixelShader(ID3D11Device& device, gsl::span<const std::byte> byteCode)
-    {
-        wrl::ComPtr<ID3D11PixelShader> ps;
-        TryHR(device.CreatePixelShader(byteCode.data(), byteCode.size(), nullptr, ps.GetAddressOf()));
-        return ps;
-    }
+    CREATE_SHADER_DEFINE(VertexShader)
+    CREATE_SHADER_DEFINE(PixelShader)
+    CREATE_SHADER_DEFINE(HullShader)
+    CREATE_SHADER_DEFINE(DomainShader)
 
     wrl::ComPtr<ID3D10Blob> CompileShaderFromFile(const wchar_t* fileName, const char* entryPoint, const char* shaderModel)
     {
@@ -39,17 +38,6 @@ namespace dx
             throw std::runtime_error{ errorMessage };
         }
         return shaderBlob;
-    }
-
-    void SetupShader(ID3D11DeviceContext& context3D, VertexShaderView vs)
-    {
-        context3D.IASetInputLayout(vs.Layout);
-        context3D.VSSetShader(vs.Shader, nullptr, 0);
-    }
-
-    void SetupShader(ID3D11DeviceContext& context3D, PixelShaderView ps)
-    {
-        context3D.PSSetShader(ps, {}, {});
     }
 
     VertexShader VertexShader::CompileFromFile(ID3D11Device& device,
@@ -95,37 +83,44 @@ namespace dx
     {
     }
 
-    PixelShader PixelShader::CompileFromFile(ID3D11Device& device, const fs::path& filePath, const char* entryName)
-    {
-        auto psByteCode = CompileShaderFromFile(
-            filePath.c_str(),
-            entryName,
-            "ps_5_0"
-        );
-        return FromByteCode(device, BlobToSpan(Ref(psByteCode)));
-    }
+#define DEFINE_SHADER_Def(shaderName, shaderModel)\
+    shaderName shaderName::CompileFromFile(ID3D11Device& device, const fs::path& filePath, const char* entryName)\
+    {\
+        auto byteCode = CompileShaderFromFile(\
+            filePath.c_str(),\
+            entryName,\
+            #shaderModel\
+        );\
+        return FromByteCode(device, BlobToSpan(Ref(byteCode)));\
+    }\
+    shaderName shaderName::FromByteCode(ID3D11Device& device, gsl::span<const std::byte> byteCode)\
+    {\
+        return { Create##shaderName(device, byteCode) };\
+    }\
+    ID3D11##shaderName& shaderName::GetShader() const noexcept\
+    {\
+        return Ref(shader_);\
+    }\
+    shaderName##View shaderName::Get() const noexcept\
+    {\
+        return shader_.Get();\
+    }\
+    shaderName::~shaderName(){}\
+    shaderName::shaderName(wrl::ComPtr<ID3D11##shaderName> shader)\
+        : shader_{std::move(shader)} {}
 
-    PixelShader PixelShader::FromByteCode(ID3D11Device& device, gsl::span<const std::byte> byteCode)
-    {
-        return { CreatePixelShader(device, byteCode) };
-    }
+    DEFINE_SHADER_Def(PixelShader, ps_5_0)
+    DEFINE_SHADER_Def(HullShader, hs_5_0)
+    DEFINE_SHADER_Def(DomainShader, ds_5_0)
 
-    ID3D11PixelShader& PixelShader::GetShader() const noexcept
-    {
-        return Ref(shader_);
-    }
 
-    PixelShaderView PixelShader::Get() const noexcept
+    void SetShaders(ID3D11DeviceContext& context, const ShaderViewGroup& shaders)
     {
-        return shader_.Get();
-    }
-
-    PixelShader::~PixelShader()
-    {
-    }
-
-    PixelShader::PixelShader(wrl::ComPtr<ID3D11PixelShader> shader)
-        : shader_{std::move(shader)}
-    {
+        auto vs = shaders.VS;
+        context.IASetInputLayout(vs.Layout);
+        context.VSSetShader(vs.Shader, nullptr, 0);
+        context.PSSetShader(shaders.PS, nullptr, 0);
+        context.HSSetShader(shaders.HS, nullptr, 0);
+        context.DSSetShader(shaders.DS, nullptr, 0);
     }
 }

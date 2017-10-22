@@ -1,9 +1,7 @@
 #pragma once
 
-#include <unordered_map>
-#include <climits>
-#include <d3d11.h>
 #include "Predefined.hpp"
+#include "Events.hpp"
 
 namespace dx
 {
@@ -13,12 +11,39 @@ namespace dx
 
     using SceneCreator = std::function<std::unique_ptr<Scene>(const Game&, std::shared_ptr<void>)>;
 
+    struct GraphicsResources
+    {
+    private:
+        GraphicsResources();
+        ~GraphicsResources();
+
+        friend class Game;
+
+        wrl::ComPtr<ID3D11Device> device3D_;
+        wrl::ComPtr<ID3D11DeviceContext> context3D_;
+        wrl::ComPtr<ID2D1Factory1> fanctory2D_;
+        wrl::ComPtr<ID2D1Device> device2D_;
+        wrl::ComPtr<ID2D1DeviceContext> context2D_;
+        wrl::ComPtr<IDXGIDevice> dxgiDevice_;
+        wrl::ComPtr<IDWriteFactory1> dwFactory_;
+    public:
+        const Predefined PredefinedResources;
+
+        ID3D11Device& Device3D() const { return Ref(device3D_); }
+        ID3D11DeviceContext& Context3D() const { return Ref(context3D_); }
+        ID2D1Factory1& Factory2D() const { return Ref(fanctory2D_); }
+        ID2D1Device& Device2D() const { return Ref(device2D_); }
+        ID2D1DeviceContext& Context2D() const { return Ref(context2D_); }
+        IDXGIDevice& DxgiDevice() const { return Ref(dxgiDevice_); }
+        IDWriteFactory1& DwFactory() const { return Ref(dwFactory_); }
+    };
+
     class Game
     {
         friend void RunGame(Game&, std::unique_ptr<GameWindow>, std::uint32_t, std::shared_ptr<void> arg);
 
     public:
-        Game();
+        Game(std::uint32_t fps);
         ~Game();
 
         void AddSceneCreator(std::uint32_t index, SceneCreator creator);
@@ -32,22 +57,19 @@ namespace dx
             AddSceneCreator(static_cast<type>(index), std::move(creator));
         }
 
+        KeyDownEvent KeyDown;
+        KeyUpEvent KeyUp;
+        MouseDownEvent MouseDown;
+        MouseUpEvent MouseUp;
+        WindowResizeEvent WindowResize;
+        DpiChangedEvent DpiChanged;
+
         //TODO: enum version.
         void WantToSwitchSceneTo(std::uint32_t index, std::shared_ptr<void> arg);
 
-        Scene& GetMainScene() const;
-        GameWindow* GetMainWindow() const;
-        const Predefined& GetPredefined() const;
-
-        ID3D11Device& GetDevice3D() const;
-        ID3D11DeviceContext& GetContext3D() const;
-        IDXGIDevice& GetDxgiDevice() const;
-
-        ID2D1Device& GetDevice2D() const;
-        ID2D1Factory1& GetFactory2D() const;
-        ID2D1DeviceContext& GetContext2D() const;
-
-        IDWriteFactory1& GetDWriteFactory() const;
+        Scene& MainScene() const { return *mainScene_; }
+        GameWindow& MainWindow() { return *mainWindow_; }
+        const GraphicsResources& Resources() const noexcept { return grahicsResources_; }
 
     private:
         friend struct VertexShader;
@@ -55,21 +77,12 @@ namespace dx
 
         static constexpr std::uint32_t InvalidSceneIndex = UINT32_MAX;
 
-        void InitializeDevices();
         void Run();
         void SetUp(std::unique_ptr<GameWindow> mainWindow);
         void ReallySwitchToScene(std::uint32_t index, std::shared_ptr<void> arg);
         void CheckAndSwitch();
 
-        wrl::ComPtr<ID3D11Device> device3D_;
-        wrl::ComPtr<ID3D11DeviceContext> context3D_;
-        wrl::ComPtr<ID2D1Factory1> d2dFactory_;
-        wrl::ComPtr<ID2D1Device> device2D_;
-        wrl::ComPtr<ID2D1DeviceContext> context2D_;
-        wrl::ComPtr<IDXGIDevice> dxgiDevice_;
-        std::unique_ptr<Predefined> predefined_;
-
-        wrl::ComPtr<IDWriteFactory1> dwFactory_;
+        const GraphicsResources grahicsResources_;
         std::unordered_map<std::uint32_t, SceneCreator> sceneCreators_;
         std::unique_ptr<GameWindow> mainWindow_;
         std::unique_ptr<Scene> mainScene_;

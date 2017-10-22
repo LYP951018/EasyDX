@@ -16,9 +16,8 @@ public:
 private:
     dx::BasicObject sphere_, mirror_, wall_, floor_, reflectedSphere_, sphereShadow_;
     std::array<dx::Light, 3> dirLights_;
-    dx::WindowResizeEventHandle resized_;
+    dx::ShaderGroup shaders_;
 
     void BuildRoom(ID3D11Device& device, const dx::Predefined& predefined);
     void BuildLights();
-    dx::EventHandle<dx::WindowResizeEvent> AddResize();
 };

@@ -262,5 +262,7 @@ __pycache__/
 
 EasyDx/BasicVS.hpp
 EasyDx/BasicPS.hpp
-Primitive/PixelShader.hpp
-Primitive/VertexShader.hpp
+PixelShader.hpp
+VertexShader.hpp
+HullShader.hpp
+DomainShader.hpp

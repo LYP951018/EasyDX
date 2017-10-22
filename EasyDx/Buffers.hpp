@@ -68,7 +68,6 @@ namespace dx
     template<typename T>
     struct ConstantBuffer
     {
-        static_assert(sizeof(T) % 16 == 0);
         wrl::ComPtr<ID3D11Buffer> GpuCb;
     };
 
@@ -84,6 +83,7 @@ namespace dx
     template<typename T>
     void UpdateCb(ID3D11DeviceContext& context, const ConstantBuffer<T>& cb, const T& data)
     {
+        static_assert(sizeof(T) % 16 == 0);
         UpdateConstantBuffer(context, Ref(cb.GpuCb), AsBytes(data));
     }
 

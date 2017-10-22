@@ -21,4 +21,7 @@ namespace dx
 
     DirectX::XMFLOAT4 MakePosition(const DirectX::XMFLOAT3& position) noexcept;
     DirectX::XMFLOAT4 MakeDirection(const DirectX::XMFLOAT3& direction) noexcept;
+
+    DirectX::XMVECTOR MakePosVec(const DirectX::XMFLOAT3& position) noexcept;
+    DirectX::XMVECTOR MakeDirVec(const DirectX::XMFLOAT3& direction) noexcept;
 }

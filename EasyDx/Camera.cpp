@@ -6,11 +6,21 @@
 
 namespace dx
 {
-    Camera::Camera() noexcept
+    namespace Internal
+    {
+        struct alignas(16) CameraData
+        {
+            DirectX::XMMATRIX View;
+            DirectX::XMMATRIX Projection;
+        };
+    }
+
+    Camera::Camera()
         : isProjectionDirty_{true},
         isViewDirty_{true},
         rotation_{0.f, 0.f, 0.f, 1.f},
-        translation_{0.f, 0.f, 0.f, 1.f}
+        position_{0.f, 0.f, 0.f, 1.f},
+        data_{aligned_unique<Internal::CameraData>()}
     {
     }
 
@@ -32,8 +42,8 @@ namespace dx
             std::terminate();
             break;
         }
-        XMStoreFloat4(&translation_, finalTranslation);
-        translation_.w = 1.f;
+        XMStoreFloat4(&position_, finalTranslation);
+        position_.w = 1.f;
         isViewDirty_ = true;
     }
 
@@ -45,7 +55,7 @@ namespace dx
 
     DirectX::XMVECTOR Camera::LoadTranslation() const noexcept
     {
-        return DirectX::XMLoadFloat4(&translation_);
+        return DirectX::XMLoadFloat4(&position_);
     }
 
     DirectX::XMVECTOR Camera::LoadRotation() const noexcept
@@ -67,7 +77,7 @@ namespace dx
         const auto view = DirectX::XMMatrixLookAtLH(DirectX::XMLoadFloat3(&eye),
             DirectX::XMLoadFloat3(&target),
             DirectX::XMLoadFloat3(&up));
-        translation_ = { eye.x, eye.y, eye.z, 1.f };
+        position_ = { eye.x, eye.y, eye.z, 1.f };
         DirectX::XMStoreFloat4(&rotation_, DirectX::XMQuaternionRotationMatrix(XMMatrixTranspose(view)));
         isViewDirty_ = true;
     }
@@ -85,39 +95,36 @@ namespace dx
 
     DirectX::XMMATRIX Camera::GetView() const noexcept
     {
+        auto& view = data_->View;
         if (isViewDirty_)
         {
             auto rotation = XMMatrixTranspose(DirectX::XMMatrixRotationQuaternion(DirectX::XMLoadFloat4(&rotation_)));
-            auto translation = DirectX::XMMatrixTranslation(-translation_.x, -translation_.y, -translation_.z);
-            const auto result = translation * rotation;
-            DirectX::XMStoreFloat4x4(&view_, result);
+            auto translation = DirectX::XMMatrixTranslation(-position_.x, -position_.y, -position_.z);
+            view = translation * rotation;
             isViewDirty_ = false;
-            return result;
         }
-        else
-        {
-            return DirectX::XMLoadFloat4x4(&view_);
-        }
+        return view;
     }
 
     DirectX::XMMATRIX Camera::GetProjection() const noexcept
     {
+        auto& projection = data_->Projection;
         if (isProjectionDirty_)
         {
-            const auto result = DirectX::XMMatrixPerspectiveFovLH(fov_, aspectRatio_, nearZ_, farZ_);
-            DirectX::XMStoreFloat4x4(&projection_, result);
+            projection = DirectX::XMMatrixPerspectiveFovLH(fov_, aspectRatio_, nearZ_, farZ_);
             isProjectionDirty_ = false;
-            return result;
         }
-        else
-        {
-            return DirectX::XMLoadFloat4x4(&projection_);
-        }
+        return projection;
     }
 
     DirectX::XMFLOAT3 Camera::GetEyePos() const noexcept
     {
-        return { translation_.x, translation_.y, translation_.z };
+        return { position_.x, position_.y, position_.z };
+    }
+
+    void Camera::Walk(float d) noexcept
+    {
+        Translate(d, d, d, Space::LocalSpace);
     }
 }
 

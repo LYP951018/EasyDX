@@ -96,6 +96,9 @@
     <ClInclude Include="Predefined.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Input.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Common.cpp">

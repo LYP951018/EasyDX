@@ -4,8 +4,7 @@
 #include <numeric>
 
 MainScene::MainScene(const dx::Game& game, dx::Rc<void> args)
-    : Scene{game},
-    resized_{AddResize()}
+    : Scene{game}
 {
     auto& device = game.GetDevice3D();
     BuildLights();
@@ -244,17 +243,4 @@ void MainScene::Update(const dx::UpdateArgs& args)
 
 MainScene::~MainScene()
 {
-}
-
-dx::EventHandle<dx::WindowResizeEvent> MainScene::AddResize()
-{
-    auto& camera = GetMainCamera();
-    auto mainWindow = GetGame().GetMainWindow();
-    return mainWindow->WindowResize.Add([&](dx::ResizeEventArgs& e) {
-        camera.SetProjection(DirectX::XM_PIDIV4, e.NewSize.GetAspectRatio(), 0.01f, 1000.f);
-        camera.MainViewport = {
-            0.f, 0.f, static_cast<float>(e.NewSize.Width), static_cast<float>(e.NewSize.Height),
-            0.f, 1.f
-        };
-    });
 }

@@ -28,12 +28,6 @@ namespace dx
         GameWindow(const GameWindow&) = delete;
         GameWindow& operator= (const GameWindow&) = delete;
 
-        KeyDownEvent KeyDown;
-        KeyUpEvent KeyUp;
-        MouseDownEvent MouseDown;
-        MouseUpEvent MouseUp;
-        WindowResizeEvent WindowResize;
-        DpiChangedEvent DpiChanged;
 
         struct Win32Params;
 

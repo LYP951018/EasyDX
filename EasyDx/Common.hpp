@@ -2,6 +2,7 @@
 
 #include "DXDef.hpp"
 #include "AlignedAllocator.hpp"
+#include "FileSystemAlias.hpp"
 #include <string>
 #include <wrl/client.h>
 

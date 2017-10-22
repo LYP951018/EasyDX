@@ -9,6 +9,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Primitive", "Primitive\Prim
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Minor", "Minor\Minor.vcxproj", "{A70980E9-BD67-42A6-8814-CB16D84630E6}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "QuadTess", "QuadTess\QuadTess.vcxproj", "{28CF7A33-60D4-4A90-B401-341D9638BBCF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -41,6 +43,14 @@ Global
 		{A70980E9-BD67-42A6-8814-CB16D84630E6}.Release|x64.Build.0 = Release|x64
 		{A70980E9-BD67-42A6-8814-CB16D84630E6}.Release|x86.ActiveCfg = Release|Win32
 		{A70980E9-BD67-42A6-8814-CB16D84630E6}.Release|x86.Build.0 = Release|Win32
+		{28CF7A33-60D4-4A90-B401-341D9638BBCF}.Debug|x64.ActiveCfg = Debug|x64
+		{28CF7A33-60D4-4A90-B401-341D9638BBCF}.Debug|x64.Build.0 = Debug|x64
+		{28CF7A33-60D4-4A90-B401-341D9638BBCF}.Debug|x86.ActiveCfg = Debug|Win32
+		{28CF7A33-60D4-4A90-B401-341D9638BBCF}.Debug|x86.Build.0 = Debug|Win32
+		{28CF7A33-60D4-4A90-B401-341D9638BBCF}.Release|x64.ActiveCfg = Release|x64
+		{28CF7A33-60D4-4A90-B401-341D9638BBCF}.Release|x64.Build.0 = Release|x64
+		{28CF7A33-60D4-4A90-B401-341D9638BBCF}.Release|x86.ActiveCfg = Release|Win32
+		{28CF7A33-60D4-4A90-B401-341D9638BBCF}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

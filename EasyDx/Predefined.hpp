@@ -55,6 +55,7 @@ namespace dx
         wrl::ComPtr<ID3D11BlendState> GetTransparent() const;
 
         ID3D11RasterizerState* GetCullClockwise() const { return cullClockWise_.Get(); }
+        ID3D11RasterizerState* GetWireFrameOnly() const { return wireFrameOnly_.Get(); }
 
         wrl::ComPtr<ID3D11SamplerState> GetDefaultSampler() const;
         wrl::ComPtr<ID3D11SamplerState> GetRepeatSampler() const;
@@ -79,7 +80,7 @@ namespace dx
 
         wrl::ComPtr<ID3D11DepthStencilState> stencilAlways_, drawnOnly_, noDoubleBlending_;
         wrl::ComPtr<ID3D11BlendState> noWriteToRt_, transparent_;
-        wrl::ComPtr<ID3D11RasterizerState> cullClockWise_;
+        wrl::ComPtr<ID3D11RasterizerState> cullClockWise_, wireFrameOnly_;
     };
 
     struct BasicRenderable
