@@ -159,7 +159,6 @@
     <ClInclude Include="FileSystemAlias.hpp" />
     <ClInclude Include="Game.hpp" />
     <ClInclude Include="GameWindow.hpp" />
-    <ClInclude Include="Input.hpp" />
     <ClInclude Include="Light.hpp" />
     <ClInclude Include="LinkWithDirectX.hpp" />
     <ClInclude Include="Material.hpp" />
