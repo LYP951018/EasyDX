@@ -3,12 +3,13 @@
 #include <DirectXColors.h>
 #include <numeric>
 
-MainScene::MainScene(const dx::Game& game, dx::Rc<void> args)
+MainScene::MainScene(dx::Game& game, dx::Rc<void> args)
     : Scene{game}
 {
-    auto& device = game.GetDevice3D();
+    auto& resources = game.Resources();
+    auto& device = resources.Device3D();
     BuildLights();
-    BuildRoom(device, game.GetPredefined());
+    BuildRoom(device, game.Predefined());
     auto& camera = GetMainCamera();
     const float theta = 1.24f * DirectX::XM_PI;
     const float phi = 0.42f * DirectX::XM_PI;
@@ -17,10 +18,11 @@ MainScene::MainScene(const dx::Game& game, dx::Rc<void> args)
     float z = radius * sinf(phi) * sinf(theta);
     float y = radius * cosf(phi);
     camera.SetLookAt({ x, y, z }, {}, { 0.0f, 1.0f, 0.0f });
+    AddCameraMovement();
 }
 
 
-void MainScene::BuildRoom(ID3D11Device& device, const dx::Predefined& predefined)
+void MainScene::BuildRoom(ID3D11Device& device, const dx::PredefinedResources& predefined)
 {
     using namespace DirectX;
     const auto roomSmoothness = dx::Smoothness{
@@ -28,6 +30,9 @@ void MainScene::BuildRoom(ID3D11Device& device, const dx::Predefined& predefined
             XMFLOAT4{ 1.0f, 1.0f, 1.0f, 1.0f },
             XMFLOAT4{ 0.4f, 0.4f, 0.4f, 1.0f },
             XMFLOAT4{ 1.0f, 1.0f, 1.0f, 1.0f }, 16.0f};
+    auto basicVS = predefined.GetBasicVS();
+    auto basicPS = predefined.GetBasicPS();
+    auto simpleLayout = predefined.GetSimpleLayout();
 
     {
         auto floorTex = dx::Load2DTexFromFile(device, fs::current_path() / "Tex" / "checkboard.dds");
@@ -45,7 +50,7 @@ void MainScene::BuildRoom(ID3D11Device& device, const dx::Predefined& predefined
             0, 1, 2, 3, 4, 5
         };
         floor_ = dx::BasicObject{
-            dx::BasicRenderable{device, predefined, FloorVertices, FloorIndices, dx::Get2DTexView(device, dx::Ref(floorTex)), predefined.GetRepeatSampler()},
+            dx::BasicRenderable{simpleLayout, dx::GpuMesh{device, FloorVertices, FloorIndices}, basicVS, basicPS, dx::Get2DTexView(device, dx::Ref(floorTex)), predefined.GetRepeatSampler()},
             roomSmoothness,
             DirectX::XMMatrixIdentity()
         };
@@ -80,7 +85,7 @@ void MainScene::BuildRoom(ID3D11Device& device, const dx::Predefined& predefined
 
         //WTF??
         wall_ = dx::BasicObject{
-            dx::BasicRenderable{ device, predefined, WallVertices, wallIndices, dx::Get2DTexView(device, dx::Ref(wallTex)), predefined.GetRepeatSampler()},
+            dx::BasicRenderable{simpleLayout , dx::GpuMesh{device, WallVertices, wallIndices}, basicVS, basicPS, dx::Get2DTexView(device, dx::Ref(wallTex)), predefined.GetRepeatSampler()},
             roomSmoothness,
             DirectX::XMMatrixIdentity()
         };
@@ -110,7 +115,7 @@ void MainScene::BuildRoom(ID3D11Device& device, const dx::Predefined& predefined
         };
 
         mirror_ = dx::BasicObject{
-            dx::BasicRenderable{ device, predefined, MirrorVertices, MirrorIndices, dx::Get2DTexView(device, dx::Ref(mirrorTex)), {} },
+            dx::BasicRenderable{simpleLayout, dx::GpuMesh{device,MirrorVertices, MirrorIndices}, basicVS, basicPS, dx::Get2DTexView(device, dx::Ref(mirrorTex)), predefined.GetRepeatSampler() },
             mirrorSmoothness,
             DirectX::XMMatrixIdentity()
         };
@@ -132,7 +137,7 @@ void MainScene::BuildRoom(ID3D11Device& device, const dx::Predefined& predefined
         transform.Translation.y = 2.f;
 
         sphere_ = dx::BasicObject{
-            dx::BasicRenderable{device, predefined, mesh.Get(), {}, {}},
+            dx::BasicRenderable{simpleLayout, dx::GpuMesh{device, view}, basicVS, basicPS, {}, {}},
             ballSmoothness,
             dx::ComputeWorld(transform)
         };
@@ -140,7 +145,7 @@ void MainScene::BuildRoom(ID3D11Device& device, const dx::Predefined& predefined
         auto reflection = DirectX::XMMatrixReflect(DirectX::XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f));
         auto reflected = dx::ComputeWorld(transform) * reflection;
         reflectedSphere_ = dx::BasicObject{
-            dx::BasicRenderable{device, predefined, view, {}, {}},
+            dx::BasicRenderable{simpleLayout, dx::GpuMesh{ device, mesh.Get() }, basicVS, basicPS,{},{} },
             ballSmoothness,
             reflected
         };
@@ -175,7 +180,7 @@ void MainScene::BuildLights()
 void MainScene::Update(const dx::UpdateArgs& args)
 {
     const auto& game = GetGame();
-    game.GetMainWindow()->Clear(DirectX::Colors::White);
+    game.MainWindow().Clear(DirectX::Colors::White);
 
     auto& context = args.Context3D;
     const auto& camera = GetMainCamera();
@@ -185,7 +190,7 @@ void MainScene::Update(const dx::UpdateArgs& args)
         context, camera, lights
     };
 
-    const auto& predefined = game.GetPredefined();
+    const auto& predefined = game.Predefined();
 
     //1. render floor, wall, sphere normally.
     {

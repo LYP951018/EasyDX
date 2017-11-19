@@ -72,13 +72,14 @@ namespace dx::cb
         *this = std::visit(Visitor{}, light);
     }
 
-    Material::Material(const Smoothness& smoothness) noexcept
+    Material::Material(const Smoothness& smoothness, bool useTexture) noexcept
     {
         Ambient = smoothness.Amibient;
         Diffuse = smoothness.Diffuse;
         Specular = smoothness.Specular;
         Emissive = smoothness.Emissive;
         SpecularPower = smoothness.SpecularPower;
+        UseTexture = useTexture ? 1 : 0;
     }
 }
 

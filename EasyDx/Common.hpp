@@ -77,18 +77,24 @@ namespace dx
         return gsl::make_span(parr, N);
     }
 
-    template<typename T>
-    gsl::span<const Ptr<T>> ComPtrsCast(gsl::span<const wrl::ComPtr<T>> comPtrs) noexcept
+    template<typename T, std::ptrdiff_t N>
+    gsl::span<const Ptr<T>, N> ComPtrsCast(gsl::span<const wrl::ComPtr<T>, N> comPtrs) noexcept
     {
         static_assert(std::is_standard_layout_v<wrl::ComPtr<T>>, "wrl::ComPtr<T> should be a standard layout class.");
-        return gsl::make_span(reinterpret_cast<Ptr<const Ptr<T>>>(reinterpret_cast<const char*>(comPtrs.data())), comPtrs.size());
+        static_assert(sizeof(wrl::ComPtr<T>) == Ptr<T>, "wrl::ComPtr<T> should have the same size as the raw pointer.");
+        const auto start = comPtrs.data();
+        const auto last = start + comPtrs.size();
+        return { start, last };
     }
 
-    template<typename T>
-    gsl::span<T*> ComPtrsCast(gsl::span<wrl::ComPtr<T>> comPtrs) noexcept
+    template<typename T, std::ptrdiff_t N>
+    gsl::span<Ptr<T>, N> ComPtrsCast(gsl::span<wrl::ComPtr<T>, N> comPtrs) noexcept
     {
         static_assert(std::is_standard_layout_v<wrl::ComPtr<T>>, "wrl::ComPtr<T> should be a standard layout class.");
-        return gsl::make_span(reinterpret_cast<Ptr<T*>>(reinterpret_cast<char*>(comPtrs.data())), comPtrs.size());
+        static_assert(sizeof(wrl::ComPtr<T>) == Ptr<T>, "wrl::ComPtr<T> should have the same size as the raw pointer.");
+        const auto start = comPtrs.data();
+        const auto last = start + comPtrs.size();
+        return { start, last };
     }
 
     struct Rect
@@ -141,6 +147,12 @@ namespace dx
     void Swallow(Args&&...) noexcept {}
 
     using TexPair = std::pair<wrl::ComPtr<ID3D11Texture2D>, wrl::ComPtr<ID3D11ShaderResourceView>>;
+
+    template<typename T>
+    struct is_vertex : std::false_type {};
+
+    template<typename T>
+    constexpr bool is_vertex_v = is_vertex<T>::value;
 }
 
 namespace stlext

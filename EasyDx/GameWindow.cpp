@@ -143,8 +143,19 @@ namespace dx
             static_cast<std::int32_t>(GET_Y_LPARAM(lParam)) };
     }
 
+
     std::int32_t GameWindow::ProcessMessage(std::uint32_t message, Win32Params params)
     {
+        const auto handle = GetWin32WindowHandle(*this);
+        const auto MakeMouseArgs = [&]() noexcept {
+            MouseEventArgs args;
+            args.IsHandled = {};
+            args.Position = PosFromLParam(params.lParam);
+            args.Window = this;
+            args.KeyStates = static_cast<std::uint32_t>(params.wParam);
+            return args;
+        };
+
         switch (message)
         {
         case WM_SIZE:
@@ -195,38 +206,32 @@ namespace dx
         break;
         case WM_LBUTTONDOWN:
         {
-            MouseEventArgs args;
-            args.Window = this;
-            args.Button = MouseButton::kLeft;
-            args.Position = PosFromLParam(params.lParam);
+            auto args = MakeMouseArgs();
             game_.MouseDown(args);
         }
         break;
         case WM_LBUTTONUP:
         {
-            MouseEventArgs args;
-            args.Window = this;
-            args.Button = MouseButton::kLeft;
-            args.Position = PosFromLParam(params.lParam);
+            auto args = MakeMouseArgs();
             game_.MouseUp(args);
         }
         break;
         case WM_RBUTTONDOWN:
         {
-            MouseEventArgs args;
-            args.Window = this;
-            args.Button = MouseButton::kRight;
-            args.Position = PosFromLParam(params.lParam);
+            auto args = MakeMouseArgs();
             game_.MouseDown(args);
         }
         break;
         case WM_RBUTTONUP:
         {
-            MouseEventArgs args;
-            args.Window = this;
-            args.Button = MouseButton::kRight;
-            args.Position = PosFromLParam(params.lParam);
+            auto args = MakeMouseArgs();
             game_.MouseUp(args);
+        }
+        break;
+        case WM_MOUSEMOVE:
+        {
+            auto args = MakeMouseArgs();
+            game_.MouseMove(args);
         }
         break;
         default:
@@ -308,8 +313,9 @@ namespace dx
         ID3D11RenderTargetView* views[] = { backBufferRenderTargetView_.Get() };
         //FIXME: is this necessary?
         context.OMSetRenderTargets(std::size(views), views, depthBufferRenderTargetView_.Get());
-        
-        const auto& mainViewport = game_.MainScene().GetMainCamera().MainViewport;
+        //FIXME: this is awful.
+        auto& switcher = game_.Switcher();
+        const auto& mainViewport = switcher.MainScene().GetMainCamera().MainViewport;
         const D3D11_VIEWPORT viewport{
            mainViewport.TopLeftX,
            mainViewport.TopLeftY,

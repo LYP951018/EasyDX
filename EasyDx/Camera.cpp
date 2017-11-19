@@ -33,7 +33,7 @@ namespace dx
         switch (space)
         {
         case Space::LocalSpace:
-            finalTranslation = XMVector3Transform(translationVec, XMMatrixRotationQuaternion(LoadRotation()));
+            finalTranslation = XMVectorAdd(LoadTranslation(), XMVector3Transform(translationVec, XMMatrixRotationQuaternion(LoadRotation())));
             break;
         case Space::WorldSpace:
             finalTranslation = XMVectorAdd(LoadTranslation(), translationVec);
@@ -45,6 +45,30 @@ namespace dx
         XMStoreFloat4(&position_, finalTranslation);
         position_.w = 1.f;
         isViewDirty_ = true;
+    }
+
+    void Camera::Pitch(float angle)
+    {
+        Rotate(DirectX::XMQuaternionRotationNormal(DirectX::XMVectorSet(1.0f, 0.0f, 0.0f, 0.0f), angle));
+    }
+
+    void Camera::Yaw(float angle)
+    {
+        Rotate(DirectX::XMQuaternionRotationNormal(DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f), angle));
+    }
+
+    void Camera::RotateY(float angle)
+    {
+        const auto rotation = DirectX::XMQuaternionRotationNormal(DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f), angle);
+        Rotate(rotation);
+        DirectX::XMStoreFloat4(&position_, DirectX::XMQuaternionMultiply(LoadTranslation(), rotation));
+    }
+
+    void Camera::RotateX(float angle)
+    {
+        const auto rotation = DirectX::XMQuaternionRotationNormal(DirectX::XMVectorSet(1.0f, 0.0f, 0.0f, 0.0f), angle);
+        Rotate(rotation);
+        DirectX::XMStoreFloat4(&position_, DirectX::XMQuaternionMultiply(LoadTranslation(), rotation));
     }
 
     void Camera::Rotate(DirectX::XMVECTOR rotation) noexcept
@@ -124,7 +148,12 @@ namespace dx
 
     void Camera::Walk(float d) noexcept
     {
-        Translate(d, d, d, Space::LocalSpace);
+        Translate(0.0f, 0.0f, d, Space::LocalSpace);
+    }
+
+    void Camera::Strafe(float d) noexcept
+    {
+        Translate(d, 0.0f, 0.0f, Space::LocalSpace);
     }
 }
 

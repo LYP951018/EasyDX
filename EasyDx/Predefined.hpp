@@ -32,20 +32,22 @@ namespace dx
         };
     }
 
+    using BasicLightingPixelShader = PixelShader<cb::GlobalLightingInfo, cb::PerObjectLightingInfo>;
+    using BasicLightingVertexShader = VertexShader<SimpleVertex, cb::BasicCb>;
 
-    class Predefined
+    class PredefinedResources
     {
     public:
         static constexpr std::uint32_t kDefaultTexWidth = 100;
         static constexpr std::uint32_t kDefaultTexHeight = 100;
 
-        Predefined(ID3D11Device&);
-        ~Predefined();
+        PredefinedResources(ID3D11Device&);
+        ~PredefinedResources();
 
         wrl::ComPtr<ID3D11ShaderResourceView> GetWhite() const { return white_; }
 
-        VertexShader GetBasicVS() const { return basicVS_; }
-        PixelShader GetBasicPS() const { return basicPS_; }
+        BasicLightingVertexShader GetBasicVS() const { return basicVS_; }
+        BasicLightingPixelShader GetBasicPS() const { return basicPS_; }
 
         wrl::ComPtr<ID3D11DepthStencilState> GetStencilAlways() const;
         wrl::ComPtr<ID3D11DepthStencilState> GetDrawnOnly() const;
@@ -60,13 +62,14 @@ namespace dx
         wrl::ComPtr<ID3D11SamplerState> GetDefaultSampler() const;
         wrl::ComPtr<ID3D11SamplerState> GetRepeatSampler() const;
 
+        wrl::ComPtr<ID3D11InputLayout> GetSimpleLayout() const { return simpleLayout_; }
+
     private:
         void MakeWhiteTex(ID3D11Device&);
-        void MakeBasicVS(ID3D11Device&);
-        void MakeBasicPS(ID3D11Device&);
         void MakeStencilStates(ID3D11Device&);
         void MakeBlendingStates(ID3D11Device&);
         void MakeRasterizerStates(ID3D11Device&);
+        void MakeLayouts(ID3D11Device& device);
 
         //Default white texture
         wrl::ComPtr<ID3D11ShaderResourceView> white_;
@@ -75,52 +78,34 @@ namespace dx
         wrl::ComPtr<ID3D11SamplerState> repeatSampler_;
 
         //default shaders
-        VertexShader basicVS_;
-        PixelShader basicPS_;
+        BasicLightingVertexShader basicVS_;
+        BasicLightingPixelShader basicPS_;
 
         wrl::ComPtr<ID3D11DepthStencilState> stencilAlways_, drawnOnly_, noDoubleBlending_;
         wrl::ComPtr<ID3D11BlendState> noWriteToRt_, transparent_;
         wrl::ComPtr<ID3D11RasterizerState> cullClockWise_, wireFrameOnly_;
+
+        wrl::ComPtr<ID3D11InputLayout> simpleLayout_;
     };
 
+    struct BasicDrawContext;
+
+    void SetupBasicLighting(const BasicDrawContext& drawContext,
+        BasicLightingPixelShader& ps,
+        const Smoothness& smoothness,
+        ID3D11ShaderResourceView* tex = nullptr,
+        ID3D11SamplerState* sampler = nullptr);
+
+
+    //TODO: rename to BasicPipelineObjects ?
     struct BasicRenderable
     {
-        BasicRenderable() = default;
-
-        template<typename VertexT, std::size_t VN, std::size_t IN_>
-        BasicRenderable(ID3D11Device& device,
-            const Predefined& predefined,
-            const VertexT(&vertices)[VN],
-            const std::uint16_t (&indices)[IN_],
-            wrl::ComPtr<ID3D11ShaderResourceView> texture,
-            wrl::ComPtr<ID3D11SamplerState> sampler)
-            : BasicRenderable{ device, predefined, CpuMeshView<VertexT>{gsl::make_span(vertices), gsl::make_span(indices)}, std::move(texture), std::move(sampler) }
-        {}
-
-        template<typename VertexT>
-        BasicRenderable(ID3D11Device& device,
-            const Predefined& predefined,
-            CpuMeshView<VertexT> cpuMesh,
-            wrl::ComPtr<ID3D11ShaderResourceView> texture,
-            wrl::ComPtr<ID3D11SamplerState> sampler)
-            : Mesh{ device, cpuMesh },
-            VS{ predefined.GetBasicVS() },
-            PS{ predefined.GetBasicPS() },
-            Texture{ texture ? texture : predefined.GetWhite() },
-            Sampler {sampler ? sampler : predefined.GetDefaultSampler()},
-            BasicCb{ MakeConstantBuffer<cb::BasicCb>(device) },
-            GlobalLightingCb{ MakeConstantBuffer<cb::GlobalLightingInfo>(device) },
-            PerObjectCb{ MakeConstantBuffer<cb::PerObjectLightingInfo>(device) }
-        {}
-
+        wrl::ComPtr<ID3D11InputLayout> InputLayout;
         GpuMesh Mesh;
-        VertexShader VS;
-        PixelShader PS;
+        BasicLightingVertexShader VS;
+        BasicLightingPixelShader PS;
         wrl::ComPtr<ID3D11ShaderResourceView> Texture;
         wrl::ComPtr<ID3D11SamplerState> Sampler;
-        ConstantBuffer<cb::BasicCb> BasicCb;
-        ConstantBuffer<cb::GlobalLightingInfo> GlobalLightingCb;
-        ConstantBuffer<cb::PerObjectLightingInfo> PerObjectCb;
     };
 
     struct BasicObject
@@ -149,6 +134,5 @@ namespace dx
 
     void UpdateAndDraw(const BasicDrawContext& drawContext, const BasicObject& object);
     void DrawBasic(ID3D11DeviceContext&, const BasicRenderable&);
-
 
 }

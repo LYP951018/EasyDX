@@ -2,6 +2,7 @@
 
 #include "DXDef.hpp"
 #include "Events.hpp"
+#include <optional>
 #include <chrono>
 
 namespace dx
@@ -23,21 +24,32 @@ namespace dx
         friend class Game;
 
     public:
-        Scene(const Game& game);
+        Scene(Game& game);
         virtual ~Scene();
 
         Camera& GetMainCamera() const noexcept;
-        void SetMainCamera(std::unique_ptr<Camera> mainCamera) noexcept;
-        const Game& GetGame() const { return game_; }
+        Game& GetGame() const { return game_; }
 
     protected:
         virtual void Update(const UpdateArgs& updateArgs);
 
+        template<typename T, typename F>
+        void RegisterEvent(Event<T>& event, F&& callback)
+        {
+            eventHandles_.push_back(event.Add(std::forward<F>(callback)));
+        }
+
+        void AddCameraMovement();
+
     private:
-        dx::EventHandle<dx::WindowResizeEvent> AddResize();
-        const Game& game_;
+        void AddBasicEvents();
+        
+        Game& game_;
+        //XXX
+        std::optional<dx::Point> oldPoint_;
+        //TODO: remove unique_ptr.
         std::unique_ptr<Camera> mainCamera_;
-        dx::EventHandle<dx::WindowResizeEvent> resize_;
+        std::vector<std::unique_ptr<IEventHandle>> eventHandles_;
     };
 
 
@@ -46,7 +58,7 @@ namespace dx
     {
         static_assert(std::is_base_of_v<Scene, SceneT>, "SceneT should derive from dx::Scene");
 
-        std::unique_ptr<Scene> operator()(const Game& game, std::shared_ptr<void> arg)
+        std::unique_ptr<Scene> operator()(Game& game, std::shared_ptr<void> arg)
         {
             return std::make_unique<SceneT>(game, std::move(arg));
         }

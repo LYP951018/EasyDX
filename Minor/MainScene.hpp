@@ -9,15 +9,14 @@
 class MainScene : public dx::Scene
 {
 public:
-    MainScene(const dx::Game&, dx::Rc<void> args);
+    MainScene(dx::Game&, dx::Rc<void> args);
     void Update(const dx::UpdateArgs& updateArgs) override;
     ~MainScene() override;
 
 private:
     dx::BasicObject sphere_, mirror_, wall_, floor_, reflectedSphere_, sphereShadow_;
     std::array<dx::Light, 3> dirLights_;
-    dx::ShaderGroup shaders_;
 
-    void BuildRoom(ID3D11Device& device, const dx::Predefined& predefined);
+    void BuildRoom(ID3D11Device& device, const dx::PredefinedResources& predefined);
     void BuildLights();
 };

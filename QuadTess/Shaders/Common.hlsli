@@ -1,11 +1,11 @@
 struct VertexInput
 {
-    float4 Position : POSITION;
+    float3 Position : POSITION;
 };
 
 struct VertexOutput
 {
-    float4 Position : POSITION;
+    float3 Position : POSITION;
 };
 
 struct ConstantHullOutput
@@ -16,10 +16,13 @@ struct ConstantHullOutput
 
 struct HullControlPointOutput
 {
-    float4 Position : POSITION;
+    float3 Position : POSITION;
 };
 
 struct DomainOutput
 {
-    float4 Position : SV_POSITION;
+    float3 Position : SV_POSITION;
+    float3 Normal : SV_NORMAL;
 };
+
+#define PATCH_COUNT 16

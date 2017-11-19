@@ -16,7 +16,7 @@ cbuffer PerObjectLightingInfo : register(b1)
 Texture2D Texture;
 SamplerState Sampler;
 
-float4 main(VertexOutput input) : SV_TARGET
+float4 main(dx::VertexOutput input) : SV_TARGET
 {
     float4 totalDiffuse = float4(0.0f, 0.0f, 0.0f, 0.0f), totalSpec = float4(0.0f, 0.0f, 0.0f, 0.0f);
     for (int i = 0; i < LightCount; ++i)
@@ -30,5 +30,9 @@ float4 main(VertexOutput input) : SV_TARGET
     totalSpec = saturate(totalSpec);
     float4 total = totalDiffuse + totalSpec;
     total.w = 1.0f;
-    return total * Texture.Sample(Sampler, input.TexCoord);
+    if (ObjectMaterial.UseTexture)
+    {
+        total *= Texture.Sample(Sampler, input.TexCoord);
+    }
+    return total;
 }

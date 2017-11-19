@@ -2,7 +2,7 @@
 #include "CBuffer.hlsli"
 
 ConstantHullOutput CalcHSPatchConstants(
-	InputPatch<VertexOutput, 4> patches,
+	InputPatch<VertexOutput, PATCH_COUNT> patches,
 	uint PatchID : SV_PrimitiveID)
 {
     ConstantHullOutput Output;
@@ -13,14 +13,12 @@ ConstantHullOutput CalcHSPatchConstants(
     //const float d0 = 20.0f;
     //const float d1 = 100.0f;
     //float tes = saturate((d1 - dist) / (d1 - d0)) * 64.0f;
-
-    for (int i = 0; i < 4; ++i)
-    {
-        Output.EdgeTessFactor[i] = 5;
-        
-    }
-
-    Output.InsideTessFactor[0] = Output.InsideTessFactor[1] = 5;
+    const int n = 10;
+    Output.EdgeTessFactor[0] = n;
+    Output.EdgeTessFactor[1] = n;
+    Output.EdgeTessFactor[2] = n;
+    Output.EdgeTessFactor[3] = n;
+    Output.InsideTessFactor[0] = Output.InsideTessFactor[1] = n;
 
     return Output;
 }
@@ -28,10 +26,10 @@ ConstantHullOutput CalcHSPatchConstants(
 [domain("quad")]
 [partitioning("integer")]
 [outputtopology("triangle_cw")]
-[outputcontrolpoints(4)]
+[outputcontrolpoints(PATCH_COUNT)]
 [patchconstantfunc("CalcHSPatchConstants")]
 HullControlPointOutput main(
-	InputPatch<VertexOutput, 4> ip, 
+	InputPatch<VertexOutput, PATCH_COUNT> ip,
 	uint i : SV_OutputControlPointID,
 	uint PatchID : SV_PrimitiveID )
 {

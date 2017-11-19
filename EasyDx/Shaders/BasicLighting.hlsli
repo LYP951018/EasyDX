@@ -23,7 +23,8 @@ struct Material
 {
     float4 Amibient, Diffuse, Specular, Emissive;
     float SpecularPower;
-    float3 Padding;
+    int UseTexture;
+    float2 Padding;
 };
 
 //lightDir means LightPos - Pos

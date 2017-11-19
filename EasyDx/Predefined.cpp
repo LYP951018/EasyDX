@@ -11,42 +11,43 @@
 
 namespace dx
 {
-    Predefined::Predefined(ID3D11Device& device)
+    PredefinedResources::PredefinedResources(ID3D11Device& device)
+        : basicVS_{device, AsBytes(BasicVertexShader)},
+        basicPS_{device, AsBytes(BasicPixelShader)}
     {
         MakeWhiteTex(device);
-        MakeBasicVS(device);
-        MakeBasicPS(device);
         MakeStencilStates(device);
         MakeBlendingStates(device);
         MakeRasterizerStates(device);
+        MakeLayouts(device);
     }
 
 
-    Predefined::~Predefined()
+    PredefinedResources::~PredefinedResources()
     {
     }
 
-    wrl::ComPtr<ID3D11DepthStencilState> Predefined::GetStencilAlways() const { return stencilAlways_; }
+    wrl::ComPtr<ID3D11DepthStencilState> PredefinedResources::GetStencilAlways() const { return stencilAlways_; }
 
-    wrl::ComPtr<ID3D11DepthStencilState> Predefined::GetDrawnOnly() const { return drawnOnly_; }
+    wrl::ComPtr<ID3D11DepthStencilState> PredefinedResources::GetDrawnOnly() const { return drawnOnly_; }
 
-    wrl::ComPtr<ID3D11DepthStencilState> Predefined::GetNoDoubleBlending() const
+    wrl::ComPtr<ID3D11DepthStencilState> PredefinedResources::GetNoDoubleBlending() const
     {
         return noDoubleBlending_;
     }
 
-    wrl::ComPtr<ID3D11BlendState> Predefined::GetNoWriteToRT() const { return noWriteToRt_; }
+    wrl::ComPtr<ID3D11BlendState> PredefinedResources::GetNoWriteToRT() const { return noWriteToRt_; }
 
-    wrl::ComPtr<ID3D11BlendState> Predefined::GetTransparent() const { return transparent_; }
+    wrl::ComPtr<ID3D11BlendState> PredefinedResources::GetTransparent() const { return transparent_; }
 
-    wrl::ComPtr<ID3D11SamplerState> Predefined::GetDefaultSampler() const { return defaultSampler_; }
+    wrl::ComPtr<ID3D11SamplerState> PredefinedResources::GetDefaultSampler() const { return defaultSampler_; }
 
-    wrl::ComPtr<ID3D11SamplerState> Predefined::GetRepeatSampler() const
+    wrl::ComPtr<ID3D11SamplerState> PredefinedResources::GetRepeatSampler() const
     {
         return repeatSampler_;
     }
 
-    void Predefined::MakeWhiteTex(ID3D11Device& device)
+    void PredefinedResources::MakeWhiteTex(ID3D11Device& device)
     {
         wrl::ComPtr<ID3D11Texture2D> tex;
         {
@@ -74,17 +75,7 @@ namespace dx
         white_ = Get2DTexView(device, Ref(tex));
     }
 
-    void Predefined::MakeBasicVS(ID3D11Device& device)
-    {
-        basicVS_ = VertexShader::FromByteCode(device, BasicVertexShader, SimpleVertex::GetLayout());
-    }
-
-    void Predefined::MakeBasicPS(ID3D11Device& device)
-    {
-        basicPS_ = PixelShader::FromByteCode(device, BasicPixelShader);
-    }
-
-    void Predefined::MakeStencilStates(ID3D11Device& device)
+    void PredefinedResources::MakeStencilStates(ID3D11Device& device)
     {
         {
             D3D11_DEPTH_STENCIL_DESC stencilDesc{};
@@ -155,7 +146,7 @@ namespace dx
         }
     }
 
-    void Predefined::MakeBlendingStates(ID3D11Device& device)
+    void PredefinedResources::MakeBlendingStates(ID3D11Device& device)
     {
         {
             D3D11_BLEND_DESC noRenderTargetWritesDesc = {};
@@ -193,7 +184,7 @@ namespace dx
         
     }
 
-    void Predefined::MakeRasterizerStates(ID3D11Device& device)
+    void PredefinedResources::MakeRasterizerStates(ID3D11Device& device)
     {
         {
             D3D11_RASTERIZER_DESC cullClockwiseDesc{};
@@ -215,62 +206,72 @@ namespace dx
         }
     }
 
-    void UpdateAndDraw(const BasicDrawContext& drawContext, const BasicObject& object)
+    void PredefinedResources::MakeLayouts(ID3D11Device& device)
     {
-        auto& context = drawContext.Context;
-        auto& camera = drawContext.Camera;
-        auto& lights = drawContext.Lights;
-        auto& renderable = object.Renderable;
-        auto& material = object.Material;
-        auto& transform = object.Transform;
-        //update constant buffers
-        const auto view = camera.GetView();
-        const auto proj = camera.GetProjection();
-        const auto world = object.GetWorld();
-        UpdateCb(context, renderable.BasicCb, cb::BasicCb{
-            world * view * proj,
-            world,
-            DirectX::XMMatrixTranspose(DirectX::XMMatrixInverse(nullptr, world))
-        });
-        UpdateCb(context, renderable.PerObjectCb, cb::PerObjectLightingInfo{
-            cb::Material{material}
-        });
+        const auto desc = SimpleVertex::GetDesc();
+        device.CreateInputLayout(desc.data(), desc.size(), BasicVertexShader, std::size(BasicVertexShader), simpleLayout_.GetAddressOf());
+    }
+
+    void SetupBasicLighting(const BasicDrawContext& drawContext, 
+        BasicLightingPixelShader& ps, 
+        const Smoothness& smoothness, 
+        ID3D11ShaderResourceView* tex, 
+        ID3D11SamplerState* sampler)
+    {
+        auto&[context, camera, lights] = drawContext;
+
         cb::GlobalLightingInfo globalLights;
         globalLights.EyePos = camera.GetEyePos();
         std::transform(lights.begin(), lights.end(), globalLights.Lights, [](const Light& light) { return cb::Light{ light }; });
         globalLights.LightCount = static_cast<std::uint32_t>(lights.size());
-        UpdateCb(context, renderable.GlobalLightingCb, globalLights);
+        ps.UpdateCb(
+            context,
+            globalLights,
+            cb::PerObjectLightingInfo{
+            cb::Material{ smoothness, tex != nullptr }
+        });
+
+        if (tex != nullptr)
+        {
+            const std::array<ID3D11ShaderResourceView*, 1> resources = {
+                tex
+            };
+            context.PSSetShaderResources(0, resources.size(), resources.data());
+            const std::array<ID3D11SamplerState*, 1> samplers = {
+                sampler
+            };
+            context.PSSetSamplers(0, samplers.size(), samplers.data());
+        }
+    }
+
+    void UpdateAndDraw(const BasicDrawContext& drawContext, const BasicObject& object)
+    {
+        auto[context, camera, lights] = drawContext;
+        auto[renderable, material, transform] = object;
+        //update constant buffers
+        const auto view = camera.GetView();
+        const auto proj = camera.GetProjection();
+        const auto world = object.GetWorld();
+
+        renderable.VS.UpdateCb(context, cb::BasicCb{
+            world * view * proj,
+            world,
+            DirectX::XMMatrixTranspose(DirectX::XMMatrixInverse(nullptr, world))
+        });
+
+        SetupBasicLighting(drawContext, renderable.PS, material, renderable.Texture.Get(), renderable.Sampler.Get());
         DrawBasic(context, renderable);
     }
 
     void DrawBasic(ID3D11DeviceContext& context, const BasicRenderable& renderable)
     {
         context.IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-        SetupGpuMesh(context, renderable.Mesh.Get());
-
-        ShaderViewGroup shaderGroup;
-        shaderGroup.VS = renderable.VS.Get();
-        shaderGroup.PS = renderable.PS.Get();
-        SetShaders(context, shaderGroup);
-        const std::array<ID3D11ShaderResourceView*, 1> resources = {
-            renderable.Texture.Get()
-        };
-        context.PSSetShaderResources(0, resources.size(), resources.data());
-        const std::array<ID3D11Buffer*, 1> vsCbs = {
-            renderable.BasicCb.GpuCb.Get()
-        };
-        context.VSSetConstantBuffers(0, vsCbs.size(), vsCbs.data());
-        const std::array<ID3D11Buffer*, 2> psCbs = {
-            renderable.GlobalLightingCb.GpuCb.Get(),
-            renderable.PerObjectCb.GpuCb.Get()
-        };
-        context.PSSetConstantBuffers(0, psCbs.size(), psCbs.data());
-        const std::array<ID3D11SamplerState*, 1> samplers = {
-            renderable.Sampler.Get()
-        };
-        context.PSSetSamplers(0, samplers.size(), samplers.data());
-        context.DrawIndexed(renderable.Mesh.Get().IndexCount, 0, 0);
+        auto[inputLayout, mesh, vs, ps, tex, sampler] = renderable;
+        context.IASetInputLayout(inputLayout.Get());
+        SetupGpuMesh(context, mesh.Get());
+        SetupShader(context, vs);
+        SetupShader(context, ps);
+        context.DrawIndexed(mesh.Get().IndexCount, 0, 0);
     }
 
     BasicObject::BasicObject(BasicRenderable renderable, Smoothness material, DirectX::XMMATRIX matrix)

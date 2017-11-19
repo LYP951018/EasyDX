@@ -10,9 +10,13 @@ namespace dx
         DirectX::XMFLOAT3 Pos, Normal, TangentU;
         DirectX::XMFLOAT2 TexCoord;
 
-        static gsl::span<const D3D11_INPUT_ELEMENT_DESC> GetLayout() noexcept;
+        static gsl::span<const D3D11_INPUT_ELEMENT_DESC> GetDesc() noexcept;
     };
 
+    template<>
+    struct is_vertex<SimpleVertex> : std::true_type {};
+
+    //TODO: is this a vertex? 
     struct alignas(16) InstancedData
     {
         DirectX::XMMATRIX World;
@@ -20,4 +24,5 @@ namespace dx
     };
 
     gsl::span<const D3D11_INPUT_ELEMENT_DESC> GetInstancedLayout() noexcept;
+
 }

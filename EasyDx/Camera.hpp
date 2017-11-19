@@ -27,6 +27,10 @@ namespace dx
         Camera();
 
         void Translate(float x, float y, float z, Space space = Space::LocalSpace) noexcept;
+        void Pitch(float angle);
+        void Yaw(float angle);
+        void RotateY(float angle);
+        void RotateX(float angle);
         void Rotate(DirectX::XMVECTOR rotation) noexcept;
         void SetProjection(float fov, float aspectRatio, float nearZ, float farZ) noexcept;
         void SetLookAt(const DirectX::XMFLOAT3& eye, const DirectX::XMFLOAT3& target, const DirectX::XMFLOAT3& up) noexcept;
@@ -36,6 +40,7 @@ namespace dx
         DirectX::XMMATRIX GetProjection() const noexcept;
         DirectX::XMFLOAT3 GetEyePos() const noexcept;
         void Walk(float d) noexcept;
+        void Strafe(float d) noexcept;
 
         Viewport MainViewport;
 

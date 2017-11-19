@@ -11,7 +11,7 @@ namespace dx
         { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 36, D3D11_INPUT_PER_VERTEX_DATA, 0 }
     };
 
-    gsl::span<const D3D11_INPUT_ELEMENT_DESC> SimpleVertex::GetLayout() noexcept
+    gsl::span<const D3D11_INPUT_ELEMENT_DESC> SimpleVertex::GetDesc() noexcept
     {
         return gsl::make_span(SimpleVertexLayout);
     }

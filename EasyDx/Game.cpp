@@ -17,20 +17,21 @@ namespace dx
     {
         MSG message = {};
         const auto fps = fps_;
-        auto destroyMainScene = gsl::finally([this]() noexcept {
-            mainScene_.reset();
-            nextSceneIndex_ = InvalidSceneIndex;
+        auto& switcher = Switcher();
+        auto destroyMainScene = gsl::finally([&]() noexcept {
+            switcher.Reset();
         });
         mainWindow_->Show();
-        auto& context3D = GetContext3D();
-        auto& context2D = GetContext2D();
+        auto& resources = Resources();
+        auto& context3D = resources.Context3D();
+        auto& context2D = resources.Context2D();
         //FIXME: 应该确保 WM_SIZE 在第一次 Window->Draw 之前。
         auto prevTime = std::chrono::steady_clock::now();
         using namespace std::chrono_literals;
         auto totalTime = 0ms;
         while (true)
         {
-            CheckAndSwitch();
+            switcher.CheckAndSwitch();
             if (PeekMessage(&message, {}, {}, {}, PM_REMOVE) != 0)
             {
                 if (message.message == WM_QUIT)
@@ -49,9 +50,9 @@ namespace dx
                     totalTime += delta;
                     UpdateArgs updateArgs{ delta, totalTime, context3D, context2D };
                     prevTime = nowTime;
-                    auto& mainScene = GetMainScene();
+                    auto& mainScene = switcher.MainScene();
                     mainScene.Update(updateArgs);
-                    GetMainWindow()->Present();
+                    MainWindow().Present();
                 }
             }
         }
@@ -62,43 +63,54 @@ namespace dx
         mainWindow_ = std::move(mainWindow);
     }
 
-    void Game::ReallySwitchToScene(std::uint32_t index, std::shared_ptr<void> arg)
+    void SceneSwitcher::ReallySwitchToScene(Game& game, std::uint32_t index, std::shared_ptr<void> arg)
     {
-        assert(index != InvalidSceneIndex);
         const auto it = sceneCreators_.find(index);
         if (it != sceneCreators_.end())
         {
             const auto creator = std::move(it->second);
             sceneCreators_.erase(it);
-            mainScene_ = creator(*this, std::move(arg));
+            mainScene_ = creator(game_, std::move(arg));
         }
         else
             throw std::logic_error{ "Invalid index!" };
     }
 
-    void Game::CheckAndSwitch()
+    void SceneSwitcher::CheckAndSwitch()
     {
-        if (nextSceneIndex_ != InvalidSceneIndex)
+        if (nextSceneIndex_)
         {
-            ReallySwitchToScene(nextSceneIndex_, std::move(nextSceneArg_));
-            nextSceneIndex_ = InvalidSceneIndex;
+            ReallySwitchToScene(game_, nextSceneIndex_.value(), std::move(nextSceneArg_));
+            nextSceneIndex_ = std::nullopt;
         }
     }
 
-    void Game::AddSceneCreator(std::uint32_t index, SceneCreator creator)
+    void SceneSwitcher::Reset()
+    {
+        mainScene_.reset();
+        nextSceneIndex_ = std::nullopt;
+    }
+
+    SceneSwitcher::SceneSwitcher(Game& game)
+        : game_{game}
+    {
+    }
+
+    void SceneSwitcher::AddSceneCreator(std::uint32_t index, SceneCreator creator)
     {
         sceneCreators_.insert(std::make_pair(index, std::move(creator)));
     }
 
-    void Game::WantToSwitchSceneTo(std::uint32_t index, std::shared_ptr<void> arg)
+    void SceneSwitcher::WantToSwitchSceneTo(std::uint32_t index, std::shared_ptr<void> arg)
     {
         nextSceneIndex_ = index;
         nextSceneArg_ = std::move(arg);
     }
 
     Game::Game(std::uint32_t fps)
-        : nextSceneIndex_{InvalidSceneIndex},
-        fps_{fps}
+        : fps_{fps},
+        predefined_{Resources().Device3D()},
+        sceneSwitcher_{*this}
     {
         TryHR(::CoInitialize(nullptr));
     }
@@ -114,7 +126,8 @@ namespace dx
         //Step 2: switch to the main scene, in which Scene::Start will be called, which may depend on MainWindow.
         //There always be event registration in Scene::Start, so we must ensure GameWindow::Show be executed after
         //Start.
-        game.ReallySwitchToScene(mainSceneIndex, std::move(arg));
+        auto& sceneSwitcher = game.Switcher();
+        sceneSwitcher.ReallySwitchToScene(game, mainSceneIndex, std::move(arg));
         //Step 3: run the game.
         game.Run();
     }
@@ -139,24 +152,24 @@ namespace dx
             D3D11_SDK_VERSION,
             device3D_.ReleaseAndGetAddressOf(),
             nullptr,
-            Context3D.ReleaseAndGetAddressOf()
+            context3D_.ReleaseAndGetAddressOf()
         ));
 
-        TryHR(device3D_->QueryInterface(DxgiDevice.ReleaseAndGetAddressOf()));
+        TryHR(device3D_->QueryInterface(dxgiDevice_.ReleaseAndGetAddressOf()));
 
         D2D1_FACTORY_OPTIONS options = {};
 #ifdef _DEBUG
         options.debugLevel = D2D1_DEBUG_LEVEL_INFORMATION;
 #endif
 
-        TryHR(D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, options, Factory2D.ReleaseAndGetAddressOf()));
-        TryHR(Factory2D->CreateDevice(DxgiDevice.Get(), Device2D.ReleaseAndGetAddressOf()));
-        TryHR(Device2D->CreateDeviceContext(D2D1_DEVICE_CONTEXT_OPTIONS_NONE, Context2D.ReleaseAndGetAddressOf()));
+        TryHR(D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, options, fanctory2D_.ReleaseAndGetAddressOf()));
+        TryHR(fanctory2D_->CreateDevice(dxgiDevice_.Get(), device2D_.ReleaseAndGetAddressOf()));
+        TryHR(device2D_->CreateDeviceContext(D2D1_DEVICE_CONTEXT_OPTIONS_NONE, context2D_.ReleaseAndGetAddressOf()));
 
         TryHR(DWriteCreateFactory(
             DWRITE_FACTORY_TYPE_SHARED,
             __uuidof(IDWriteFactory1),
-            reinterpret_cast<IUnknown**>(DwFactory.ReleaseAndGetAddressOf())));
+            reinterpret_cast<IUnknown**>(dwFactory_.ReleaseAndGetAddressOf())));
     }
 
     GraphicsResources::~GraphicsResources()

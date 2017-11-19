@@ -19,21 +19,27 @@ namespace dx
     template<typename Arg>
     class Event;
 
+    struct IEventHandle 
+    {
+        virtual ~IEventHandle();
+    };
+
     template<typename EventT>
-    struct EventHandle
+    struct EventHandle : IEventHandle
     {
     public:
         EventHandle(EventT& event, std::uint32_t handle)
             : event_{event}, handle_{handle}
         {}
 
-        ~EventHandle();
+        ~EventHandle() override;
 
     private:
         std::reference_wrapper<EventT> event_;
         std::uint32_t handle_;
     };
 
+    //TODO: enable_share_from_this & weak_ptr?
     template<typename Args>
     class Event
     {
@@ -47,11 +53,12 @@ namespace dx
         Event(const Event&) = delete;
         Event& operator=(const Event&) = delete;
 
-        HandleType Add(Handler handler)
+        [[nodiscard]]
+        std::unique_ptr<IEventHandle> Add(Handler handler)
         {
             const auto handle = AllocateHandle();
             handlers_.insert({handle, std::move(handler) });
-            return { *this, handle };
+            return std::make_unique<HandleType>(*this, handle);
         }
 
         void Remove(std::uint32_t handle)
@@ -93,15 +100,18 @@ namespace dx
         kLeft, kRight, kMiddle
     };
 
+    //应该在 Args 中携带尽可能多的按键信息，以防在执行 event 前按键状态发生变化。
     struct MouseEventArgs : EventArgs
     {
-        MouseButton Button;
         Point Position;
-    };
+        //MouseButton Button;
+        std::uint32_t KeyStates;
 
-    struct MouseMoveEventArgs : EventArgs
-    {
-        Point From, To;
+        bool Control() const noexcept;
+        bool Left() const noexcept;
+        bool Middle() const noexcept;
+        bool Right() const noexcept;
+        bool Shift() const noexcept;
     };
 
     struct ResizeEventArgs : EventArgs
@@ -118,6 +128,7 @@ namespace dx
     using KeyUpEvent = Event<KeyEventArgs&>;
     using MouseDownEvent = Event<MouseEventArgs&>;
     using MouseUpEvent = Event<MouseEventArgs&>;
+    using MouseMoveEvent = Event<MouseEventArgs&>;
     using WindowResizeEvent = Event<ResizeEventArgs&>;
     using DpiChangedEvent = Event<DpiChangedEventArgs&>;
 

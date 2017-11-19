@@ -42,9 +42,10 @@ namespace dx
             DirectX::XMFLOAT4 Emissive;
 
             float SpecularPower;
-            DirectX::XMFLOAT3 Padding;
+            std::int32_t UseTexture;
+            DirectX::XMFLOAT2 Padding;
 
-            Material(const Smoothness& smoothness) noexcept;
+            Material(const Smoothness& smoothness, bool useTexture) noexcept;
         };
     }
 }

@@ -155,6 +155,7 @@
     <ClInclude Include="CBStructs.hpp" />
     <ClInclude Include="Common.hpp" />
     <ClInclude Include="DXDef.hpp" />
+    <ClInclude Include="EventLoop.hpp" />
     <ClInclude Include="Events.hpp" />
     <ClInclude Include="FileSystemAlias.hpp" />
     <ClInclude Include="Game.hpp" />
@@ -187,6 +188,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="Events.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="GameWindow.cpp" />
     <ClCompile Include="Mesh.cpp" />
