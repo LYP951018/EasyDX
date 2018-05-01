@@ -152,7 +152,7 @@ TessQuad MakeQuad(ID3D11Device& device, const dx::PredefinedResources& predefine
 
 MainScene::MainScene(dx::Game& game, dx::Rc<void> args)
     : dx::Scene{game},
-    quad_{std::make_unique<TessQuad>(MakeQuad(game.Resources().Device3D(), game.Predefined()))},
+    quad_{std::make_unique<TessQuad>(MakeQuad(game.IndependentResources().Device3D(), game.Predefined()))},
     light_{
         {1.0f, 0.0f, 0.0f, 1.0f},
         { -1.0f, -1.5f, 3.5f },
@@ -170,7 +170,7 @@ MainScene::~MainScene() {}
 void MainScene::Update(const dx::UpdateArgs& args)
 {
     const auto& game = GetGame();
-    auto& resources = game.Resources();
+    auto& resources = game.IndependentResources();
     game.MainWindow().Clear(DirectX::Colors::White);
     auto& context = args.Context3D;
     const auto& camera = GetMainCamera();

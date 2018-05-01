@@ -1,6 +1,5 @@
-#include "pch.hpp"
+#include "../pch.hpp"
 #include "Shaders.hpp"
-#include "Game.hpp"
 #include <gsl/gsl_assert>
 #include <d3d11.h>
 #include <D3Dcompiler.h>
@@ -8,7 +7,7 @@
 namespace dx
 {
 #define CREATE_SHADER_DEFINE(shaderName) \
-    wrl::ComPtr<ID3D11##shaderName> Create##shaderName(ID3D11Device& device, gsl::span<const std::byte> byteCode)\
+    wrl::ComPtr<ID3D11##shaderName> Create##shaderName(::ID3D11Device& device, gsl::span<const std::byte> byteCode)\
     {\
         wrl::ComPtr<ID3D11##shaderName> shader;\
         TryHR(device.Create##shaderName(byteCode.data(), byteCode.size(), nullptr, shader.GetAddressOf()));\
@@ -39,4 +38,6 @@ namespace dx
         }
         return shaderBlob;
     }
+
+   
 }

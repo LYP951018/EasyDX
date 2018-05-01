@@ -1,9 +1,6 @@
 #pragma once
 
-#include "DXDef.hpp"
 #include "Events.hpp"
-#include <optional>
-#include <chrono>
 
 namespace dx
 {
@@ -12,8 +9,7 @@ namespace dx
 
     struct UpdateArgs
     {
-        std::chrono::milliseconds DeltaTime;
-        std::chrono::milliseconds TotalTime;
+        Duration Delta;
         ID3D11DeviceContext& Context3D;
         ID2D1DeviceContext& Context2D;
     };
@@ -33,8 +29,8 @@ namespace dx
     protected:
         virtual void Update(const UpdateArgs& updateArgs);
 
-        template<typename T, typename F>
-        void RegisterEvent(Event<T>& event, F&& callback)
+        template<typename...Args, typename F>
+        void RegisterEvent(Events<Args...>& event, F&& callback)
         {
             eventHandles_.push_back(event.Add(std::forward<F>(callback)));
         }

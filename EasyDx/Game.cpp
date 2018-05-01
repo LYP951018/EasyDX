@@ -2,60 +2,53 @@
 #include "Game.hpp"
 #include "GameWindow.hpp"
 #include "Scene.hpp"
-#include "BasicVS.hpp"
-#include "BasicPS.hpp"
-#include <chrono>
+#include "EventLoop.hpp"
 #include <stdexcept>
 #include <gsl/gsl_assert>
 #include <d3d11.h>
 #include <d2d1_1.h>
 #include <dwrite_1.h>
+#include <thread>
 
 namespace dx
 {
     void Game::Run()
     {
-        MSG message = {};
         const auto fps = fps_;
+        const auto interval = std::chrono::microseconds{ 1000 / fps };
+        auto& loop = EventLoop::GetInstanceInCurrentThread();
+        TimePoint prev = Clock::now();
         auto& switcher = Switcher();
-        auto destroyMainScene = gsl::finally([&]() noexcept {
-            switcher.Reset();
-        });
-        mainWindow_->Show();
-        auto& resources = Resources();
-        auto& context3D = resources.Context3D();
-        auto& context2D = resources.Context2D();
-        //FIXME: 应该确保 WM_SIZE 在第一次 Window->Draw 之前。
-        auto prevTime = std::chrono::steady_clock::now();
-        using namespace std::chrono_literals;
-        auto totalTime = 0ms;
-        while (true)
-        {
+        auto& independent = IndependentResources();
+        auto& context3D = independent.Context3D();
+        auto& context2D = independent.Context2D();
+        MainWindow().Show();
+        loop.Run([&](WindowEventArgsPack e) {
             switcher.CheckAndSwitch();
-            if (PeekMessage(&message, {}, {}, {}, PM_REMOVE) != 0)
+            if (std::holds_alternative<IdleEventArgs>(e.Arg))
             {
-                if (message.message == WM_QUIT)
+                const auto now = Clock::now();
+                const auto delta = now - prev;
+                if (delta >= interval)
                 {
-                    break;
+                    UpdateArgs args{
+                        delta,
+                        context3D,
+                        context2D
+                    };
+                    prev = now;
+                    switcher.MainScene().Update(args);
                 }
-                TranslateMessage(&message);
-                DispatchMessage(&message);
+                else
+                {
+                    std::this_thread::yield();
+                }
             }
             else
             {
-                const auto nowTime = std::chrono::steady_clock::now();
-                const auto delta = (std::max)(std::chrono::duration_cast<std::chrono::milliseconds>(nowTime - prevTime), 0ms);
-                if (delta >= std::chrono::milliseconds(1000 / fps))
-                {
-                    totalTime += delta;
-                    UpdateArgs updateArgs{ delta, totalTime, context3D, context2D };
-                    prevTime = nowTime;
-                    auto& mainScene = switcher.MainScene();
-                    mainScene.Update(updateArgs);
-                    MainWindow().Present();
-                }
+                UnpackMessage(std::move(e));
             }
-        }
+        });
     }
 
     void Game::SetUp(std::unique_ptr<GameWindow> mainWindow)
@@ -63,7 +56,103 @@ namespace dx
         mainWindow_ = std::move(mainWindow);
     }
 
-    void SceneSwitcher::ReallySwitchToScene(Game& game, std::uint32_t index, std::shared_ptr<void> arg)
+    struct MessageDispatcher
+    {
+        Game& Game_;
+        GameWindow* Window;
+
+        void operator()(KeyEventArgs args) noexcept
+        {
+            switch (args.State)
+            {
+            case ElementState::Pressed:
+                Game_.KeyDown(Window, args);
+                break;
+            case ElementState::Released:
+                Game_.KeyUp(Window, args);
+                break;
+            }
+        }
+
+        void operator()(MouseEventArgs args) noexcept
+        {
+            switch (args.State)
+            {
+            case ElementState::Pressed:
+                Game_.MouseDown(Window, args);
+                break;
+            case ElementState::Released:
+                Game_.MouseUp(Window, args);
+                break;
+            }
+        }
+
+        void operator()(CursorMoved args) noexcept
+        {
+            Game_.MouseMove(Window, args);
+        }
+
+        void operator()(DpiChangedEventArgs args) noexcept
+        {
+            Window->PrepareForDpiChanging(args.NewDpiX, args.NewDpiY, args.NewRect);
+            Game_.DpiChanged(Window, args);
+        }
+
+        void operator()(ResizeEventArgs args) noexcept
+        {
+            PrepareGraphicsForResizing(args.NewSize);
+            Game_.WindowResize(Window, args);
+        }
+
+        template<typename T>
+        void operator()(T)
+        {
+            assert(false);
+        }
+
+    private:
+        void PrepareGraphicsForResizing(Size newSize)
+        {
+            auto& independent = Game_.IndependentResources();
+            auto& context3D = independent.Context3D();
+            auto& device3D = independent.Device3D();
+            //auto& debug = independent.D3DDebug();
+            auto& dependentGraphics = Game_.DependentResources();
+            auto[newWidth, newHeight] = newSize;
+
+            //first time resizement
+            if (!dependentGraphics)
+            {
+                dependentGraphics.emplace(dx::DependentGraphics{
+                    dx::SwapChain {
+                        independent.Device3D(),
+                        *Window,
+                        dx::SwapChainOptions{}
+                    },
+                    dx::DepthStencil(independent.Device3D(),
+                        newWidth, newHeight)
+                    });
+                return;
+            }
+            auto&[swapChain, depthStencil] = dependentGraphics.value();
+            ID3D11RenderTargetView* nullViews[] = { nullptr };
+            context3D.OMSetRenderTargets(gsl::narrow<UINT>(std::size(nullViews)), nullViews, {});
+            depthStencil.Reset();
+            swapChain.Reset();
+            context3D.Flush();
+            //debug.ReportLiveDeviceObjects(D3D11_RLDO_FLAGS::D3D11_RLDO_DETAIL);
+            swapChain.Resize(device3D, newWidth, newHeight);
+            //TODO: format should be cached.
+            depthStencil = DepthStencil(device3D, newWidth, newHeight);
+        }
+    };
+
+    void Game::UnpackMessage(WindowEventArgsPack event)
+    {
+        std::visit(MessageDispatcher{ *this, event.Window }, std::move(event.Arg));
+    }
+
+    void SceneSwitcher::ReallySwitchToScene([[maybe_unused]] Game& game, std::uint32_t index, std::shared_ptr<void> arg)
     {
         const auto it = sceneCreators_.find(index);
         if (it != sceneCreators_.end())
@@ -107,9 +196,13 @@ namespace dx
         nextSceneArg_ = std::move(arg);
     }
 
-    Game::Game(std::uint32_t fps)
+    IndependentGraphics::~IndependentGraphics()
+    {}
+
+    Game::Game(IndependentGraphics graphics, std::uint32_t fps)
         : fps_{fps},
-        predefined_{Resources().Device3D()},
+        grahicsResources_{std::move(graphics)},
+        predefined_{IndependentResources().Device3D()},
         sceneSwitcher_{*this}
     {
         TryHR(::CoInitialize(nullptr));
@@ -132,7 +225,7 @@ namespace dx
         game.Run();
     }
 
-    GraphicsResources::GraphicsResources()
+    IndependentGraphics::IndependentGraphics()
     {
         UINT creationFlags = {};
 #ifdef _DEBUG
@@ -148,7 +241,7 @@ namespace dx
             nullptr,
             creationFlags,
             featureLevel,
-            std::size(featureLevel),
+            gsl::narrow<UINT>(std::size(featureLevel)),
             D3D11_SDK_VERSION,
             device3D_.ReleaseAndGetAddressOf(),
             nullptr,
@@ -156,6 +249,7 @@ namespace dx
         ));
 
         TryHR(device3D_->QueryInterface(dxgiDevice_.ReleaseAndGetAddressOf()));
+        TryHR(device3D_->QueryInterface(d3dDebug_.ReleaseAndGetAddressOf()));
 
         D2D1_FACTORY_OPTIONS options = {};
 #ifdef _DEBUG
@@ -170,9 +264,5 @@ namespace dx
             DWRITE_FACTORY_TYPE_SHARED,
             __uuidof(IDWriteFactory1),
             reinterpret_cast<IUnknown**>(dwFactory_.ReleaseAndGetAddressOf())));
-    }
-
-    GraphicsResources::~GraphicsResources()
-    {
     }
 }

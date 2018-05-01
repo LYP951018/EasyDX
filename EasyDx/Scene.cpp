@@ -29,9 +29,9 @@ namespace dx
     void Scene::AddBasicEvents()
     {
         auto& camera = GetMainCamera();
-        RegisterEvent(GetGame().WindowResize, [&](dx::ResizeEventArgs& e) {
+        RegisterEvent(GetGame().WindowResize, [&](GameWindow*, dx::ResizeEventArgs& e) {
             camera.SetProjection(DirectX::XM_PIDIV4, e.NewSize.GetAspectRatio(), 0.01f, 1000.f);
-            camera.MainViewport = {
+            camera.Viewport() = {
                 0.f, 0.f, static_cast<float>(e.NewSize.Width), static_cast<float>(e.NewSize.Height),
                 0.f, 1.f
             };
@@ -40,15 +40,15 @@ namespace dx
 
     void Scene::AddCameraMovement()
     {
-        RegisterEvent(game_.MouseDown, [&](dx::MouseEventArgs& args) {
-            if (args.Left())
+        RegisterEvent(game_.MouseDown, [&](GameWindow*, dx::MouseEventArgs& args) {
+            if (args.KeyStates_.Left())
             {
                 oldPoint_ = args.Position;
             }
         });
 
-        RegisterEvent(game_.MouseMove, [&](dx::MouseEventArgs& args) {
-            if (oldPoint_ && args.Left())
+        RegisterEvent(game_.MouseMove, [&](GameWindow*, dx::CursorMoved& args) {
+            if (oldPoint_ && args.KeyStates_.Left())
             {
                 auto& oldPos = oldPoint_.value();
                 const auto newPos = args.Position;
@@ -61,7 +61,7 @@ namespace dx
             }
         });
 
-        RegisterEvent(game_.KeyDown, [&](dx::KeyEventArgs& args) {
+        RegisterEvent(game_.KeyDown, [&](GameWindow*, dx::KeyEventArgs& args) {
             auto& camera = GetMainCamera();
             switch (args.Key)
             {
@@ -82,7 +82,7 @@ namespace dx
             }
         });
 
-        RegisterEvent(game_.MouseUp, [&](dx::MouseEventArgs& args) {
+        RegisterEvent(game_.MouseUp, [&](GameWindow*, dx::MouseEventArgs&) {
             oldPoint_ = std::nullopt;
         });
     }

@@ -2,7 +2,7 @@
 
 #include "Predefined.hpp"
 #include "Events.hpp"
-#include <optional>
+#include "DependentGraphics.hpp"
 
 namespace dx
 {
@@ -12,14 +12,9 @@ namespace dx
 
     using SceneCreator = std::function<std::unique_ptr<Scene>(Game&, std::shared_ptr<void>)>;
 
-    struct GraphicsResources
+    struct IndependentGraphics : Noncopyable
     {
     private:
-        GraphicsResources();
-        ~GraphicsResources();
-
-        friend class Game;
-
         wrl::ComPtr<ID3D11Device> device3D_;
         wrl::ComPtr<ID3D11DeviceContext> context3D_;
         wrl::ComPtr<ID2D1Factory1> fanctory2D_;
@@ -27,7 +22,12 @@ namespace dx
         wrl::ComPtr<ID2D1DeviceContext> context2D_;
         wrl::ComPtr<IDXGIDevice> dxgiDevice_;
         wrl::ComPtr<IDWriteFactory1> dwFactory_;
+        wrl::ComPtr<ID3D11Debug> d3dDebug_;
+
     public:
+        IndependentGraphics();
+
+        IndependentGraphics(IndependentGraphics&&) = default;
 
         ID3D11Device& Device3D() const { return Ref(device3D_); }
         ID3D11DeviceContext& Context3D() const { return Ref(context3D_); }
@@ -36,6 +36,9 @@ namespace dx
         ID2D1DeviceContext& Context2D() const { return Ref(context2D_); }
         IDXGIDevice& DxgiDevice() const { return Ref(dxgiDevice_); }
         IDWriteFactory1& DwFactory() const { return Ref(dwFactory_); }
+        ID3D11Debug& D3DDebug() const { return Ref(d3dDebug_); }
+
+        ~IndependentGraphics();
     };
 
     class SceneSwitcher
@@ -79,7 +82,7 @@ namespace dx
         friend void RunGame(Game&, std::unique_ptr<GameWindow>, std::uint32_t, std::shared_ptr<void> arg);
 
     public:
-        Game(std::uint32_t fps);
+        Game(IndependentGraphics independent, std::uint32_t fps);
         ~Game();
 
         KeyDownEvent KeyDown;
@@ -91,7 +94,8 @@ namespace dx
         DpiChangedEvent DpiChanged;
 
         GameWindow& MainWindow() const { return *mainWindow_; }
-        const GraphicsResources& Resources() const noexcept { return grahicsResources_; }
+        const IndependentGraphics& IndependentResources() const noexcept { return grahicsResources_; }
+        std::optional<DependentGraphics>& DependentResources() noexcept { return dependentGraphics_; }
         const PredefinedResources& Predefined() const noexcept { return predefined_; }
         SceneSwitcher& Switcher() noexcept { return sceneSwitcher_; }
         const SceneSwitcher& Switcher() const noexcept { return sceneSwitcher_; }
@@ -99,11 +103,14 @@ namespace dx
     private:
         void Run();
         void SetUp(std::unique_ptr<GameWindow> mainWindow);
+        void UnpackMessage(WindowEventArgsPack event);
 
-        const GraphicsResources grahicsResources_;
+        const IndependentGraphics grahicsResources_;
+        //this guy will be delayed to the first WM_SIZE, so we mark it as optional
+        std::optional<DependentGraphics> dependentGraphics_;
         const PredefinedResources predefined_;
         SceneSwitcher sceneSwitcher_;
-
+        //TODO: only one window?
         std::unique_ptr<GameWindow> mainWindow_;
 
         std::uint32_t fps_;

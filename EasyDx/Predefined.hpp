@@ -1,10 +1,12 @@
 #pragma once
 
-#include "Shaders.hpp"
+#include "Resources/Shaders.hpp"
 #include "CBStructs.hpp"
-#include "Mesh.hpp"
 #include "Material.hpp"
 #include "Transformation.hpp"
+#include "Light.hpp"
+#include "Resources/Buffers.hpp"
+#include "Vertex.hpp"
 
 namespace dx
 {
@@ -33,7 +35,7 @@ namespace dx
     }
 
     using BasicLightingPixelShader = PixelShader<cb::GlobalLightingInfo, cb::PerObjectLightingInfo>;
-    using BasicLightingVertexShader = VertexShader<SimpleVertex, cb::BasicCb>;
+    using BasicLightingVertexShader = VertexShader<cb::BasicCb>;
 
     class PredefinedResources
     {
@@ -101,7 +103,8 @@ namespace dx
     struct BasicRenderable
     {
         wrl::ComPtr<ID3D11InputLayout> InputLayout;
-        GpuMesh Mesh;
+        ImmutableVertexBuffer<SimpleVertex> VertexBuffer;
+        ImmutableIndexBuffer IndexBuffer;
         BasicLightingVertexShader VS;
         BasicLightingPixelShader PS;
         wrl::ComPtr<ID3D11ShaderResourceView> Texture;

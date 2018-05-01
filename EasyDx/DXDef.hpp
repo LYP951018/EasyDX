@@ -21,6 +21,7 @@ struct ID3D11SamplerState;
 struct ID3D11DepthStencilState;
 struct ID3D11BlendState;
 struct ID3D11RasterizerState;
+struct ID3D11DeviceChild;
 
 struct ID2D1Factory1;
 struct ID2D1Device;
@@ -34,7 +35,11 @@ struct IDWriteFactory1;
 struct IDWriteTextLayout1;
 struct IDWriteTextFormat;
 
+struct IDXGISwapChain;
+struct IDXGIFactory;
+
 struct D3D11_INPUT_ELEMENT_DESC;
+struct D3D11_VIEWPORT;
 
 namespace dx
 {
@@ -58,6 +63,29 @@ namespace dx
         UnorderedAccess = 0x80,
         Decoder = 0x200,
         VideoEncoder = 0x400
+    };
+
+    //TODO: Fill them all.
+    enum class DxgiFormat
+    {
+        //A four-component, 128-bit floating-point format that supports 32 bits per channel including alpha.
+        R32G32B32A32Float = 2,
+        //A three-component, 96-bit floating-point format that supports 32 bits per color channel.
+        R32G32B32Float = 6,
+        //A single-component, 16-bit unsigned-integer format that supports 16 bits for the red channel.
+        R16UInt = 57,
+        B8G8R8A8UNorm = 87,
+        //A 32-bit z-buffer format that supports 24 bits for depth and 8 bits for stencil.
+        Depth24UNormStencilS8UInt = 45
+    };
+
+    template<DxgiFormat>
+    struct dxgi_format_map;
+
+    template<>
+    struct dxgi_format_map<DxgiFormat::R16UInt>
+    {
+        using type = std::uint16_t;
     };
 }
 

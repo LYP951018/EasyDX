@@ -4,29 +4,29 @@
 
 namespace dx
 {
-    bool MouseEventArgs::Control() const noexcept
+    bool KeyStates::Control() const noexcept
     {
-        return KeyStates & MK_CONTROL;
+        return KeyStateBits & MK_CONTROL;
     }
 
-    bool MouseEventArgs::Left() const noexcept
+    bool KeyStates::Left() const noexcept
     {
-        return KeyStates & MK_LBUTTON;
+        return KeyStateBits & MK_LBUTTON;
     }
 
-    bool MouseEventArgs::Middle() const noexcept
+    bool KeyStates::Middle() const noexcept
     {
-        return KeyStates & MK_MBUTTON;
+        return KeyStateBits & MK_MBUTTON;
     }
 
-    bool MouseEventArgs::Right() const noexcept
+    bool KeyStates::Right() const noexcept
     {
-        return KeyStates & MK_RBUTTON;
+        return KeyStateBits & MK_RBUTTON;
     }
 
-    bool MouseEventArgs::Shift() const noexcept
+    bool KeyStates::Shift() const noexcept
     {
-        return KeyStates & MK_SHIFT;
+        return KeyStateBits & MK_SHIFT;
     }
 
     IEventHandle::~IEventHandle()

@@ -1,6 +1,6 @@
 #include "pch.hpp"
 #include "Camera.hpp"
-#include "Buffers.hpp"
+#include "Resources/Buffers.hpp"
 #include <d3d11.h>
 #include <Windows.h>
 
@@ -20,7 +20,8 @@ namespace dx
         isViewDirty_{true},
         rotation_{0.f, 0.f, 0.f, 1.f},
         position_{0.f, 0.f, 0.f, 1.f},
-        data_{aligned_unique<Internal::CameraData>()}
+        data_{aligned_unique<Internal::CameraData>()},
+        viewport_{std::make_unique<D3D11_VIEWPORT>()}
     {
     }
 

@@ -5,7 +5,7 @@
 #include <malloc.h>
 #endif
 
-namespace stlext
+namespace dx
 {
     void* AlignedAlloc(std::size_t size, std::size_t align)
     {

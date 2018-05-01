@@ -1,23 +1,13 @@
-#pragma once
+ï»¿#pragma once
 
-#include <functional>
 #include <unordered_map>
-#include <cstdint>
-#include <type_traits>
+#include <variant>
+#include <chrono>
 #include "Misc.hpp"
 
 namespace dx
 {
     class GameWindow;
-
-    struct EventArgs
-    {
-        bool IsHandled = false;
-        GameWindow* Window = {};
-    };
-
-    template<typename Arg>
-    class Event;
 
     struct IEventHandle 
     {
@@ -39,25 +29,47 @@ namespace dx
         std::uint32_t handle_;
     };
 
-    //TODO: enable_share_from_this & weak_ptr?
-    template<typename Args>
-    class Event
+    enum class ControlFlow
     {
-        static_assert(std::is_base_of_v<EventArgs, std::remove_reference_t<Args>>, "Args should be base of EventArgs");
+        kContinue,
+        kBreak
+    };
+
+    //TODO: enable_share_from_this & weak_ptr?
+    template<typename... Args>
+    class Events
+    {
     public:
-        using Handler = std::function<void(Args)>;
-        using HandleType = EventHandle<Event<Args>>;
+        using Handler = std::function<ControlFlow(Args...)>;
+        using HandleType = EventHandle<Events>;
 
-        Event() = default;
+        Events() = default;
 
-        Event(const Event&) = delete;
-        Event& operator=(const Event&) = delete;
+        Events(const Events&) = delete;
+        Events& operator=(const Events&) = delete;
 
+        //TODO: æ”¯æŒå°‘å‚æ•°çš„æƒ…å†µã€‚
+        template<typename Func>
         [[nodiscard]]
-        std::unique_ptr<IEventHandle> Add(Handler handler)
+        std::unique_ptr<IEventHandle> Add(Func func)
         {
             const auto handle = AllocateHandle();
-            handlers_.insert({handle, std::move(handler) });
+            using RetType = std::invoke_result_t<Func, Args...>;
+            if constexpr (std::is_same_v<RetType, void>)
+            {
+                handlers_.insert({ handle, [func = std::move(func)](Args&&... args) {
+                    func(exforward(args)...);
+                    return ControlFlow::kContinue;
+                } });
+            }
+            else if constexpr(std::is_same_v<RetType, ControlFlow>)
+            {
+                handlers_.insert({ handle, std::move(func) });
+            }
+            else
+            {
+                static_assert(always_false<Func>::value);
+            }
             return std::make_unique<HandleType>(*this, handle);
         }
 
@@ -66,11 +78,14 @@ namespace dx
             handlers_.erase(handle);
         }
 
-        void operator()(Args args) const
+        void operator()(Args... args) const
         {
             for (auto& kv : handlers_)
             {
-                kv.second(std::forward<Args>(args));
+                if (kv.second(args...) == ControlFlow::kBreak)
+                {
+                    break;
+                }
             }
         }
 
@@ -90,22 +105,23 @@ namespace dx
         event_.get().Remove(handle_);
     }
 
-    struct KeyEventArgs : EventArgs
-    {
-        std::uint32_t Key;
-    };
+    template<typename WindowArg>
+    using WindowEvents = Events<GameWindow*, WindowArg>;
 
     enum class MouseButton
     {
         kLeft, kRight, kMiddle
     };
 
-    //Ó¦¸ÃÔÚ Args ÖĞĞ¯´ø¾¡¿ÉÄÜ¶àµÄ°´¼üĞÅÏ¢£¬ÒÔ·ÀÔÚÖ´ĞĞ event Ç°°´¼ü×´Ì¬·¢Éú±ä»¯¡£
-    struct MouseEventArgs : EventArgs
+    enum class ElementState
     {
-        Point Position;
-        //MouseButton Button;
-        std::uint32_t KeyStates;
+        Pressed,
+        Released
+    };
+
+    struct KeyStates
+    {
+        std::uint32_t KeyStateBits;
 
         bool Control() const noexcept;
         bool Left() const noexcept;
@@ -114,23 +130,64 @@ namespace dx
         bool Shift() const noexcept;
     };
 
-    struct ResizeEventArgs : EventArgs
+    //åº”è¯¥åœ¨ Args ä¸­æºå¸¦å°½å¯èƒ½å¤šçš„æŒ‰é”®ä¿¡æ¯ï¼Œä»¥é˜²åœ¨æ‰§è¡Œ event å‰æŒ‰é”®çŠ¶æ€å‘ç”Ÿå˜åŒ–ã€‚
+    struct MouseEventArgs
+    {
+        Point Position;
+        ElementState State;
+        MouseButton Button;
+        KeyStates KeyStates_;
+    };
+
+    struct CursorMoved
+    {
+        Point Position;
+        KeyStates KeyStates_;
+    };
+
+    struct KeyEventArgs
+    {
+        std::uint32_t Key;
+        ElementState State;
+        KeyStates KeyStates_;
+    };
+
+    struct ResizeEventArgs
     {
         Size NewSize;
     };
 
-    struct DpiChangedEventArgs : EventArgs
+    struct DpiChangedEventArgs
     {
         std::uint32_t NewDpiX, NewDpiY;
+        Rect NewRect;
     };
 
-    using KeyDownEvent = Event<KeyEventArgs&>;
-    using KeyUpEvent = Event<KeyEventArgs&>;
-    using MouseDownEvent = Event<MouseEventArgs&>;
-    using MouseUpEvent = Event<MouseEventArgs&>;
-    using MouseMoveEvent = Event<MouseEventArgs&>;
-    using WindowResizeEvent = Event<ResizeEventArgs&>;
-    using DpiChangedEvent = Event<DpiChangedEventArgs&>;
+    struct QuitEventArgs {};
 
-    using WindowResizeEventHandle = dx::EventHandle<dx::WindowResizeEvent>;
+    struct IdleEventArgs 
+    {
+        //duration since last idle.
+        //Duration duration;
+    };
+
+#define DefWindowEvent(name, arg) using name = WindowEvents<arg&>
+
+    DefWindowEvent(KeyDownEvent, KeyEventArgs);
+    DefWindowEvent(KeyUpEvent, KeyEventArgs);
+    DefWindowEvent(MouseDownEvent, MouseEventArgs);
+    DefWindowEvent(MouseUpEvent, MouseEventArgs);
+    DefWindowEvent(MouseMoveEvent, CursorMoved);
+    DefWindowEvent(WindowResizeEvent, ResizeEventArgs);
+    DefWindowEvent(DpiChangedEvent, DpiChangedEventArgs);
+
+    using WindowEventArgs = std::variant<KeyEventArgs, MouseEventArgs, CursorMoved, ResizeEventArgs, DpiChangedEventArgs, QuitEventArgs, IdleEventArgs>;
+
+    struct WindowEventArgsPack
+    {
+        GameWindow* Window;
+        WindowEventArgs Arg;
+    };
+
+#undef DefWindowEvent
 }

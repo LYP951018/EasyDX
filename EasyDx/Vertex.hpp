@@ -10,7 +10,7 @@ namespace dx
         DirectX::XMFLOAT3 Pos, Normal, TangentU;
         DirectX::XMFLOAT2 TexCoord;
 
-        static gsl::span<const D3D11_INPUT_ELEMENT_DESC> GetDesc() noexcept;
+        static gsl::span<const D3D11_INPUT_ELEMENT_DESC, 4> GetDesc() noexcept;
     };
 
     template<>
@@ -24,5 +24,4 @@ namespace dx
     };
 
     gsl::span<const D3D11_INPUT_ELEMENT_DESC> GetInstancedLayout() noexcept;
-
 }

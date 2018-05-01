@@ -1,7 +1,5 @@
 #pragma once
 
-#include "FileSystemAlias.hpp"
-
 namespace dx
 {
     wrl::ComPtr<ID3D11Texture2D> Load2DTexFromWicFile(ID3D11Device& device, const fs::path& filePath, ResourceUsage usage = ResourceUsage::Default);

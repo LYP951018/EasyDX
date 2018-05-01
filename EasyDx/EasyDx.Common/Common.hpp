@@ -1,11 +1,13 @@
-﻿#pragma once
+#pragma once
 
-#include "DXDef.hpp"
-#include "AlignedAllocator.hpp"
-#include "FileSystemAlias.hpp"
-#include <string>
-#include <wrl/client.h>
+#include <experimental/filesystem>
+#include <wrl.h>
+#include <memory>
+#include <string_view>
+#include <cstddef>
+#include <gsl/span>
 
+namespace fs = std::experimental::filesystem;
 namespace wrl = Microsoft::WRL;
 
 struct tagRECT;
@@ -13,7 +15,7 @@ struct tagRECT;
 namespace dx
 {
     template<typename T>
-    using Ptr = T*;
+    using Ptr = T * ;
 
     template<typename T>
     using Rc = std::shared_ptr<T>;
@@ -24,11 +26,14 @@ namespace dx
     template<typename T>
     using Box = std::unique_ptr<T>;
 
-    std::string ws2s(const std::wstring& wstr);
-    std::wstring s2ws(const std::string& str);
+    std::string ws2s(std::wstring_view wstr);
+    std::wstring s2ws(std::string_view str);
 
     [[noreturn]]
     void ThrowHRException(long hr);
+
+    [[noreturn]]
+    void ThrowWin32();
 
     void TryHR(long hr);
 
@@ -64,7 +69,7 @@ namespace dx
     }
 
     template<std::size_t N>
-    gsl::span<std::byte> AsBytes(unsigned char(& arr)[N])
+    gsl::span<std::byte> AsBytes(unsigned char(&arr)[N])
     {
         const auto parr = reinterpret_cast<std::byte*>(arr);
         return gsl::make_span(parr, N);
@@ -81,8 +86,8 @@ namespace dx
     gsl::span<const Ptr<T>, N> ComPtrsCast(gsl::span<const wrl::ComPtr<T>, N> comPtrs) noexcept
     {
         static_assert(std::is_standard_layout_v<wrl::ComPtr<T>>, "wrl::ComPtr<T> should be a standard layout class.");
-        static_assert(sizeof(wrl::ComPtr<T>) == Ptr<T>, "wrl::ComPtr<T> should have the same size as the raw pointer.");
-        const auto start = comPtrs.data();
+        static_assert(sizeof(wrl::ComPtr<T>) == sizeof(Ptr<T>), "wrl::ComPtr<T> should have the same size as the raw pointer.");
+        const auto start = reinterpret_cast<const Ptr<T>*>(comPtrs.data());
         const auto last = start + comPtrs.size();
         return { start, last };
     }
@@ -91,10 +96,11 @@ namespace dx
     gsl::span<Ptr<T>, N> ComPtrsCast(gsl::span<wrl::ComPtr<T>, N> comPtrs) noexcept
     {
         static_assert(std::is_standard_layout_v<wrl::ComPtr<T>>, "wrl::ComPtr<T> should be a standard layout class.");
-        static_assert(sizeof(wrl::ComPtr<T>) == Ptr<T>, "wrl::ComPtr<T> should have the same size as the raw pointer.");
-        const auto start = comPtrs.data();
+        static_assert(sizeof(wrl::ComPtr<T>) == sizeof(Ptr<T>), "wrl::ComPtr<T> should have the same size as the raw pointer.");
+        const auto start = reinterpret_cast<Ptr<T>*>(comPtrs.data());
         const auto last = start + comPtrs.size();
         return { start, last };
+
     }
 
     struct Rect
@@ -102,23 +108,6 @@ namespace dx
         std::uint32_t LeftTopX, LeftTopY, Width, Height;
         static Rect FromRECT(const tagRECT& win32Rect) noexcept;
     };
-
-    template<typename T>
-    using aligned_unique_ptr = std::unique_ptr<T, void(&)(void*)>;
-
-    template<typename T>
-    aligned_unique_ptr<T> aligned_unique()
-    {
-        return { static_cast<std::add_pointer_t<T>>(stlext::AlignedAlloc(sizeof(T), alignof(T))), stlext::AlignedFree };
-    }
-
-    template<typename T>
-    aligned_unique_ptr<T[]> aligned_unique(std::size_t n)
-    {
-        return { static_cast<std::add_pointer_t<T>>(stlext::AlignedAlloc(sizeof(T) * n, alignof(T))), stlext::AlignedFree };
-    }
-
-    gsl::span<std::byte> BlobToSpan(ID3D10Blob& blob) noexcept;
 
     struct Noncopyable
     {
@@ -140,23 +129,37 @@ namespace dx
     auto MakeUnique(Args&&... args)->std::enable_if_t<std::is_constructible_v<T, Args&&...>,
         std::unique_ptr<T>>
     {
-        return std::unique_ptr<T>(std::forward<Args>(args)...);
+        return std::make_unique<T>(std::forward<Args>(args)...);
     }
 
     template<typename... Args>
     void Swallow(Args&&...) noexcept {}
-
-    using TexPair = std::pair<wrl::ComPtr<ID3D11Texture2D>, wrl::ComPtr<ID3D11ShaderResourceView>>;
 
     template<typename T>
     struct is_vertex : std::false_type {};
 
     template<typename T>
     constexpr bool is_vertex_v = is_vertex<T>::value;
+
+    template<typename>
+    struct always_false : std::false_type {};
+
+    template<typename T, typename... Args>
+    using is_one_of = std::disjunction<std::is_same<T, Args>...>;
+
+    template<typename T, typename... Args>
+    inline constexpr bool is_one_of_v = is_one_of<T, Args...>::value;
+
+    using Clock = std::chrono::high_resolution_clock;
+    using Duration = Clock::duration;
+    using TimePoint = Clock::time_point;
 }
 
-namespace stlext
-{
-    template<typename T>
-    using AlignedVec = std::vector<T, AlignAllocator<T>>;
-}
+#define exforward(v) std::forward<decltype(v)>(v)
+
+#define CONCAT_(x, y) x##y
+#define CONCAT(x, y) CONCAT_(x, y)
+
+#define DEF_INLINE_VAR_SINGLE(name) \
+template<typename T>    \
+inline constexpr bool CONCAT(name, _v) = name<T>::value

@@ -1,4 +1,4 @@
-#include <EasyDx/One.hpp>
+#include "pch.hpp"
 #include "MainScene.hpp"
 #include <DirectXColors.h>
 #include <numeric>
@@ -6,7 +6,7 @@
 MainScene::MainScene(dx::Game& game, dx::Rc<void> args)
     : Scene{game}
 {
-    auto& resources = game.Resources();
+    auto& resources = game.IndependentResources();
     auto& device = resources.Device3D();
     BuildLights();
     BuildRoom(device, game.Predefined());
@@ -46,11 +46,18 @@ void MainScene::BuildRoom(ID3D11Device& device, const dx::PredefinedResources& p
             { { 7.5f, 0.0f, -10.0f },{ 0.0f, 1.0f, 0.0f },{},{ 4.0f, 4.0f } }
         };
 
-        const std::uint16_t FloorIndices[] = {
+        const dx::Index FloorIndices[] = {
             0, 1, 2, 3, 4, 5
         };
         floor_ = dx::BasicObject{
-            dx::BasicRenderable{simpleLayout, dx::GpuMesh{device, FloorVertices, FloorIndices}, basicVS, basicPS, dx::Get2DTexView(device, dx::Ref(floorTex)), predefined.GetRepeatSampler()},
+            dx::BasicRenderable {
+                simpleLayout, 
+                dx::ImmutableVertexBuffer{device, gsl::make_span(FloorVertices)},
+                dx::ImmutableIndexBuffer{device, gsl::make_span(FloorIndices)}, 
+                basicVS, 
+                basicPS, 
+                dx::Get2DTexView(device, dx::Ref(floorTex)), 
+                predefined.GetRepeatSampler()},
             roomSmoothness,
             DirectX::XMMatrixIdentity()
         };
@@ -85,7 +92,14 @@ void MainScene::BuildRoom(ID3D11Device& device, const dx::PredefinedResources& p
 
         //WTF??
         wall_ = dx::BasicObject{
-            dx::BasicRenderable{simpleLayout , dx::GpuMesh{device, WallVertices, wallIndices}, basicVS, basicPS, dx::Get2DTexView(device, dx::Ref(wallTex)), predefined.GetRepeatSampler()},
+            dx::BasicRenderable {
+                simpleLayout , 
+                dx::ImmutableVertexBuffer{device, gsl::make_span(WallVertices)}, 
+                dx::ImmutableIndexBuffer{device, gsl::make_span(wallIndices)},
+                basicVS, 
+                basicPS, 
+                dx::Get2DTexView(device, dx::Ref(wallTex)), 
+                predefined.GetRepeatSampler()},
             roomSmoothness,
             DirectX::XMMatrixIdentity()
         };
@@ -115,7 +129,15 @@ void MainScene::BuildRoom(ID3D11Device& device, const dx::PredefinedResources& p
         };
 
         mirror_ = dx::BasicObject{
-            dx::BasicRenderable{simpleLayout, dx::GpuMesh{device,MirrorVertices, MirrorIndices}, basicVS, basicPS, dx::Get2DTexView(device, dx::Ref(mirrorTex)), predefined.GetRepeatSampler() },
+            dx::BasicRenderable {
+                simpleLayout, 
+                dx::ImmutableVertexBuffer{device, gsl::make_span(MirrorVertices)}, 
+                dx::ImmutableIndexBuffer{device, gsl::make_span(MirrorIndices)}, 
+                basicVS, 
+                basicPS, 
+                dx::Get2DTexView(device, dx::Ref(mirrorTex)), 
+                predefined.GetRepeatSampler() 
+            },
             mirrorSmoothness,
             DirectX::XMMatrixIdentity()
         };
@@ -130,14 +152,20 @@ void MainScene::BuildRoom(ID3D11Device& device, const dx::PredefinedResources& p
         };
         dx::SimpleCpuMesh mesh;
         dx::MakeUVSphere(1.0f, 30, 30, mesh);
-        const auto view = mesh.Get();
 
         dx::Transformation transform;
         transform.Translation.z = -2.5f;
         transform.Translation.y = 2.f;
 
         sphere_ = dx::BasicObject{
-            dx::BasicRenderable{simpleLayout, dx::GpuMesh{device, view}, basicVS, basicPS, {}, {}},
+            dx::BasicRenderable{
+                simpleLayout, 
+                dx::ImmutableVertexBuffer{device, gsl::make_span(mesh.Vertices)},
+                dx::ImmutableIndexBuffer{device, gsl::make_span(mesh.Indices)},
+                basicVS, 
+                basicPS, 
+                {}, 
+                {}},
             ballSmoothness,
             dx::ComputeWorld(transform)
         };
@@ -145,7 +173,15 @@ void MainScene::BuildRoom(ID3D11Device& device, const dx::PredefinedResources& p
         auto reflection = DirectX::XMMatrixReflect(DirectX::XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f));
         auto reflected = dx::ComputeWorld(transform) * reflection;
         reflectedSphere_ = dx::BasicObject{
-            dx::BasicRenderable{simpleLayout, dx::GpuMesh{ device, mesh.Get() }, basicVS, basicPS,{},{} },
+            dx::BasicRenderable{
+                simpleLayout,
+                dx::ImmutableVertexBuffer{ device, gsl::make_span(mesh.Vertices) },
+                dx::ImmutableIndexBuffer{ device, gsl::make_span(mesh.Indices) },
+                basicVS, 
+                basicPS,
+                {},
+                {} 
+            },
             ballSmoothness,
             reflected
         };
@@ -179,12 +215,19 @@ void MainScene::BuildLights()
 
 void MainScene::Update(const dx::UpdateArgs& args)
 {
-    const auto& game = GetGame();
-    game.MainWindow().Clear(DirectX::Colors::White);
+    auto& game = GetGame();
+    auto& dependentGraphics = game.DependentResources();
+
+    if (!dependentGraphics) return;
+    auto&[swapChain, depthStencil] = dependentGraphics.value();
 
     auto& context = args.Context3D;
+    dependentGraphics.value().Bind(context);
     const auto& camera = GetMainCamera();
     const auto lights = gsl::make_span(dirLights_);
+    depthStencil.ClearBoth(context);
+    swapChain.Front().Clear(context, DirectX::Colors::White);
+    context.RSSetViewports(1, &camera.Viewport());
 
     const auto drawContext = dx::BasicDrawContext{
         context, camera, lights
@@ -244,6 +287,8 @@ void MainScene::Update(const dx::UpdateArgs& args)
         context.OMSetBlendState({}, {}, static_cast<UINT>(-1));
         context.OMSetDepthStencilState({}, 0);
     }
+
+    swapChain.Present();
 }
 
 MainScene::~MainScene()

@@ -3,8 +3,7 @@
 #include "Mesh.hpp"
 #include "Texture.hpp"
 #include "Material.hpp"
-#include "Shaders.hpp"
-#include "SimpleVertex.hpp"
+#include "Resources/Shaders.hpp"
 #include <cmath>
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
@@ -45,123 +44,123 @@ namespace dx
         }
     }
 
-    void LoadAllMaterialsFromScene(ID3D11Device& device, const aiScene* scene,
-        const fs::path& parentPath,
-        std::vector<Smoothness>& smoothnesses,
-        std::vector<TextureSampler>& textures)
-    {
-        const auto materialsInScene = gsl::make_span(scene->mMaterials, scene->mNumMaterials);
-        smoothnesses.clear();
-        smoothnesses.reserve(materialsInScene.size());
-        for (auto material : materialsInScene)
-        {
-            aiColor3D diffuse, specular, ambient;
-            CheckAiReturn(material->Get(AI_MATKEY_COLOR_DIFFUSE, diffuse));
-            CheckAiReturn(material->Get(AI_MATKEY_COLOR_SPECULAR, specular));
-            CheckAiReturn(material->Get(AI_MATKEY_COLOR_AMBIENT, ambient));
-            float specularPower;
-            CheckAiReturn(material->Get(AI_MATKEY_SHININESS, specularPower));
-            constexpr auto kTexType = aiTextureType::aiTextureType_DIFFUSE;
-            const auto texCount = material->GetTextureCount(kTexType);
-            Ensures(texCount <= 1); //only single texture is supported
-            for (unsigned i = 0; i < texCount; ++i)
-            {
-                aiString texPath;
-                CheckAiReturn(material->Get(AI_MATKEY_TEXTURE(kTexType, i), texPath));
-                aiTextureMapMode uMapMode = aiTextureMapMode_Wrap, vMapMode = aiTextureMapMode_Wrap;
-                //FIXME
-                material->Get(AI_MATKEY_MAPPINGMODE_U(kTexType, i), uMapMode);
-                material->Get(AI_MATKEY_MAPPINGMODE_V(kTexType, i), vMapMode);
-                /*CheckAiReturn(material->Get(AI_MATKEY_MAPPINGMODE_U(kTexType, i), uMapMode));
-                CheckAiReturn(material->Get(AI_MATKEY_MAPPINGMODE_V(kTexType, i), vMapMode));*/
-                auto parent = parentPath;
-                auto texture = Load2DTexFromFile(device, parent.append(s2ws(texPath.C_Str())));
-                D3D11_SAMPLER_DESC samplerDesc = {};
-                //TODO: How to get this from assimp?
-                samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
-                samplerDesc.AddressU = FromAssimpTexMapModeToDX(uMapMode);
-                samplerDesc.AddressV = FromAssimpTexMapModeToDX(vMapMode);
-                samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
-                wrl::ComPtr<ID3D11SamplerState> samplerState;
-                TryHR(device.CreateSamplerState(&samplerDesc, samplerState.ReleaseAndGetAddressOf()));
-                textures.push_back({ Get2DTexView(device, Ref(texture)), std::move(samplerState) });
-            }
-            Smoothness smoothness;
-            AiColorToFloat4(ambient, smoothness.Amibient);
-            AiColorToFloat4(specular, smoothness.Specular);
-            AiColorToFloat4(diffuse, smoothness.Diffuse);
-            smoothness.SpecularPower = specularPower;
-            smoothnesses.push_back(smoothness);
-        }
-    }
+    //void LoadAllMaterialsFromScene(ID3D11Device& device, const aiScene* scene,
+    //    const fs::path& parentPath,
+    //    std::vector<Smoothness>& smoothnesses,
+    //    std::vector<TextureSampler>& textures)
+    //{
+    //    const auto materialsInScene = gsl::make_span(scene->mMaterials, scene->mNumMaterials);
+    //    smoothnesses.clear();
+    //    smoothnesses.reserve(materialsInScene.size());
+    //    for (auto material : materialsInScene)
+    //    {
+    //        aiColor3D diffuse, specular, ambient;
+    //        CheckAiReturn(material->Get(AI_MATKEY_COLOR_DIFFUSE, diffuse));
+    //        CheckAiReturn(material->Get(AI_MATKEY_COLOR_SPECULAR, specular));
+    //        CheckAiReturn(material->Get(AI_MATKEY_COLOR_AMBIENT, ambient));
+    //        float specularPower;
+    //        CheckAiReturn(material->Get(AI_MATKEY_SHININESS, specularPower));
+    //        constexpr auto kTexType = aiTextureType::aiTextureType_DIFFUSE;
+    //        const auto texCount = material->GetTextureCount(kTexType);
+    //        Ensures(texCount <= 1); //only single texture is supported
+    //        for (unsigned i = 0; i < texCount; ++i)
+    //        {
+    //            aiString texPath;
+    //            CheckAiReturn(material->Get(AI_MATKEY_TEXTURE(kTexType, i), texPath));
+    //            aiTextureMapMode uMapMode = aiTextureMapMode_Wrap, vMapMode = aiTextureMapMode_Wrap;
+    //            //FIXME
+    //            material->Get(AI_MATKEY_MAPPINGMODE_U(kTexType, i), uMapMode);
+    //            material->Get(AI_MATKEY_MAPPINGMODE_V(kTexType, i), vMapMode);
+    //            /*CheckAiReturn(material->Get(AI_MATKEY_MAPPINGMODE_U(kTexType, i), uMapMode));
+    //            CheckAiReturn(material->Get(AI_MATKEY_MAPPINGMODE_V(kTexType, i), vMapMode));*/
+    //            auto parent = parentPath;
+    //            auto texture = Load2DTexFromFile(device, parent.append(s2ws(texPath.C_Str())));
+    //            D3D11_SAMPLER_DESC samplerDesc = {};
+    //            //TODO: How to get this from assimp?
+    //            samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
+    //            samplerDesc.AddressU = FromAssimpTexMapModeToDX(uMapMode);
+    //            samplerDesc.AddressV = FromAssimpTexMapModeToDX(vMapMode);
+    //            samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+    //            wrl::ComPtr<ID3D11SamplerState> samplerState;
+    //            TryHR(device.CreateSamplerState(&samplerDesc, samplerState.ReleaseAndGetAddressOf()));
+    //            textures.push_back({ Get2DTexView(device, Ref(texture)), std::move(samplerState) });
+    //        }
+    //        Smoothness smoothness;
+    //        AiColorToFloat4(ambient, smoothness.Amibient);
+    //        AiColorToFloat4(specular, smoothness.Specular);
+    //        AiColorToFloat4(diffuse, smoothness.Diffuse);
+    //        smoothness.SpecularPower = specularPower;
+    //        smoothnesses.push_back(smoothness);
+    //    }
+    //}
 
-    auto LoadFromModel(ID3D11Device& device, const fs::path& filePath) ->
-        std::experimental::generator<
-        std::tuple<SimpleCpuMesh, TextureSampler, Smoothness>>
-    {
-        const auto pathString = filePath.u8string();
-        Assimp::Importer importer;
+    //auto LoadFromModel(ID3D11Device& device, const fs::path& filePath) ->
+    //    std::experimental::generator<
+    //    std::tuple<SimpleCpuMesh, TextureSampler, Smoothness>>
+    //{
+    //    const auto pathString = filePath.u8string();
+    //    Assimp::Importer importer;
 
-        const auto AssimpThrow = [&](auto ptr)
-        {
-            ThrowIf<std::runtime_error>(ptr == nullptr, importer.GetErrorString());
-            return ptr;
-        };
-        const auto scene = AssimpThrow(importer.ReadFile(pathString.c_str(), aiProcessPreset_TargetRealtime_MaxQuality));
-        std::vector<Smoothness> materials;
-        std::vector<TextureSampler> textures;
-        LoadAllMaterialsFromScene(device, scene, filePath.parent_path(), materials, textures);
-        const auto meshCount = scene->mNumMeshes;
-        std::vector<SimpleVertex> verticesInMesh;
-        std::vector<std::uint16_t> indicesInMesh;
-        for (unsigned j = 0; j < meshCount; ++j)
-        {
-            const auto mesh = scene->mMeshes[j];
-            verticesInMesh.clear();
-            indicesInMesh.clear();
-            const auto verticesNum = mesh->mNumVertices;
-            verticesInMesh.reserve(verticesNum);
-            for (unsigned i = 0; i < verticesNum; ++i)
-            {
-                const auto& pos = mesh->mVertices[i];
-                const auto& normal = mesh->mNormals[i];
-                const auto& tangent = mesh->mTangents[i];
-                const auto tex = mesh->mTextureCoords[j];
+    //    const auto AssimpThrow = [&](auto ptr)
+    //    {
+    //        ThrowIf<std::runtime_error>(ptr == nullptr, importer.GetErrorString());
+    //        return ptr;
+    //    };
+    //    const auto scene = AssimpThrow(importer.ReadFile(pathString.c_str(), aiProcessPreset_TargetRealtime_MaxQuality));
+    //    std::vector<Smoothness> materials;
+    //    std::vector<TextureSampler> textures;
+    //    LoadAllMaterialsFromScene(device, scene, filePath.parent_path(), materials, textures);
+    //    const auto meshCount = scene->mNumMeshes;
+    //    std::vector<SimpleVertex> verticesInMesh;
+    //    std::vector<std::uint16_t> indicesInMesh;
+    //    for (unsigned j = 0; j < meshCount; ++j)
+    //    {
+    //        const auto mesh = scene->mMeshes[j];
+    //        verticesInMesh.clear();
+    //        indicesInMesh.clear();
+    //        const auto verticesNum = mesh->mNumVertices;
+    //        verticesInMesh.reserve(verticesNum);
+    //        for (unsigned i = 0; i < verticesNum; ++i)
+    //        {
+    //            const auto& pos = mesh->mVertices[i];
+    //            const auto& normal = mesh->mNormals[i];
+    //            const auto& tangent = mesh->mTangents[i];
+    //            const auto tex = mesh->mTextureCoords[j];
 
-                SimpleVertex vertex = {
-                    { pos.x, pos.y, pos.z },
-                    { normal.x, normal.y, normal.z },
-                    { tangent.x, tangent.y, tangent.z }
-                };
+    //            SimpleVertex vertex = {
+    //                { pos.x, pos.y, pos.z },
+    //                { normal.x, normal.y, normal.z },
+    //                { tangent.x, tangent.y, tangent.z }
+    //            };
 
-                if (tex == nullptr)
-                {
-                    vertex.TexCoord = { 1.f, 1.f };
-                }
-                else
-                {
-                    vertex.TexCoord = { tex[i].x, tex[i].y };
-                }
-                verticesInMesh.push_back(vertex);
+    //            if (tex == nullptr)
+    //            {
+    //                vertex.TexCoord = { 1.f, 1.f };
+    //            }
+    //            else
+    //            {
+    //                vertex.TexCoord = { tex[i].x, tex[i].y };
+    //            }
+    //            verticesInMesh.push_back(vertex);
 
-                const auto faces = gsl::make_span(mesh->mFaces, mesh->mNumFaces);
+    //            const auto faces = gsl::make_span(mesh->mFaces, mesh->mNumFaces);
 
-                indicesInMesh.reserve(faces.size() * 3);
-                for (const auto& face : faces)
-                {
-                    const auto faceIndices = gsl::make_span(face.mIndices, face.mNumIndices);
-                    if (faceIndices.size() != 3)
-                        continue;
+    //            indicesInMesh.reserve(faces.size() * 3);
+    //            for (const auto& face : faces)
+    //            {
+    //                const auto faceIndices = gsl::make_span(face.mIndices, face.mNumIndices);
+    //                if (faceIndices.size() != 3)
+    //                    continue;
 
-                    for (auto index : faceIndices)
-                    {
-                        indicesInMesh.push_back(static_cast<std::uint16_t>(index));
-                    }
-                }
-                co_yield std::make_tuple(SimpleCpuMesh(std::move(verticesInMesh), std::move(indicesInMesh)), textures[mesh->mMaterialIndex], materials[mesh->mMaterialIndex]);
-            }
-        }
-    }
+    //                for (auto index : faceIndices)
+    //                {
+    //                    indicesInMesh.push_back(static_cast<std::uint16_t>(index));
+    //                }
+    //            }
+    //            co_yield std::make_tuple(SimpleCpuMesh(std::move(verticesInMesh), std::move(indicesInMesh)), textures[mesh->mMaterialIndex], materials[mesh->mMaterialIndex]);
+    //        }
+    //    }
+    //}
 
     void MakeCylinder(float bottomRadius, float topRadius, float height,
         std::uint16_t sliceCount, std::uint16_t stackCount, CpuMesh<SimpleVertex>& meshData)

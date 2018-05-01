@@ -1,13 +1,14 @@
-#include "pch.hpp"
+ï»¿#include "pch.hpp"
 #include <d3d11.h>
 #include "Predefined.hpp"
 #include "Camera.hpp"
 #include "Material.hpp"
 #include "CBStructs.hpp"
 #include "Texture.hpp"
-#include <DirectXtk/DirectXHelpers.h>
+#include <DirectXTK/DirectXHelpers.h>
 #include "BasicVS.hpp"
 #include "BasicPS.hpp"
+#include "Bind.hpp"
 
 namespace dx
 {
@@ -58,7 +59,7 @@ namespace dx
             D3D11_SUBRESOURCE_DATA resourceData{};
             resourceData.pSysMem = pixels.data();
             resourceData.SysMemPitch = kDefaultTexWidth;
-            resourceData.SysMemSlicePitch = pixels.size() * sizeof(DirectX::XMFLOAT4);
+            resourceData.SysMemSlicePitch = gsl::narrow<UINT>(pixels.size() * sizeof(DirectX::XMFLOAT4));
             TryHR(device.CreateTexture2D(&desc, &resourceData, tex.GetAddressOf()));
         }
         {
@@ -69,7 +70,6 @@ namespace dx
         {
             CD3D11_SAMPLER_DESC desc{ CD3D11_DEFAULT{} };
             desc.AddressW = desc.AddressV = desc.AddressU = D3D11_TEXTURE_ADDRESS_MODE::D3D11_TEXTURE_ADDRESS_WRAP;
-             D3D11_TEXTURE_ADDRESS_MODE::D3D11_TEXTURE_ADDRESS_WRAP;
             TryHR(device.CreateSamplerState(&desc, repeatSampler_.GetAddressOf()));
         }
         white_ = Get2DTexView(device, Ref(tex));
@@ -79,7 +79,7 @@ namespace dx
     {
         {
             D3D11_DEPTH_STENCIL_DESC stencilDesc{};
-            //²ÉÓÃÕý³£µÄ depth test¡£
+            //é‡‡ç”¨æ­£å¸¸çš„ depth testã€‚
             stencilDesc.DepthEnable = true;
             stencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
             stencilDesc.DepthFunc = D3D11_COMPARISON_LESS;
@@ -209,7 +209,7 @@ namespace dx
     void PredefinedResources::MakeLayouts(ID3D11Device& device)
     {
         const auto desc = SimpleVertex::GetDesc();
-        device.CreateInputLayout(desc.data(), desc.size(), BasicVertexShader, std::size(BasicVertexShader), simpleLayout_.GetAddressOf());
+        device.CreateInputLayout(desc.data(), gsl::narrow<UINT>(desc.size()), BasicVertexShader, std::size(BasicVertexShader), simpleLayout_.GetAddressOf());
     }
 
     void SetupBasicLighting(const BasicDrawContext& drawContext, 
@@ -218,7 +218,10 @@ namespace dx
         ID3D11ShaderResourceView* tex, 
         ID3D11SamplerState* sampler)
     {
-        auto&[context, camera, lights] = drawContext;
+        auto& context = drawContext.Context;
+        auto& camera = drawContext.Camera;
+        auto& lights = drawContext.Lights;
+        //const auto&[context, camera, lights] = drawContext;
 
         cb::GlobalLightingInfo globalLights;
         globalLights.EyePos = camera.GetEyePos();
@@ -233,14 +236,8 @@ namespace dx
 
         if (tex != nullptr)
         {
-            const std::array<ID3D11ShaderResourceView*, 1> resources = {
-                tex
-            };
-            context.PSSetShaderResources(0, resources.size(), resources.data());
-            const std::array<ID3D11SamplerState*, 1> samplers = {
-                sampler
-            };
-            context.PSSetSamplers(0, samplers.size(), samplers.data());
+            ps.SetResource(context, tex);
+            ps.SetSampler(context, sampler);
         }
     }
 
@@ -263,15 +260,15 @@ namespace dx
         DrawBasic(context, renderable);
     }
 
+    //static_assert(is_bindable_v<ID3D11InputLayout>);
+
     void DrawBasic(ID3D11DeviceContext& context, const BasicRenderable& renderable)
     {
         context.IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-        auto[inputLayout, mesh, vs, ps, tex, sampler] = renderable;
-        context.IASetInputLayout(inputLayout.Get());
-        SetupGpuMesh(context, mesh.Get());
-        SetupShader(context, vs);
-        SetupShader(context, ps);
-        context.DrawIndexed(mesh.Get().IndexCount, 0, 0);
+        auto[inputLayout, vb, ib, vs, ps, tex, sampler] = renderable;
+        Bind(context, Ref(inputLayout));
+        Bind(context, vb, ib, vs, ps);
+        context.DrawIndexed(ib.CountOfIndices(), 0, 0);
     }
 
     BasicObject::BasicObject(BasicRenderable renderable, Smoothness material, DirectX::XMMATRIX matrix)

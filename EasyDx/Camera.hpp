@@ -1,15 +1,10 @@
 #pragma once
 
 #include <DirectXMath.h>
-#include <cstdlib>
+#include "AlignedAllocator.hpp"
 
 namespace dx
 {
-    struct Viewport
-    {
-        float TopLeftX, TopLeftY, Width, Height, MinDepth, MaxDepth;
-    };
-
     enum class Space
     {
         LocalSpace,
@@ -42,7 +37,8 @@ namespace dx
         void Walk(float d) noexcept;
         void Strafe(float d) noexcept;
 
-        Viewport MainViewport;
+        D3D11_VIEWPORT& Viewport() noexcept { return *viewport_; }
+        const D3D11_VIEWPORT& Viewport() const noexcept { return *viewport_; }
 
     private:
         DirectX::XMVECTOR LoadTranslation() const noexcept;
@@ -56,5 +52,7 @@ namespace dx
         DirectX::XMFLOAT4 rotation_;
         DirectX::XMFLOAT4 position_;
         aligned_unique_ptr<Internal::CameraData> data_;
+        Box<D3D11_VIEWPORT> viewport_;
     };
+
 }

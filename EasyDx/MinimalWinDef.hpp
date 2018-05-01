@@ -2,8 +2,6 @@
 
 #define NOMINMAX
 
-#include<minwindef.h>
+#include <minwindef.h>
 
-#undef near
-#undef far
 #undef NOMINMAX

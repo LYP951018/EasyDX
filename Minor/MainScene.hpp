@@ -1,7 +1,7 @@
 #pragma once
 
 #include <EasyDx/Scene.hpp>
-#include <EasyDx/Common.hpp>
+#include <EasyDx/EasyDx.Common/Common.hpp>
 #include <EasyDx/Light.hpp>
 #include <EasyDx/Predefined.hpp>
 #include <array>

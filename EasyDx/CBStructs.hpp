@@ -1,9 +1,7 @@
 #pragma once
 
 #include "Light.hpp"
-#include "Buffers.hpp"
 #include <DirectXMath.h>
-#include <cstdint>
 
 namespace dx
 {

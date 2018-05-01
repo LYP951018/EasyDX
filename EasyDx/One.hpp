@@ -1,10 +1,8 @@
 #pragma once
 
 #include "pch.hpp"
-#include "Buffers.hpp"
 #include "Camera.hpp"
 #include "CBStructs.hpp"
-#include "Common.hpp"
 #include "Events.hpp"
 #include "Game.hpp"
 #include "GameWindow.hpp"
@@ -12,8 +10,9 @@
 #include "Material.hpp"
 #include "Model.hpp"
 #include "Scene.hpp"
-#include "Shaders.hpp"
-#include "SimpleVertex.hpp"
+#include "DependentGraphics.hpp"
 #include "Texture.hpp"
 #include "Transformation.hpp"
 #include "Predefined.hpp"
+#include "EventLoop.hpp"
+#include "Resources.hpp"
