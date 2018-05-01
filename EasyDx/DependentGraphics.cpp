@@ -15,7 +15,9 @@ namespace dx
         {
             void* ptr;
             TryHR(object.GetParent(__uuidof(T), &ptr));
-            return { static_cast<T*>(ptr) };
+            wrl::ComPtr<T> result;
+            result.Attach(static_cast<T*>(ptr));
+            return result;
         }
     }
 
