@@ -132,7 +132,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Common.hpp" />
-    <ClInclude Include="StaticVector.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Common.cpp" />
