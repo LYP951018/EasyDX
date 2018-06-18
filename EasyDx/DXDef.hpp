@@ -72,6 +72,7 @@ namespace dx
         R32G32B32A32Float = 2,
         //A three-component, 96-bit floating-point format that supports 32 bits per color channel.
         R32G32B32Float = 6,
+        R32G32Float = 16,
         //A single-component, 16-bit unsigned-integer format that supports 16 bits for the red channel.
         R16UInt = 57,
         B8G8R8A8UNorm = 87,

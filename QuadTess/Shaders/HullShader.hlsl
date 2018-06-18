@@ -2,8 +2,8 @@
 #include "CBuffer.hlsli"
 
 ConstantHullOutput CalcHSPatchConstants(
-	InputPatch<VertexOutput, PATCH_COUNT> patches,
-	uint PatchID : SV_PrimitiveID)
+    InputPatch<VertexOutput, PATCH_COUNT> patches,
+    uint PatchID : SV_PrimitiveID)
 {
     ConstantHullOutput Output;
 
@@ -23,13 +23,13 @@ ConstantHullOutput CalcHSPatchConstants(
 [outputcontrolpoints(PATCH_COUNT)]
 [patchconstantfunc("CalcHSPatchConstants")]
 HullControlPointOutput main(
-	InputPatch<VertexOutput, PATCH_COUNT> ip,
-	uint i : SV_OutputControlPointID,
-	uint PatchID : SV_PrimitiveID )
+    InputPatch<VertexOutput, PATCH_COUNT> ip,
+    uint i : SV_OutputControlPointID,
+    uint PatchID : SV_PrimitiveID)
 {
     HullControlPointOutput Output;
 
     Output.Position = ip[i].Position;
 
-	return Output;
+    return Output;
 }

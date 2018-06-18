@@ -43,7 +43,7 @@ struct TessRenderable
 {
     dx::GpuMesh Mesh;
     dx::VertexShader<Vertex> VS;
-    dx::BasicLightingPixelShader PS;
+    dx::SimpleLightingPS PS;
     dx::HullShader<CbPerObject, CbPerFrame> HS;
     dx::DomainShader<CbPerObject, CbPerFrame> DS;
 };
@@ -51,7 +51,7 @@ struct TessRenderable
 
 struct TessQuad
 {
-    TessRenderable Renderable;
+    TessRenderable Pipeline_;
     dx::Smoothness Smoothness;
     DirectX::XMMATRIX World;
 };

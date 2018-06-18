@@ -3,6 +3,7 @@
 #include <unordered_map>
 #include <variant>
 #include <chrono>
+#include "InputSystem.hpp"
 #include "Misc.hpp"
 
 namespace dx
@@ -113,11 +114,7 @@ namespace dx
         kLeft, kRight, kMiddle
     };
 
-    enum class ElementState
-    {
-        Pressed,
-        Released
-    };
+
 
     struct KeyStates
     {
@@ -160,7 +157,7 @@ namespace dx
     struct DpiChangedEventArgs
     {
         std::uint32_t NewDpiX, NewDpiY;
-        Rect NewRect;
+        IntRect NewRect;
     };
 
     struct QuitEventArgs {};
@@ -173,11 +170,6 @@ namespace dx
 
 #define DefWindowEvent(name, arg) using name = WindowEvents<arg&>
 
-    DefWindowEvent(KeyDownEvent, KeyEventArgs);
-    DefWindowEvent(KeyUpEvent, KeyEventArgs);
-    DefWindowEvent(MouseDownEvent, MouseEventArgs);
-    DefWindowEvent(MouseUpEvent, MouseEventArgs);
-    DefWindowEvent(MouseMoveEvent, CursorMoved);
     DefWindowEvent(WindowResizeEvent, ResizeEventArgs);
     DefWindowEvent(DpiChangedEvent, DpiChangedEventArgs);
 

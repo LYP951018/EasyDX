@@ -99,9 +99,6 @@
     <ClInclude Include="DependentGraphics.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Concepts.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Detection.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -124,6 +121,18 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="D3DHelpers.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Fwd.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Object.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ObjectBase.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="InputSystem.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -167,9 +176,6 @@
     <ClCompile Include="Events.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Vertex.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="EventLoop.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -189,6 +195,12 @@
       <Filter>Source Files\Resources</Filter>
     </ClCompile>
     <ClCompile Include="D3DHelpers.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ObjectBase.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="InputSystem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

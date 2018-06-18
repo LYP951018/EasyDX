@@ -10,7 +10,12 @@ namespace dx
     {
     public:
         using value_type = T;
-        using pointer = value_type*;
+        using pointer = value_type * ;
+
+        AlignAllocator() = default;
+
+        template<typename U>
+        AlignAllocator(const AlignAllocator<U>&) {}
 
         pointer allocate(std::size_t n)
         {

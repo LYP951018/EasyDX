@@ -65,7 +65,7 @@ namespace dx
         //::UpdateWindow(handle);
     }
 
-    void GameWindow::Relocate(const Rect& rect)
+    void GameWindow::Relocate(const IntRect& rect)
     {
         TryWin32(SetWindowPos(NativeHandle(),
             HWND_TOP,
@@ -81,14 +81,9 @@ namespace dx
         return windowHandle_;
     }
 
-    std::uint32_t GameWindow::GetWidth() const noexcept
+    Size GameWindow::GetSize() const noexcept
     {
-        return width_;
-    }
-
-    std::uint32_t GameWindow::GetHeight() const noexcept
-    {
-        return height_;
+        return { width_, height_ };
     }
 
     float GameWindow::GetDpiX() const noexcept
@@ -105,11 +100,17 @@ namespace dx
     {
     }
 
-    void GameWindow::PrepareForDpiChanging(std::uint32_t dpiX, std::uint32_t dpiY, const Rect& newWindowRect)
+    void GameWindow::PrepareForDpiChanging(std::uint32_t dpiX, std::uint32_t dpiY, const IntRect& newWindowRect)
     {
         dpiX_ = dpiX;
         dpiY_ = dpiY;
         Relocate(newWindowRect);
+    }
+
+    void GameWindow::OnResize(Size newSize)
+    {
+        width_ = newSize.Width;
+        height_ = newSize.Height;
     }
 
     void GameWindow::InitializeDpi()

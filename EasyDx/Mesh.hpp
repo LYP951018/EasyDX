@@ -1,19 +1,23 @@
 #pragma once
 
-#include "Resources/Buffers.hpp"
-#include "Vertex.hpp"
 
 namespace dx
 {
-    template<typename T>
-    struct CpuMesh 
+    /*struct CpuMesh 
     {
-        static_assert(is_vertex_v<T>);
+        using PosType = DirectX::XMFLOAT4;
+
+        CpuMesh(std::vector<PosType> vertices, std::vector<Index> indices)
+            : Vertices{std::move(vertices)},
+            Indices{std::move(indices)}
+        {}
+
+        void UpdateBoundingBox()
+        {
+            for(const auto& vertex : Vertices)
+        }
+
         std::vector<T> Vertices;
-        std::vector<Index> Indices;
-    };
-
-    extern template struct CpuMesh<SimpleVertex>;
-
-    using SimpleCpuMesh = CpuMesh<SimpleVertex>;
+        DirectX::BoundingBox boundingBox_;
+    };*/
 }

@@ -7,6 +7,8 @@
 #include "Light.hpp"
 #include "Resources/Buffers.hpp"
 #include "Vertex.hpp"
+#include "Object.hpp"
+#include <d3d11.h>
 
 namespace dx
 {
@@ -26,7 +28,7 @@ namespace dx
             Material Smoothness;
         };
 
-        struct alignas(16) BasicCb
+        struct alignas(16) MvpCb
         {
             DirectX::XMMATRIX WorldViewProj;
             DirectX::XMMATRIX World;
@@ -34,8 +36,10 @@ namespace dx
         };
     }
 
-    using BasicLightingPixelShader = PixelShader<cb::GlobalLightingInfo, cb::PerObjectLightingInfo>;
-    using BasicLightingVertexShader = VertexShader<cb::BasicCb>;
+    using SimpleLightingPS = PixelShader<cb::GlobalLightingInfo, cb::PerObjectLightingInfo>;
+
+    //仅仅将顶点做变换传递给下一个 Shader 的 VertexShader。
+    using MvpTransformVS = VertexShader<cb::MvpCb>;
 
     class PredefinedResources
     {
@@ -43,13 +47,20 @@ namespace dx
         static constexpr std::uint32_t kDefaultTexWidth = 100;
         static constexpr std::uint32_t kDefaultTexHeight = 100;
 
+        static constexpr auto PosNormTexTangDescs = MakeDescArray(std::array{
+            MakeVertex(VSSemantics::kPosition, 0),
+            MakeVertex(VSSemantics::kNormal, 1),
+            MakeVertex(VSSemantics::kTexCoord, 2),
+            MakeVertex(VSSemantics::kTangent, 3)
+        });
+
         PredefinedResources(ID3D11Device&);
         ~PredefinedResources();
 
         wrl::ComPtr<ID3D11ShaderResourceView> GetWhite() const { return white_; }
 
-        BasicLightingVertexShader GetBasicVS() const { return basicVS_; }
-        BasicLightingPixelShader GetBasicPS() const { return basicPS_; }
+        MvpTransformVS GetBasicVS() const { return basicVS_; }
+        SimpleLightingPS GetBasicPS() const { return basicPS_; }
 
         wrl::ComPtr<ID3D11DepthStencilState> GetStencilAlways() const;
         wrl::ComPtr<ID3D11DepthStencilState> GetDrawnOnly() const;
@@ -80,8 +91,8 @@ namespace dx
         wrl::ComPtr<ID3D11SamplerState> repeatSampler_;
 
         //default shaders
-        BasicLightingVertexShader basicVS_;
-        BasicLightingPixelShader basicPS_;
+        MvpTransformVS basicVS_;
+        SimpleLightingPS basicPS_;
 
         wrl::ComPtr<ID3D11DepthStencilState> stencilAlways_, drawnOnly_, noDoubleBlending_;
         wrl::ComPtr<ID3D11BlendState> noWriteToRt_, transparent_;
@@ -93,49 +104,50 @@ namespace dx
     struct BasicDrawContext;
 
     void SetupBasicLighting(const BasicDrawContext& drawContext,
-        BasicLightingPixelShader& ps,
+        SimpleLightingPS& ps,
         const Smoothness& smoothness,
         ID3D11ShaderResourceView* tex = nullptr,
         ID3D11SamplerState* sampler = nullptr);
 
+    void UpdateMvpCb(const BasicDrawContext& drawContext, const DirectX::XMMATRIX& world, MvpTransformVS& vs);
 
-    //TODO: rename to BasicPipelineObjects ?
-    struct BasicRenderable
+    struct BasicPipeline
     {
-        wrl::ComPtr<ID3D11InputLayout> InputLayout;
-        ImmutableVertexBuffer<SimpleVertex> VertexBuffer;
-        ImmutableIndexBuffer IndexBuffer;
-        BasicLightingVertexShader VS;
-        BasicLightingPixelShader PS;
+        enum : std::size_t
+        {
+            kPos, kNormal, kTangent, kTexCoord
+        };
+
+        wrl::ComPtr<ID3D11InputLayout> Layout;
+        MvpTransformVS VS;
+        SimpleLightingPS PS;
+        std::array<VertexBuffer, 4> Vbs;
+        ConstIndexBuffer Ib;
         wrl::ComPtr<ID3D11ShaderResourceView> Texture;
         wrl::ComPtr<ID3D11SamplerState> Sampler;
+
+        VertexBuffer& PosVb() { return Vbs[kPos]; }
+        VertexBuffer& NormalVb() { return Vbs[kNormal]; }
+        VertexBuffer& TangentVb() { return Vbs[kTangent]; }
+        VertexBuffer& TexCoordVb() { return Vbs[kTexCoord]; }
     };
 
-    struct BasicObject
-    {
-        BasicObject() = default;
-        BasicObject(BasicRenderable renderable,
-            Smoothness material,
-            DirectX::XMMATRIX matrix);
-
-        DirectX::XMMATRIX GetWorld() const noexcept
-        {
-            return DirectX::XMLoadFloat4x4(&Transform);
-        }
-
-        BasicRenderable Renderable;
-        Smoothness Material;
-        DirectX::XMFLOAT4X4 Transform;
-    };
+    void Bind(ID3D11DeviceContext& context3D, BasicPipeline& pipeline);
+    
+    using BasicObject = Object<BasicPipeline>;
 
     struct BasicDrawContext
     {
         ID3D11DeviceContext& Context;
         const Camera& Camera;
-        gsl::span<dx::Light> Lights;
+        gsl::span<const dx::Light> Lights;
     };
 
     void UpdateAndDraw(const BasicDrawContext& drawContext, const BasicObject& object);
-    void DrawBasic(ID3D11DeviceContext&, const BasicRenderable&);
 
+    template<typename PipelineT>
+    void DrawAllIndexed(ID3D11DeviceContext& context3D, const PipelineT& pipeline)
+    {
+        context3D.DrawIndexed(pipeline.Ib.CountOfIndices(), 0, 0);
+    }
 }

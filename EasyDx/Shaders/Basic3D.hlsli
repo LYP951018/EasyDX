@@ -1,9 +1,9 @@
-namespace dx 
+namespace dx
 {
     struct InstancedVertexInput
     {
-        float3 Position : POSITION;
-        float3 Normal : NORMAL;
+        float4 Position : POSITION;
+        float4 Normal : NORMAL;
         float2 TexCoord : TEXCOORD;
 
         matrix WorldMatrix : WORLDMATRIX;

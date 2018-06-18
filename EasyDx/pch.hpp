@@ -29,4 +29,3 @@
 #include "DXDef.hpp"
 #include "Detection.hpp"
 #include "EasyDx.Common/Common.hpp"
-#include "Concepts.hpp"

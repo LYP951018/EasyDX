@@ -32,8 +32,8 @@ namespace dx
         context.UpdateSubresource(&buffer, 0, nullptr, bytes.data(), 0, 0);
     }
 
-    void Bind(ID3D11DeviceContext& context3D, const ImmutableIndexBuffer& ib)
+    void Bind(ID3D11DeviceContext& context3D, const ConstIndexBuffer& ib)
     {
-        context3D.IASetIndexBuffer(ib.D3DBuffer(), static_cast<DXGI_FORMAT>(ImmutableIndexBuffer::kFormat), 0);
+        context3D.IASetIndexBuffer(ib.D3DBuffer(), static_cast<DXGI_FORMAT>(ConstIndexBuffer::kFormat), 0);
     }
 }

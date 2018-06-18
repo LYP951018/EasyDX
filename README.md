@@ -1,6 +1,10 @@
 # EasyDX
 Make DirectX easy to use.
 
+## Warning
+
+Code is in a bad shape by now. This should be fixed in near future.
+
 # TODO
 
 * 更加一致的命名规则，包括对 `ID3D11DeviceContext` `Cb` 等；
@@ -9,6 +13,7 @@ Make DirectX easy to use.
 * 移除 Warnings;
 * ~~将目前的消息收发改为多线程~~；
 * 恢复 Direct2D & DirectWrite 支持；
-* 将目前的 Vertex 传入形式改为多 slots。
+* ~~将目前的 Vertex 传入形式改为多 slots；~~
+* 恢复原来的示例。
 
 Special thanks to the [aMazing Project](https://github.com/AntiMoron/aMazing).

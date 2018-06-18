@@ -9,8 +9,9 @@ namespace dx
     class GameWindow;
     class Scene;
     class Game;
+    class InputSystem;
 
-    using SceneCreator = std::function<std::unique_ptr<Scene>(Game&, std::shared_ptr<void>)>;
+    using SceneCreator = std::function<std::unique_ptr<Scene>(Game&)>;
 
     struct IndependentGraphics : Noncopyable
     {
@@ -44,7 +45,7 @@ namespace dx
     class SceneSwitcher
     {
     public:
-        friend void RunGame(Game&, std::unique_ptr<GameWindow>, std::uint32_t, std::shared_ptr<void> arg);
+        friend void RunGame(Game&, std::unique_ptr<GameWindow>, std::uint32_t);
         friend class Game;
 
         SceneSwitcher(Game& game);
@@ -61,60 +62,64 @@ namespace dx
         }
 
         //TODO: enum version.
-        void WantToSwitchSceneTo(std::uint32_t index, std::shared_ptr<void> arg);
+        void WantToSwitchSceneTo(std::uint32_t index);
 
         Scene& MainScene() const { return *mainScene_; }
 
     private:
-        void ReallySwitchToScene(Game& game, std::uint32_t index, std::shared_ptr<void> arg);
+        void ReallySwitchToScene(Game& game, std::uint32_t index);
         void CheckAndSwitch();
         void Reset();
 
         std::unordered_map<std::uint32_t, SceneCreator> sceneCreators_;
         std::unique_ptr<Scene> mainScene_;
         std::optional<std::uint32_t> nextSceneIndex_;
-        std::shared_ptr<void> nextSceneArg_;
         Game& game_;
+    };
+
+    struct UpdateArgs
+    {
+        Duration Delta;
     };
 
     class Game
     {
-        friend void RunGame(Game&, std::unique_ptr<GameWindow>, std::uint32_t, std::shared_ptr<void> arg);
+        friend void RunGame(Game&, std::unique_ptr<GameWindow>, std::uint32_t);
 
     public:
         Game(IndependentGraphics independent, std::uint32_t fps);
         ~Game();
 
-        KeyDownEvent KeyDown;
-        KeyUpEvent KeyUp;
-        MouseDownEvent MouseDown;
-        MouseUpEvent MouseUp;
-        MouseMoveEvent MouseMove;
         WindowResizeEvent WindowResize;
         DpiChangedEvent DpiChanged;
 
         GameWindow& MainWindow() const { return *mainWindow_; }
         const IndependentGraphics& IndependentResources() const noexcept { return grahicsResources_; }
-        std::optional<DependentGraphics>& DependentResources() noexcept { return dependentGraphics_; }
+        std::optional<DependentGraphics>& DependentResources() noexcept { return m_dependentGraphics; }
         const PredefinedResources& Predefined() const noexcept { return predefined_; }
         SceneSwitcher& Switcher() noexcept { return sceneSwitcher_; }
         const SceneSwitcher& Switcher() const noexcept { return sceneSwitcher_; }
+        const InputSystem& GetInputSystem() const noexcept { return *m_inputSystem; }
 
     private:
+        friend struct MessageDispatcher;
+
         void Run();
         void SetUp(std::unique_ptr<GameWindow> mainWindow);
         void UnpackMessage(WindowEventArgsPack event);
+        void PrepareGraphicsForResizing(GameWindow* window, Size newSize);
+        InputSystem& GetInputSystem() noexcept { return *m_inputSystem; }
 
         const IndependentGraphics grahicsResources_;
-        //this guy will be delayed to the first WM_SIZE, so we mark it as optional
-        std::optional<DependentGraphics> dependentGraphics_;
+        //this guy's initalization will be delayed to the first WM_SIZE, so we mark it as optional
+        std::optional<DependentGraphics> m_dependentGraphics;
         const PredefinedResources predefined_;
         SceneSwitcher sceneSwitcher_;
         //TODO: only one window?
         std::unique_ptr<GameWindow> mainWindow_;
-
+        std::unique_ptr<InputSystem> m_inputSystem;
         std::uint32_t fps_;
     };
 
-    void RunGame(Game& game, std::unique_ptr<GameWindow> mainWindow, std::uint32_t mainSceneIndex, std::shared_ptr<void> args = {});
+    void RunGame(Game& game, std::unique_ptr<GameWindow> mainWindow, std::uint32_t mainSceneIndex);
 }

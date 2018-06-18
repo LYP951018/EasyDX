@@ -60,6 +60,11 @@ namespace dx
         }
     }
 
+    gsl::span<const std::byte> AsSpan(ID3D10Blob & blob)
+    {
+        return { static_cast<const std::byte*>(blob.GetBufferPointer()), gsl::narrow<std::ptrdiff_t>(blob.GetBufferSize()) };
+    }
+
     [[noreturn]]
     void ThrowHRException(HRESULT hr)
     {
@@ -68,7 +73,7 @@ namespace dx
         throw std::runtime_error{ ws2s(errorMessage) };
     }
 
-    Rect Rect::FromRECT(const ::RECT& win32Rect) noexcept
+    IntRect IntRect::FromRECT(const ::RECT& win32Rect) noexcept
     {
         return { static_cast<std::uint32_t>(win32Rect.left),
             static_cast<std::uint32_t>(win32Rect.top),

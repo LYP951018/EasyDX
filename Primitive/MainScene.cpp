@@ -131,7 +131,7 @@ void MainScene::SetupBall(ID3D11Device& device3D)
     auto mesh = GpuMesh{ device3D, meshData.Get() };
     auto update = MakeShared<dx::FuncBehavior>(Rotator{lightGlobal_});
     auto cbUpdator = MakeShared<dx::FuncBehavior>(CbPerObjectUpdator{ GetMainCamera() }, Behavior::kCbUpdate);
-    auto renderable = MakeShared<dx::Renderable>(std::move(vs), std::move(ps), std::move(mesh), cpuCbPerObject);
+    auto renderable = MakeShared<dx::Pipeline_>(std::move(vs), std::move(ps), std::move(mesh), cpuCbPerObject);
     ball->AddComponents(std::move(smoothness), std::move(renderable));
     ball->AddBehaviors(std::move(update), std::move(cbUpdator));
     ball_ = ball;

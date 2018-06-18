@@ -13,8 +13,8 @@
 namespace dx
 {
     PredefinedResources::PredefinedResources(ID3D11Device& device)
-        : basicVS_{device, AsBytes(BasicVertexShader)},
-        basicPS_{device, AsBytes(BasicPixelShader)}
+        : basicVS_{device, BasicVertexShader},
+        basicPS_{device, BasicPixelShader}
     {
         MakeWhiteTex(device);
         MakeStencilStates(device);
@@ -206,14 +206,14 @@ namespace dx
         }
     }
 
-    void PredefinedResources::MakeLayouts(ID3D11Device& device)
+    void PredefinedResources::MakeLayouts(ID3D11Device& /*device*/)
     {
-        const auto desc = SimpleVertex::GetDesc();
-        device.CreateInputLayout(desc.data(), gsl::narrow<UINT>(desc.size()), BasicVertexShader, std::size(BasicVertexShader), simpleLayout_.GetAddressOf());
+        /*const auto desc = SimpleVertex::GetDesc();
+        device.CreateInputLayout(desc.data(), gsl::narrow<UINT>(desc.size()), BasicVertexShader, std::size(BasicVertexShader), simpleLayout_.GetAddressOf());*/
     }
 
     void SetupBasicLighting(const BasicDrawContext& drawContext, 
-        BasicLightingPixelShader& ps, 
+        SimpleLightingPS& ps, 
         const Smoothness& smoothness, 
         ID3D11ShaderResourceView* tex, 
         ID3D11SamplerState* sampler)
@@ -241,40 +241,30 @@ namespace dx
         }
     }
 
+    void UpdateMvpCb(const BasicDrawContext& drawContext, const DirectX::XMMATRIX& world, MvpTransformVS & vs)
+    {
+        auto[context, camera, lights] = drawContext;
+        const auto view = camera.GetView();
+        const auto proj = camera.GetProjection();
+        cb::MvpCb cb{
+            world * view * proj,
+            world,
+            DirectX::XMMatrixTranspose(DirectX::XMMatrixInverse(nullptr, world))
+        };
+        vs.UpdateCb(context, cb);
+    }
+
+    void Bind(ID3D11DeviceContext & context3D, BasicPipeline & pipeline)
+    {
+        dx::Bind(context3D, Ref(pipeline.Layout), MakeVbBinder(pipeline.Vbs), pipeline.Ib, pipeline.VS, pipeline.PS);
+    }
+
     void UpdateAndDraw(const BasicDrawContext& drawContext, const BasicObject& object)
     {
         auto[context, camera, lights] = drawContext;
         auto[renderable, material, transform] = object;
-        //update constant buffers
-        const auto view = camera.GetView();
-        const auto proj = camera.GetProjection();
-        const auto world = object.GetWorld();
-
-        renderable.VS.UpdateCb(context, cb::BasicCb{
-            world * view * proj,
-            world,
-            DirectX::XMMatrixTranspose(DirectX::XMMatrixInverse(nullptr, world))
-        });
-
+        UpdateMvpCb(drawContext, object.GetWorld(), renderable.VS);
         SetupBasicLighting(drawContext, renderable.PS, material, renderable.Texture.Get(), renderable.Sampler.Get());
-        DrawBasic(context, renderable);
-    }
-
-    //static_assert(is_bindable_v<ID3D11InputLayout>);
-
-    void DrawBasic(ID3D11DeviceContext& context, const BasicRenderable& renderable)
-    {
-        context.IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-        auto[inputLayout, vb, ib, vs, ps, tex, sampler] = renderable;
-        Bind(context, Ref(inputLayout));
-        Bind(context, vb, ib, vs, ps);
-        context.DrawIndexed(ib.CountOfIndices(), 0, 0);
-    }
-
-    BasicObject::BasicObject(BasicRenderable renderable, Smoothness material, DirectX::XMMATRIX matrix)
-        : Renderable{std::move(renderable)},
-        Material{std::move(material)}
-    {
-        DirectX::XMStoreFloat4x4(&Transform, matrix);
+        DrawAllIndexed(context, renderable);
     }
 }

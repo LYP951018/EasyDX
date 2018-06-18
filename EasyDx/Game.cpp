@@ -3,19 +3,21 @@
 #include "GameWindow.hpp"
 #include "Scene.hpp"
 #include "EventLoop.hpp"
+#include "InputSystem.hpp"
 #include <stdexcept>
 #include <gsl/gsl_assert>
 #include <d3d11.h>
 #include <d2d1_1.h>
 #include <dwrite_1.h>
 #include <thread>
+#include <DirectXColors.h>
 
 namespace dx
 {
     void Game::Run()
     {
         const auto fps = fps_;
-        const auto interval = std::chrono::microseconds{ 1000 / fps };
+        const auto interval = std::chrono::milliseconds{ 1000 / fps };
         auto& loop = EventLoop::GetInstanceInCurrentThread();
         TimePoint prev = Clock::now();
         auto& switcher = Switcher();
@@ -24,6 +26,24 @@ namespace dx
         auto& context2D = independent.Context2D();
         MainWindow().Show();
         loop.Run([&](WindowEventArgsPack e) {
+            //wait until the first resize event reach.
+            if (std::holds_alternative<ResizeEventArgs>(e.Arg))
+            {
+                bool firstResize = !m_dependentGraphics.has_value();
+                auto& resizeArg = std::get<ResizeEventArgs>(e.Arg);
+                e.Window->OnResize(resizeArg.NewSize);
+                PrepareGraphicsForResizing(e.Window, resizeArg.NewSize);
+                if (firstResize)
+                {
+                    m_inputSystem->OnInitialized();
+                }
+            }
+            else if (!m_dependentGraphics)
+            {
+                return;
+            }
+
+            //not resize event, and initialized.
             switcher.CheckAndSwitch();
             if (std::holds_alternative<IdleEventArgs>(e.Arg))
             {
@@ -31,16 +51,24 @@ namespace dx
                 const auto delta = now - prev;
                 if (delta >= interval)
                 {
-                    UpdateArgs args{
-                        delta,
-                        context3D,
-                        context2D
-                    };
+                    UpdateArgs args{ delta };
                     prev = now;
-                    switcher.MainScene().Update(args);
+                    m_inputSystem->OnFrameStart();
+                    auto& scene = switcher.MainScene();
+                    scene.Update(args, *this);
+                    auto& dependent = m_dependentGraphics.value();
+                    //TODO: clean up
+                    dependent.DepthStencil_.ClearBoth(context3D);
+                    dependent.SwapChain_.Front().Clear(context3D, DirectX::Colors::Black);
+                    //Ugh
+                    dependent.Bind(context3D);
+                    scene.Render(*this);
+                    dependent.SwapChain_.Present();
+                    m_inputSystem->OnFrameDone();
                 }
                 else
                 {
+                    Sleep(1);
                     std::this_thread::yield();
                 }
             }
@@ -66,30 +94,22 @@ namespace dx
             switch (args.State)
             {
             case ElementState::Pressed:
-                Game_.KeyDown(Window, args);
+                Game_.GetInputSystem().OnKeyDown(args.Key);
                 break;
             case ElementState::Released:
-                Game_.KeyUp(Window, args);
+                Game_.GetInputSystem().OnKeyUp(args.Key);
                 break;
             }
         }
 
-        void operator()(MouseEventArgs args) noexcept
+        void operator()(MouseEventArgs) noexcept
         {
-            switch (args.State)
-            {
-            case ElementState::Pressed:
-                Game_.MouseDown(Window, args);
-                break;
-            case ElementState::Released:
-                Game_.MouseUp(Window, args);
-                break;
-            }
+            //ignore WM_*BUTTON{DOWN, UP}, handle KEY messages only.
         }
 
-        void operator()(CursorMoved args) noexcept
+        void operator()(CursorMoved) noexcept
         {
-            Game_.MouseMove(Window, args);
+            //Game_.GetInputSystem().OnMouseMove(args.Position);
         }
 
         void operator()(DpiChangedEventArgs args) noexcept
@@ -100,7 +120,7 @@ namespace dx
 
         void operator()(ResizeEventArgs args) noexcept
         {
-            PrepareGraphicsForResizing(args.NewSize);
+            //do we need this?
             Game_.WindowResize(Window, args);
         }
 
@@ -109,42 +129,6 @@ namespace dx
         {
             assert(false);
         }
-
-    private:
-        void PrepareGraphicsForResizing(Size newSize)
-        {
-            auto& independent = Game_.IndependentResources();
-            auto& context3D = independent.Context3D();
-            auto& device3D = independent.Device3D();
-            //auto& debug = independent.D3DDebug();
-            auto& dependentGraphics = Game_.DependentResources();
-            auto[newWidth, newHeight] = newSize;
-
-            //first time resizement
-            if (!dependentGraphics)
-            {
-                dependentGraphics.emplace(dx::DependentGraphics{
-                    dx::SwapChain {
-                        independent.Device3D(),
-                        *Window,
-                        dx::SwapChainOptions{}
-                    },
-                    dx::DepthStencil(independent.Device3D(),
-                        newWidth, newHeight)
-                    });
-                return;
-            }
-            auto&[swapChain, depthStencil] = dependentGraphics.value();
-            ID3D11RenderTargetView* nullViews[] = { nullptr };
-            context3D.OMSetRenderTargets(gsl::narrow<UINT>(std::size(nullViews)), nullViews, {});
-            depthStencil.Reset();
-            swapChain.Reset();
-            context3D.Flush();
-            //debug.ReportLiveDeviceObjects(D3D11_RLDO_FLAGS::D3D11_RLDO_DETAIL);
-            swapChain.Resize(device3D, newWidth, newHeight);
-            //TODO: format should be cached.
-            depthStencil = DepthStencil(device3D, newWidth, newHeight);
-        }
     };
 
     void Game::UnpackMessage(WindowEventArgsPack event)
@@ -152,14 +136,50 @@ namespace dx
         std::visit(MessageDispatcher{ *this, event.Window }, std::move(event.Arg));
     }
 
-    void SceneSwitcher::ReallySwitchToScene([[maybe_unused]] Game& game, std::uint32_t index, std::shared_ptr<void> arg)
+    void Game::PrepareGraphicsForResizing(GameWindow* window, Size newSize)
+    {
+        auto& independent = IndependentResources();
+        auto& context3D = independent.Context3D();
+        auto& device3D = independent.Device3D();
+        //auto& debug = independent.D3DDebug();
+        auto& dependentGraphics = DependentResources();
+        auto[newWidth, newHeight] = newSize;
+        auto& camera = Switcher().MainScene().MainCamera();
+        camera.OnResize(newSize);
+        //first time resizement
+        if (!dependentGraphics)
+        {
+            dependentGraphics.emplace(dx::DependentGraphics{
+                dx::SwapChain{
+                    independent.Device3D(),
+                    *window,
+                    dx::SwapChainOptions{}
+                },
+                dx::DepthStencil(independent.Device3D(),
+                    newWidth, newHeight)
+                });
+            return;
+        }
+        auto&[swapChain, depthStencil] = dependentGraphics.value();
+        ID3D11RenderTargetView* nullViews[] = { nullptr };
+        context3D.OMSetRenderTargets(gsl::narrow<UINT>(std::size(nullViews)), nullViews, {});
+        depthStencil.Reset();
+        swapChain.Reset();
+        context3D.Flush();
+        //debug.ReportLiveDeviceObjects(D3D11_RLDO_FLAGS::D3D11_RLDO_DETAIL);
+        swapChain.Resize(device3D, newWidth, newHeight);
+        //TODO: format should be cached.
+        depthStencil = DepthStencil(device3D, newWidth, newHeight);
+    }
+
+    void SceneSwitcher::ReallySwitchToScene([[maybe_unused]] Game& game, std::uint32_t index)
     {
         const auto it = sceneCreators_.find(index);
         if (it != sceneCreators_.end())
         {
             const auto creator = std::move(it->second);
             sceneCreators_.erase(it);
-            mainScene_ = creator(game_, std::move(arg));
+            mainScene_ = creator(game_);
         }
         else
             throw std::logic_error{ "Invalid index!" };
@@ -169,7 +189,7 @@ namespace dx
     {
         if (nextSceneIndex_)
         {
-            ReallySwitchToScene(game_, nextSceneIndex_.value(), std::move(nextSceneArg_));
+            ReallySwitchToScene(game_, nextSceneIndex_.value());
             nextSceneIndex_ = std::nullopt;
         }
     }
@@ -181,7 +201,7 @@ namespace dx
     }
 
     SceneSwitcher::SceneSwitcher(Game& game)
-        : game_{game}
+        : game_{ game }
     {
     }
 
@@ -190,20 +210,20 @@ namespace dx
         sceneCreators_.insert(std::make_pair(index, std::move(creator)));
     }
 
-    void SceneSwitcher::WantToSwitchSceneTo(std::uint32_t index, std::shared_ptr<void> arg)
+    void SceneSwitcher::WantToSwitchSceneTo(std::uint32_t index)
     {
         nextSceneIndex_ = index;
-        nextSceneArg_ = std::move(arg);
     }
 
     IndependentGraphics::~IndependentGraphics()
     {}
 
     Game::Game(IndependentGraphics graphics, std::uint32_t fps)
-        : fps_{fps},
-        grahicsResources_{std::move(graphics)},
-        predefined_{IndependentResources().Device3D()},
-        sceneSwitcher_{*this}
+        : fps_{ fps },
+        grahicsResources_{ std::move(graphics) },
+        predefined_{ IndependentResources().Device3D() },
+        sceneSwitcher_{ *this },
+        m_inputSystem{ MakeUnique<InputSystem>() }
     {
         TryHR(::CoInitialize(nullptr));
     }
@@ -212,7 +232,7 @@ namespace dx
     {
     }
 
-    void RunGame(Game& game, std::unique_ptr<GameWindow> mainWindow, std::uint32_t mainSceneIndex, std::shared_ptr<void> arg)
+    void RunGame(Game& game, std::unique_ptr<GameWindow> mainWindow, std::uint32_t mainSceneIndex)
     {
         //Step 1: setup the main window.
         game.SetUp(std::move(mainWindow));
@@ -220,7 +240,7 @@ namespace dx
         //There always be event registration in Scene::Start, so we must ensure GameWindow::Show be executed after
         //Start.
         auto& sceneSwitcher = game.Switcher();
-        sceneSwitcher.ReallySwitchToScene(game, mainSceneIndex, std::move(arg));
+        sceneSwitcher.ReallySwitchToScene(game, mainSceneIndex);
         //Step 3: run the game.
         game.Run();
     }

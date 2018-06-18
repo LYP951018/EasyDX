@@ -39,5 +39,9 @@ namespace dx
         return shaderBlob;
     }
 
-   
+    void Foo(ID3D11Device& device)
+    {
+        HullShader<>{device, fs::path{}, u8"233"}.ByteCode();
+    }
+
 }

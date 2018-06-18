@@ -1,16 +1,17 @@
 #pragma once
 
-#include <experimental/filesystem>
+#include <filesystem>
 #include <wrl.h>
 #include <memory>
 #include <string_view>
 #include <cstddef>
 #include <gsl/span>
 
-namespace fs = std::experimental::filesystem;
+namespace fs = std::filesystem;
 namespace wrl = Microsoft::WRL;
 
 struct tagRECT;
+struct ID3D10Blob;
 
 namespace dx
 {
@@ -103,10 +104,10 @@ namespace dx
 
     }
 
-    struct Rect
+    struct IntRect
     {
         std::uint32_t LeftTopX, LeftTopY, Width, Height;
-        static Rect FromRECT(const tagRECT& win32Rect) noexcept;
+        static IntRect FromRECT(const tagRECT& win32Rect) noexcept;
     };
 
     struct Noncopyable
@@ -126,7 +127,7 @@ namespace dx
     }
 
     template<typename T, typename... Args>
-    auto MakeUnique(Args&&... args)->std::enable_if_t<std::is_constructible_v<T, Args&&...>,
+    auto MakeUnique(Args&&... args) -> std::enable_if_t<std::is_constructible_v<T, Args&&...>,
         std::unique_ptr<T>>
     {
         return std::make_unique<T>(std::forward<Args>(args)...);
@@ -149,6 +150,15 @@ namespace dx
 
     template<typename T, typename... Args>
     inline constexpr bool is_one_of_v = is_one_of<T, Args...>::value;
+
+    template<typename T, typename... Args>
+    T& construct_at(T* ptr, Args&&... args)
+    {
+        ::new (static_cast<void*>(ptr)) T(std::forward<Args>(args)... );
+        return *ptr;
+    }
+
+    gsl::span<const std::byte> AsSpan(::ID3D10Blob& blob);
 
     using Clock = std::chrono::high_resolution_clock;
     using Duration = Clock::duration;

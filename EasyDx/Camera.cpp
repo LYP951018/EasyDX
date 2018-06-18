@@ -3,6 +3,8 @@
 #include "Resources/Buffers.hpp"
 #include <d3d11.h>
 #include <Windows.h>
+#include "Game.hpp"
+#include "GameWindow.hpp"
 
 namespace dx
 {
@@ -16,12 +18,13 @@ namespace dx
     }
 
     Camera::Camera()
-        : isProjectionDirty_{true},
-        isViewDirty_{true},
-        rotation_{0.f, 0.f, 0.f, 1.f},
-        position_{0.f, 0.f, 0.f, 1.f},
-        data_{aligned_unique<Internal::CameraData>()},
-        viewport_{std::make_unique<D3D11_VIEWPORT>()}
+        : isProjectionDirty_{ true },
+        isViewDirty_{ true },
+        rotation_{ 0.f, 0.f, 0.f, 1.f },
+        position_{ 0.f, 0.f, 0.f, 1.f },
+        data_{ aligned_unique<Internal::CameraData>() },
+        m_viewport{ std::make_unique<Rect>() },
+        m_defaultMove{}
     {
     }
 
@@ -78,6 +81,58 @@ namespace dx
         isViewDirty_ = true;
     }
 
+    void Camera::PrepareForRendering(ID3D11DeviceContext& context3D, const Game& game)
+    {
+        auto[width, height] = game.MainWindow().GetSize();
+        const auto vpWidth = m_viewport->Right * static_cast<float>(width) - m_viewport->Left;
+        const auto vpHeight = m_viewport->Bottom * static_cast<float>(height) - m_viewport->Top;
+        const auto d3dViewport = D3D11_VIEWPORT{
+            m_viewport->Left,
+            m_viewport->Top,
+            vpWidth,
+            vpHeight,
+            0.0f, 1.0f
+        };
+        context3D.RSSetViewports(1, &d3dViewport);
+    }
+
+    void Camera::Update(const UpdateArgs&, const Game & game)
+    {
+        if (m_defaultMove)
+        {
+            auto& inputSystem = game.GetInputSystem();
+            if (inputSystem.IsPressing(VirtualKey::kLeftButton))
+            {
+                auto[x, y] = inputSystem.MouseMoved();
+                const float dx = DirectX::XMConvertToRadians(0.25f * static_cast<float>(x));
+                const float dy = DirectX::XMConvertToRadians(0.25f * static_cast<float>(y));
+                RotateY(dx);
+                RotateX(dy);
+            }
+            if (inputSystem.IsPressing(VirtualKey::kUp))
+            {
+                Walk(1.0f);
+            }
+            if (inputSystem.IsPressing(VirtualKey::kDown))
+            {
+                Walk(-1.0f);
+            }
+            if (inputSystem.IsPressing(VirtualKey::kLeft))
+            {
+                Strafe(-1.0f);
+            }
+            if (inputSystem.IsPressing(VirtualKey::kRight))
+            {
+                Strafe(1.0f);
+            }
+        }
+    }
+
+    void Camera::OnResize(Size newSize)
+    {
+        SetProjection(Fov, newSize.GetAspectRatio(), NearZ, FarZ);
+    }
+
     DirectX::XMVECTOR Camera::LoadTranslation() const noexcept
     {
         return DirectX::XMLoadFloat4(&position_);
@@ -91,10 +146,10 @@ namespace dx
     void Camera::SetProjection(float fov, float aspectRatio, float nearZ, float farZ) noexcept
     {
         isProjectionDirty_ = true;
-        fov_ = fov;
+        Fov = fov;
         aspectRatio_ = aspectRatio;
-        nearZ_ = nearZ;
-        farZ_ = farZ;
+        NearZ = nearZ;
+        FarZ = farZ;
     }
 
     void Camera::SetLookAt(const DirectX::XMFLOAT3& eye, const DirectX::XMFLOAT3& target, const DirectX::XMFLOAT3& up) noexcept
@@ -136,7 +191,7 @@ namespace dx
         auto& projection = data_->Projection;
         if (isProjectionDirty_)
         {
-            projection = DirectX::XMMatrixPerspectiveFovLH(fov_, aspectRatio_, nearZ_, farZ_);
+            projection = DirectX::XMMatrixPerspectiveFovLH(Fov, aspectRatio_, NearZ, FarZ);
             isProjectionDirty_ = false;
         }
         return projection;
@@ -145,6 +200,11 @@ namespace dx
     DirectX::XMFLOAT3 Camera::GetEyePos() const noexcept
     {
         return { position_.x, position_.y, position_.z };
+    }
+
+    void Camera::UseDefaultMoveEvents(bool use)
+    {
+        m_defaultMove = use;
     }
 
     void Camera::Walk(float d) noexcept

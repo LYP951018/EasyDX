@@ -17,7 +17,7 @@ namespace dx
         const char* entryPoint,
         const char* shaderModel);
 
-#define DEF_SHADER(prefix, shaderName, className) \
+#define DEF_SHADER(prefix, shaderName, className, shaderModel) \
     template<typename... ConstantBufferT>\
     struct className\
     {\
@@ -28,14 +28,23 @@ namespace dx
         className() = default;\
 \
         /*TODO: allow to pass constant buffer directly */ \
-        className(ID3D11Device& device, gsl::span<const std::byte> byteCode)\
-            : shader_{ CONCAT(Create, shaderName)(device, byteCode)},\
-            gpuCbs_{MakeConstantBuffer<ConstantBufferT>(device)...}\
+        className(ID3D11Device& device, wrl::ComPtr<ID3D10Blob> byteCode)\
+            : shader_{ CONCAT(Create, shaderName)(device, AsSpan(dx::Ref(byteCode)))},\
+            gpuCbs_{MakeConstantBuffer<ConstantBufferT>(device)...},\
+            byteCode_{std::move(byteCode)}\
         {}\
 \
-       /*FIXME*/ \
-        className(ID3D11Device& device, const fs::path& filePath, const char* entryName);\
-            \
+    template<std::size_t N>\
+    className(ID3D11Device& device, const unsigned char(&byteCode)[N])\
+        : shader_{ CONCAT(Create, shaderName)(device, gsl::make_span(reinterpret_cast<const std::byte*>(byteCode), N)) }, \
+        gpuCbs_{ MakeConstantBuffer<ConstantBufferT>(device)... }, \
+        byteCode_{ gsl::make_span(reinterpret_cast<const std::byte*>(byteCode), N) }\
+    {}\
+\
+        className(ID3D11Device& device, const fs::path& filePath, const char* entryName)\
+            : className{device, CompileShaderFromFile(filePath.c_str(), entryName, shaderModel)}\
+        {}\
+\
         void UpdateCb(ID3D11DeviceContext& context, const ConstantBufferT&... cpuCbs)\
         {\
             this->UpdateCbImpl(context, std::forward_as_tuple(cpuCbs...), std::make_index_sequence<sizeof...(ConstantBufferT)>{});\
@@ -51,7 +60,16 @@ namespace dx
     }\
         NativeType* D3DShader() const noexcept { return shader_.Get(); }\
         gsl::span<const Ptr<ID3D11Buffer>, kCbSize> GpuCbs() const noexcept { return ComPtrsCast(gsl::span<const wrl::ComPtr<ID3D11Buffer>, kCbSize>(gpuCbs_)); }\
-                \
+        gsl::span<const std::byte> ByteCode() const noexcept { \
+            switch (byteCode_.index())\
+            {\
+                case 0:\
+                    return AsSpan(Ref(std::get<0>(byteCode_))); \
+                case 1:\
+                    return std::get<1>(byteCode_); \
+            }\
+            assert(false);\
+    }       \
 HOOK \
     private:\
         template<std::size_t... I>\
@@ -62,6 +80,7 @@ HOOK \
                 \
         wrl::ComPtr<NativeType> shader_;\
         std::array<wrl::ComPtr<ID3D11Buffer>, kCbSize> gpuCbs_;\
+        std::variant<wrl::ComPtr<ID3D10Blob>, gsl::span<const std::byte>> byteCode_;  \
     };\
         template<typename... ConstantBufferT> \
         void Bind(ID3D11DeviceContext& context, const className<ConstantBufferT...>& shader)\
@@ -71,12 +90,12 @@ HOOK \
             context.CONCAT(prefix, SetConstantBuffers)(0, gsl::narrow<UINT>(gpuCbs.size()), gpuCbs.data()); \
         }\
 
-#define DEF_SHADER_SIMPLE(prefix, shaderName) DEF_SHADER(prefix, shaderName, shaderName)
+#define DEF_SHADER_SIMPLE(prefix, shaderName, shaderModel) DEF_SHADER(prefix, shaderName, shaderName, shaderModel)
 
-#define HOOK 
-    DEF_SHADER_SIMPLE(HS, HullShader)
-    DEF_SHADER_SIMPLE(DS, DomainShader)
-    DEF_SHADER_SIMPLE(VS, VertexShader)
+#define HOOK
+    DEF_SHADER_SIMPLE(HS, HullShader, "hs_5_0")
+    DEF_SHADER_SIMPLE(DS, DomainShader, "ds_5_0")
+    DEF_SHADER_SIMPLE(VS, VertexShader, "vs_5_0")
 
 //Make clang happy
 #undef HOOK
@@ -90,7 +109,7 @@ context3D.PSSetSamplers(startSlot, gsl::narrow<UINT>(samplers.size()), samplers.
     {\
         context3D.PSSetSamplers(startSlot, 1, &sampler); \
     }
-        DEF_SHADER_SIMPLE(PS, PixelShader)
+        DEF_SHADER_SIMPLE(PS, PixelShader, "ps_5_0")
 #undef HOOK
 }
 

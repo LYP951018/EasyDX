@@ -30,8 +30,9 @@ namespace dx
         const auto factory = Internal::GetParent<IDXGIFactory1>(Ref(adapter));
         DXGI_SWAP_CHAIN_DESC desc = {};
         desc.BufferCount = gsl::narrow<UINT>(options.CountOfBackBuffers);
-        desc.BufferDesc.Width = gsl::narrow<UINT>(window.GetWidth());
-        desc.BufferDesc.Height = gsl::narrow<UINT>(window.GetHeight());
+        auto[width, height] = window.GetSize();
+        desc.BufferDesc.Width = gsl::narrow<UINT>(width);
+        desc.BufferDesc.Height = gsl::narrow<UINT>(height);
         desc.BufferDesc.Format = static_cast<DXGI_FORMAT>(options.BackBufferFormat);
         desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
         desc.OutputWindow = window.NativeHandle();

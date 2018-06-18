@@ -2,6 +2,7 @@
 
 #include <DirectXMath.h>
 #include "AlignedAllocator.hpp"
+#include "Misc.hpp"
 
 namespace dx
 {
@@ -16,7 +17,10 @@ namespace dx
         struct alignas(16) CameraData;
     }
 
-    class Camera
+    class Game;
+    struct UpdateArgs;
+
+    class Camera : Noncopyable
     {
     public:
         Camera();
@@ -34,25 +38,33 @@ namespace dx
         DirectX::XMMATRIX GetView() const noexcept;
         DirectX::XMMATRIX GetProjection() const noexcept;
         DirectX::XMFLOAT3 GetEyePos() const noexcept;
+        void UseDefaultMoveEvents(bool use);
         void Walk(float d) noexcept;
         void Strafe(float d) noexcept;
 
-        D3D11_VIEWPORT& Viewport() noexcept { return *viewport_; }
-        const D3D11_VIEWPORT& Viewport() const noexcept { return *viewport_; }
+        Rect& Viewport() noexcept { return *m_viewport; }
+        const Rect& Viewport() const noexcept { return *m_viewport; }
+
+        float Fov;
+        float NearZ, FarZ;
 
     private:
+        friend class Scene;
+        friend class Game;
+        void PrepareForRendering(ID3D11DeviceContext& context3D, const Game& game);
+        void Update(const UpdateArgs& args, const Game& game);
+        void OnResize(Size newSize);
+
         DirectX::XMVECTOR LoadTranslation() const noexcept;
         DirectX::XMVECTOR LoadRotation() const noexcept;
 
-        float fov_;
         float aspectRatio_;
-        float nearZ_, farZ_;
-
         mutable bool isProjectionDirty_, isViewDirty_;
+        bool m_defaultMove;
         DirectX::XMFLOAT4 rotation_;
         DirectX::XMFLOAT4 position_;
         aligned_unique_ptr<Internal::CameraData> data_;
-        Box<D3D11_VIEWPORT> viewport_;
+        std::unique_ptr<Rect> m_viewport;
     };
 
 }

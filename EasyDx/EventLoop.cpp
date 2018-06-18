@@ -131,14 +131,6 @@ namespace dx
         const auto MakeKeyStates = [&]() noexcept {
             return KeyStates{ static_cast<std::uint32_t>(wParam) };
         };
-        const auto MakeMouseArgs = [&](MouseButton button, ElementState state) noexcept {
-            return MouseEventArgs{
-                PosFromLParam(lParam),
-                state,
-                button,
-                MakeKeyStates()
-            };
-        };
         auto& eventLoop = EventLoop::GetInstanceInCurrentThread();
         const auto PushEvent = [&](auto arg)
         {
@@ -163,30 +155,22 @@ namespace dx
             const auto newDpiX = static_cast<std::uint32_t>(LOWORD(wParam));
             const auto newDpiY = static_cast<std::uint32_t>(HIWORD(wParam));
             const auto rect = *reinterpret_cast<const RECT*>(lParam);
-            const auto newRect = Rect::FromRECT(rect);
+            const auto newRect = IntRect::FromRECT(rect);
             PushEvent(DpiChangedEventArgs{ newDpiX, newDpiY, newRect });
         }
         break;
+        //TODO: Right buttons
+        case WM_LBUTTONDOWN:
+            PushEvent(KeyEventArgs{ static_cast<std::uint32_t>(VirtualKey::kLeftButton), ElementState::Pressed, MakeKeyStates() });
+            break;
+        case WM_LBUTTONUP:
+            PushEvent(KeyEventArgs{ static_cast<std::uint32_t>(VirtualKey::kLeftButton), ElementState::Released, MakeKeyStates() });
+            break;
         case WM_KEYDOWN:
             PushEvent(KeyEventArgs{ static_cast<std::uint32_t>(wParam), ElementState::Pressed, MakeKeyStates() });
             break;
         case WM_KEYUP:
             PushEvent(KeyEventArgs{ static_cast<std::uint32_t>(wParam), ElementState::Released, MakeKeyStates() });
-            break;
-        case WM_LBUTTONDOWN:
-            PushEvent(MakeMouseArgs(MouseButton::kLeft, ElementState::Pressed));
-            break;
-        case WM_RBUTTONDOWN:
-            PushEvent(MakeMouseArgs(MouseButton::kRight, ElementState::Pressed));
-            break;
-        case WM_LBUTTONUP:
-            PushEvent(MakeMouseArgs(MouseButton::kLeft, ElementState::Pressed));
-            break;
-        case WM_RBUTTONUP:
-            PushEvent(MakeMouseArgs(MouseButton::kRight, ElementState::Released));
-            break;
-        case WM_MOUSEMOVE:
-            PushEvent(CursorMoved{PosFromLParam(lParam), MakeKeyStates()});
             break;
         default:
             break;

@@ -1,62 +1,63 @@
 #pragma once
 
 #include "Events.hpp"
+#include "Camera.hpp"
+#include "Light.hpp"
 
 namespace dx
 {
-    //poor man's scene
-    class Camera;
+    class ObjectBase;
+    struct UpdateArgs;
 
-    struct UpdateArgs
+    class Scene final : Noncopyable
     {
-        Duration Delta;
-        ID3D11DeviceContext& Context3D;
-        ID2D1DeviceContext& Context2D;
-    };
-
-    class Scene
-    {
-        friend class GameWindow;
-        friend class Game;
-
     public:
-        Scene(Game& game);
-        virtual ~Scene();
-
-        Camera& GetMainCamera() const noexcept;
-        Game& GetGame() const { return game_; }
-
-    protected:
-        virtual void Update(const UpdateArgs& updateArgs);
-
         template<typename...Args, typename F>
         void RegisterEvent(Events<Args...>& event, F&& callback)
         {
             eventHandles_.push_back(event.Add(std::forward<F>(callback)));
         }
 
-        void AddCameraMovement();
+        Camera& MainCamera()
+        {
+            return mainCamera_;
+        }
+
+        const Camera& MainCamera() const
+        {
+            return mainCamera_;
+        }
+
+        std::vector<Light>& Lights()
+        {
+            return m_lights;
+        }
+
+        const std::vector<Light>& Lights() const
+        {
+            return m_lights;
+        }
+
+        using ObjectsContainer = std::vector<std::shared_ptr<ObjectBase>>;
+
+        ObjectsContainer& Objects()
+        {
+            return m_objects;
+        }
+
+        const ObjectsContainer& Objects() const
+        {
+            return m_objects;
+        }
 
     private:
-        void AddBasicEvents();
-        
-        Game& game_;
-        //XXX
-        std::optional<dx::Point> oldPoint_;
-        //TODO: remove unique_ptr.
-        std::unique_ptr<Camera> mainCamera_;
+        friend class Game;
+        void Update(const UpdateArgs& args, const Game& game);
+        void Render(const Game& game);
+
+        Camera mainCamera_;
+        std::vector<Light> m_lights;
         std::vector<std::unique_ptr<IEventHandle>> eventHandles_;
-    };
-
-
-    template<typename SceneT>
-    struct BasicSceneCreator
-    {
-        static_assert(std::is_base_of_v<Scene, SceneT>, "SceneT should derive from dx::Scene");
-
-        std::unique_ptr<Scene> operator()(Game& game, std::shared_ptr<void> arg)
-        {
-            return std::make_unique<SceneT>(game, std::move(arg));
-        }
+        std::vector<std::shared_ptr<ObjectBase>> m_objects;
     };
 }

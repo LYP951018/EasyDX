@@ -53,7 +53,7 @@ void MainScene::BuildRoom(ID3D11Device& device, const dx::PredefinedResources& p
             dx::BasicRenderable {
                 simpleLayout, 
                 dx::ImmutableVertexBuffer{device, gsl::make_span(FloorVertices)},
-                dx::ImmutableIndexBuffer{device, gsl::make_span(FloorIndices)}, 
+                dx::ConstIndexBuffer{device, gsl::make_span(FloorIndices)}, 
                 basicVS, 
                 basicPS, 
                 dx::Get2DTexView(device, dx::Ref(floorTex)), 
@@ -95,7 +95,7 @@ void MainScene::BuildRoom(ID3D11Device& device, const dx::PredefinedResources& p
             dx::BasicRenderable {
                 simpleLayout , 
                 dx::ImmutableVertexBuffer{device, gsl::make_span(WallVertices)}, 
-                dx::ImmutableIndexBuffer{device, gsl::make_span(wallIndices)},
+                dx::ConstIndexBuffer{device, gsl::make_span(wallIndices)},
                 basicVS, 
                 basicPS, 
                 dx::Get2DTexView(device, dx::Ref(wallTex)), 
@@ -132,7 +132,7 @@ void MainScene::BuildRoom(ID3D11Device& device, const dx::PredefinedResources& p
             dx::BasicRenderable {
                 simpleLayout, 
                 dx::ImmutableVertexBuffer{device, gsl::make_span(MirrorVertices)}, 
-                dx::ImmutableIndexBuffer{device, gsl::make_span(MirrorIndices)}, 
+                dx::ConstIndexBuffer{device, gsl::make_span(MirrorIndices)}, 
                 basicVS, 
                 basicPS, 
                 dx::Get2DTexView(device, dx::Ref(mirrorTex)), 
@@ -161,7 +161,7 @@ void MainScene::BuildRoom(ID3D11Device& device, const dx::PredefinedResources& p
             dx::BasicRenderable{
                 simpleLayout, 
                 dx::ImmutableVertexBuffer{device, gsl::make_span(mesh.Vertices)},
-                dx::ImmutableIndexBuffer{device, gsl::make_span(mesh.Indices)},
+                dx::ConstIndexBuffer{device, gsl::make_span(mesh.Indices)},
                 basicVS, 
                 basicPS, 
                 {}, 
@@ -176,7 +176,7 @@ void MainScene::BuildRoom(ID3D11Device& device, const dx::PredefinedResources& p
             dx::BasicRenderable{
                 simpleLayout,
                 dx::ImmutableVertexBuffer{ device, gsl::make_span(mesh.Vertices) },
-                dx::ImmutableIndexBuffer{ device, gsl::make_span(mesh.Indices) },
+                dx::ConstIndexBuffer{ device, gsl::make_span(mesh.Indices) },
                 basicVS, 
                 basicPS,
                 {},

@@ -16,3 +16,5 @@
 #include "Predefined.hpp"
 #include "EventLoop.hpp"
 #include "Resources.hpp"
+#include "Bind.hpp"
+#include "ObjectBase.hpp"

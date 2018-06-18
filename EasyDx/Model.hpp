@@ -1,25 +1,33 @@
 ﻿#pragma once
 
 #include "DXDef.hpp"
-#include "Texture.hpp"
-#include "Material.hpp"
-#include "Mesh.hpp"
-//#include <tuple>
-//#include <experimental/generator>
+#include "Vertex.hpp"
+#include "Resources/Buffers.hpp"
 
 namespace dx
 {
-    //FIXME: 在完成 struct Vertex -> input slots 的重构前屏蔽该 API。
-   /* auto LoadFromModel(ID3D11Device& device, const fs::path& filePath) ->
-        std::experimental::generator<
-        std::tuple<SimpleCpuMesh, TextureSampler, Smoothness>>;*/
+    struct ModelResultUnit
+    {
+        Float4Stream Positions;
+        Float4Stream Normals;
+        Float4Stream Tangents;
+        Float4Stream Bitangents;
+        Float4Stream Colors;
+        Float2Stream TexCoords;
+        std::vector<Index> Indices;
+
+        void Reserve(std::size_t size);
+    };
+
+    auto LoadFromModel(ID3D11Device& device, const fs::path& filePath)
+        -> std::unordered_multimap<std::string, ModelResultUnit>;
 
     void MakeCylinder(float bottomRadius, float topRadius, float height, std::uint16_t sliceCount,
-        std::uint16_t stackCount, CpuMesh<SimpleVertex>& meshData);
+        std::uint16_t stackCount, ModelResultUnit& meshData);
 
     void MakeUVSphere(float radius, std::uint16_t sliceCount, std::uint16_t stackCount, 
-        CpuMesh<SimpleVertex>& meshData);
+        ModelResultUnit& meshData);
 
-    void MakeIcoSphere(std::uint32_t recursionLevel,
-        CpuMesh<SimpleVertex>& meshData);
+    /*void MakeIcoSphere(std::uint32_t recursionLevel,
+        CpuMesh<SimpleVertex>& meshData);*/
 }
