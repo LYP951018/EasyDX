@@ -99,8 +99,3 @@ namespace dx
         return view;
     }
 }
-
-extern wchar_t _CONST_RETURN* __CRTDECL wmemchr(
-    _In_reads_(_N) wchar_t const* _S,
-    _In_           wchar_t        _C,
-    _In_           size_t         _N);
