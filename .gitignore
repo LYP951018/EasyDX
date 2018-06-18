@@ -266,3 +266,4 @@ PixelShader.hpp
 VertexShader.hpp
 HullShader.hpp
 DomainShader.hpp
+Instanced/InstancingVS.hpp
