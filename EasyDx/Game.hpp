@@ -3,15 +3,16 @@
 #include "Predefined.hpp"
 #include "Events.hpp"
 #include "DependentGraphics.hpp"
+#include "GlobalD3DResources.hpp"
 
 namespace dx
 {
     class GameWindow;
-    class Scene;
+    class SceneBase;
     class Game;
     class InputSystem;
 
-    using SceneCreator = std::function<std::unique_ptr<Scene>(Game&)>;
+    using SceneCreator = std::function<std::unique_ptr<SceneBase>(Game&)>;
 
     struct IndependentGraphics : Noncopyable
     {
@@ -31,6 +32,7 @@ namespace dx
         IndependentGraphics(IndependentGraphics&&) = default;
 
         ID3D11Device& Device3D() const { return Ref(device3D_); }
+        wrl::ComPtr<ID3D11Device> SharedDevice3D() const { return device3D_; }
         ID3D11DeviceContext& Context3D() const { return Ref(context3D_); }
         ID2D1Factory1& Factory2D() const { return Ref(fanctory2D_); }
         ID2D1Device& Device2D() const { return Ref(device2D_); }
@@ -64,7 +66,7 @@ namespace dx
         //TODO: enum version.
         void WantToSwitchSceneTo(std::uint32_t index);
 
-        Scene& MainScene() const { return *mainScene_; }
+        SceneBase& MainScene() const { return *mainScene_; }
 
     private:
         void ReallySwitchToScene(Game& game, std::uint32_t index);
@@ -72,7 +74,7 @@ namespace dx
         void Reset();
 
         std::unordered_map<std::uint32_t, SceneCreator> sceneCreators_;
-        std::unique_ptr<Scene> mainScene_;
+        std::unique_ptr<SceneBase> mainScene_;
         std::optional<std::uint32_t> nextSceneIndex_;
         Game& game_;
     };
@@ -95,7 +97,7 @@ namespace dx
 
         GameWindow& MainWindow() const { return *mainWindow_; }
         const IndependentGraphics& IndependentResources() const noexcept { return grahicsResources_; }
-        std::optional<DependentGraphics>& DependentResources() noexcept { return m_dependentGraphics; }
+        DependentGraphics& DependentResources() const noexcept { return m_dependentGraphics.value(); }
         const PredefinedResources& Predefined() const noexcept { return predefined_; }
         SceneSwitcher& Switcher() noexcept { return sceneSwitcher_; }
         const SceneSwitcher& Switcher() const noexcept { return sceneSwitcher_; }
@@ -112,7 +114,7 @@ namespace dx
 
         const IndependentGraphics grahicsResources_;
         //this guy's initalization will be delayed to the first WM_SIZE, so we mark it as optional
-        std::optional<DependentGraphics> m_dependentGraphics;
+        mutable std::optional<DependentGraphics> m_dependentGraphics;
         const PredefinedResources predefined_;
         SceneSwitcher sceneSwitcher_;
         //TODO: only one window?

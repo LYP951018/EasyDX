@@ -24,10 +24,10 @@ namespace dx
         template<typename ArgT>
         void PushEvent(GameWindow* window, ArgT arg)
         {
-            std::lock_guard<std::mutex> lg{ swapLock_ };
-            frontEvents_.push_back(dx::WindowEventArgsPack{
-                window, std::move(arg)
-            });
+            {
+                std::lock_guard lg{swapLock_};
+                frontEvents_.push_back(dx::WindowEventArgsPack{window, std::move(arg)});
+            }
             consumerCv_.notify_one();
         }
 

@@ -25,6 +25,15 @@
     <Filter Include="Source Files\Resources">
       <UniqueIdentifier>{5a0a9dd8-254b-4f28-bafb-21020b165a67}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Systems">
+      <UniqueIdentifier>{0c74a0fd-fd55-42bd-9152-719a71f0aecb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Systems">
+      <UniqueIdentifier>{3d9de2e2-62fd-4649-bcd0-c57aa445053a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shaders\FakeShaders">
+      <UniqueIdentifier>{cac2e241-33df-4010-b575-13476c9cf82a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Game.hpp">
@@ -63,9 +72,6 @@
     <ClInclude Include="Light.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Transformation.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Model.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -88,9 +94,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Vertex.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Instancing.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="WinDecl.hpp">
@@ -126,13 +129,40 @@
     <ClInclude Include="Fwd.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="InputSystem.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ComponentBase.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderQueue.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Transform.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="Object.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ObjectBase.hpp">
+    <ClInclude Include="Systems\SimpleRender.hpp">
+      <Filter>Header Files\Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="MeshRenderer.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="InputSystem.hpp">
+    <ClInclude Include="GraphicsDevices.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DxMathWrappers.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GlobalD3DResources.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Resources\DepthStencilState.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Render.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -153,9 +183,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="CBStructs.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Transformation.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Model.cpp">
@@ -197,10 +224,34 @@
     <ClCompile Include="D3DHelpers.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ObjectBase.cpp">
+    <ClCompile Include="InputSystem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="InputSystem.cpp">
+    <ClCompile Include="ComponentBase.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Transform.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Object.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Systems\SimpleRender.cpp">
+      <Filter>Source Files\Systems</Filter>
+    </ClCompile>
+    <ClCompile Include="GraphicsDevices.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MeshRenderer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Render.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="DxMathWrappers.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Vertex.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -218,6 +269,15 @@
     </FxCompile>
     <FxCompile Include="Shaders\BasicPS.hlsl">
       <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\FakeShaders\PosVS.hlsl">
+      <Filter>Shaders\FakeShaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\FakeShaders\PosNormal.hlsl">
+      <Filter>Shaders\FakeShaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\FakeShaders\PosNormalTex.hlsl">
+      <Filter>Shaders\FakeShaders</Filter>
     </FxCompile>
   </ItemGroup>
 </Project>

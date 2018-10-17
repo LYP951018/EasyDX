@@ -14,6 +14,7 @@ struct ID3D11DomainShader;
 struct ID3D11InputLayout;
 struct IDXGIDevice;
 struct IDXGIDevice1;
+struct ID3D11Debug;
 struct ID3D11ShaderResourceView;
 struct ID3D11Texture2D;
 struct ID3D11Resource;
@@ -22,6 +23,8 @@ struct ID3D11DepthStencilState;
 struct ID3D11BlendState;
 struct ID3D11RasterizerState;
 struct ID3D11DeviceChild;
+struct ID3D11ShaderReflectionConstantBuffer;
+struct ID3D11ShaderReflection;
 
 struct ID2D1Factory1;
 struct ID2D1Device;
@@ -80,6 +83,15 @@ namespace dx
         Depth24UNormStencilS8UInt = 45
     };
 
+    enum class ResourceMapType
+    {
+        Read = 1,
+        Write = 2,
+        ReadWrite = 3,
+        WriteDiscard = 4,
+        WriteNoOverwrite = 5
+    };
+
     template<DxgiFormat>
     struct dxgi_format_map;
 
@@ -88,5 +100,10 @@ namespace dx
     {
         using type = std::uint16_t;
     };
+
+    inline constexpr std::uint32_t kMaxStreamCount = 8;
+
+    template<typename T>
+    using MaxStreamVector = boost::container::static_vector<T, kMaxStreamCount>;
 }
 

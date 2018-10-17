@@ -3,17 +3,17 @@
 
 namespace dx
 {
-    DirectX::XMFLOAT4 MakePosition(const DirectX::XMFLOAT3& position) noexcept
+    DirectX::XMFLOAT4 MakePosition4(const DirectX::XMFLOAT3& position) noexcept
     {
-        return MakePosition(position.x, position.y, position.z);
+        return MakePosition4(position.x, position.y, position.z);
     }
 
-    DirectX::XMFLOAT4 MakePosition(float x, float y, float z) noexcept
+    DirectX::XMFLOAT4 MakePosition4(float x, float y, float z) noexcept
     {
         return { x, y, z, 1.f };
     }
 
-    DirectX::XMFLOAT4 MakePosition(DirectX::XMVECTOR vec) noexcept
+    DirectX::XMFLOAT4 MakePosition4(DirectX::XMVECTOR vec) noexcept
     {
         DirectX::XMFLOAT4 result;
         DirectX::XMStoreFloat4(&result, vec);
@@ -21,17 +21,17 @@ namespace dx
         return result;
     }
 
-    DirectX::XMFLOAT4 MakeDirection(const DirectX::XMFLOAT3& direction) noexcept
+    DirectX::XMFLOAT4 MakeDirection4(const DirectX::XMFLOAT3& direction) noexcept
     {
-        return MakeDirection(direction.x, direction.y, direction.z);
+        return MakeDirection4(direction.x, direction.y, direction.z);
     }
 
-    DirectX::XMFLOAT4 MakeDirection(float x, float y, float z) noexcept
+    DirectX::XMFLOAT4 MakeDirection4(float x, float y, float z) noexcept
     {
         return { x, y, z, 0.f };
     }
 
-    DirectX::XMFLOAT4 MakeDirection(DirectX::XMVECTOR vec) noexcept
+    DirectX::XMFLOAT4 MakeDirection4(DirectX::XMVECTOR vec) noexcept
     {
         DirectX::XMFLOAT4 result;
         DirectX::XMStoreFloat4(&result, vec);

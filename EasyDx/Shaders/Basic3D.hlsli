@@ -1,38 +1,48 @@
 namespace dx
 {
-    struct InstancedVertexInput
+    namespace Inputs
     {
-        float4 Position : POSITION;
-        float4 Normal : NORMAL;
-        float2 TexCoord : TEXCOORD;
+        struct Pos
+        {
+            float4 Position : POSITION;
+        };
 
-        matrix WorldMatrix : WORLDMATRIX;
-        matrix InvTransWorldMatrix : INVTRANSWORLDMATRIX;
-    };
+        struct PosNormal
+        {
+            float4 Position : POSITION;
+            float4 Normal : NORMAL;
+        };
 
-    struct InstancedVertexOutput
+        struct PosNormalTex
+        {
+            float4 Position : POSITION;
+            float4 Normal : NORMAL;
+            float2 TexCoord : TEXCOORD;
+        };
+
+        struct PosNormalTanTex
+        {
+            float4 Position : POSITION;
+            float4 Normal : NORMAL;
+            float4 TangentU : TANGENT;
+            float2 TexCoord : TEXCOORD;
+        };
+    } // namespace Inputs
+
+    namespace Outputs
     {
-        float4 PositionWS : TEXCOORD1;
-        float3 NormalWS : TEXCOORD2;
-        float2 TexCoord : TEXCOORD0;
-        float4 Position : SV_Position;
-    };
+        struct Pos
+        {
+            float4 Position : SV_Position;
+            float4 PositionWS : TEXCOORD0;
+        };
 
-    struct VertexInput
-    {
-        float4 Position : POSITION;
-        float4 Normal : NORMAL;
-        float4 TangentU : TANGENT;
-        float2 TexCoord : TEXCOORD;
-    };
-
-    struct VertexOutput
-    {
-        float4 Position : SV_Position;
-        float4 PositionWS : TEXCOORD0;
-        float3 NormalWS : TEXCOORD1;
-        float2 TexCoord : TEXCOORD2;
-    };
-}
-
-
+        struct PosNormalTex
+        {
+            float4 Position : SV_Position;
+            float4 PositionWS : TEXCOORD0;
+            float3 NormalWS : TEXCOORD1;
+            float2 TexCoord : TEXCOORD2;
+        };
+    } // namespace Output
+} // namespace dx

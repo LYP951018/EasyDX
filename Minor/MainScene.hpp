@@ -1,22 +1,30 @@
 #pragma once
 
-#include <EasyDx/Scene.hpp>
-#include <EasyDx/EasyDx.Common/Common.hpp>
-#include <EasyDx/Light.hpp>
-#include <EasyDx/Predefined.hpp>
-#include <array>
+#include <DirectXMath.h>
+#include <EasyDx/Fwd.hpp>
 
-class MainScene : public dx::Scene
+
+class MainScene : public dx::SceneBase
 {
-public:
-    MainScene(dx::Game&, dx::Rc<void> args);
-    void Update(const dx::UpdateArgs& updateArgs) override;
-    ~MainScene() override;
+  public:
+    MainScene(dx::Game&);
 
-private:
-    dx::BasicObject sphere_, mirror_, wall_, floor_, reflectedSphere_, sphereShadow_;
-    std::array<dx::Light, 3> dirLights_;
-
-    void BuildRoom(ID3D11Device& device, const dx::PredefinedResources& predefined);
+  private:
+    //void Update(const dx::UpdateArgs& args, const dx::Game& game) override;
+    void Render(const dx::Game& game) override;
     void BuildLights();
+    void BuildObjects();
+    void InitReflectedMaterial();
+    void BuildCamera();
+    void LoadTextures();
+    std::unique_ptr<dx::Object> MakeBall() const;
+    std::unique_ptr<dx::Object> MakeMirror() const;
+    std::unique_ptr<dx::Object> MakeWall() const;
+    std::unique_ptr<dx::Object> MakeFloor() const;
+
+    wrl::ComPtr<ID3D11Texture2D> m_checkBoardTex, m_brick01Tex, m_iceTex;
+    ID3D11Device& m_device3D;
+    const dx::PredefinedResources& m_predefined;
+    std::unique_ptr<dx::Object> m_floor, m_wall, m_mirror, m_ball;
+    std::shared_ptr<dx::Material> m_reflectedMaterial;
 };

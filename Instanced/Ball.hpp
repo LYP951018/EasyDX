@@ -16,7 +16,7 @@ struct Pipeline
 
     wrl::ComPtr<ID3D11InputLayout> Layout;
     std::array<dx::VertexBuffer, 4> Vbs;
-    dx::ConstIndexBuffer Ib;
+    dx::IndexBuffer Ib;
     dx::VertexShader<MatrixCb> VS;
     dx::SimpleLightingPS PS;
     wrl::ComPtr<ID3D11ShaderResourceView> Tex;

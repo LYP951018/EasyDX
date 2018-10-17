@@ -43,11 +43,15 @@ namespace dx
         UpdateBuffers(device);
     }
 
+    SwapChain::SwapChain(SwapChain&& rhs)
+        : swapChain_{std::move(rhs.swapChain_)}, backBuffer_{std::move(rhs.backBuffer_)}, options_{rhs.options_}
+    {}
+
     SwapChain::~SwapChain()
     {
     }
 
-    auto SwapChain::Front() -> BackBuffer&
+    auto SwapChain::Front() const -> BackBuffer&
     {
         return backBuffer_;
     }
@@ -72,7 +76,7 @@ namespace dx
     void SwapChain::UpdateBuffers(ID3D11Device& device)
     {
         //https://msdn.microsoft.com/en-us/library/windows/desktop/mt427784%28v=vs.85%29.aspx
-        //In Direct3D 11, applications could call GetBuffer(0, ¡­) only once.Every call to Present implicitly changed the resource identity of the returned interface.
+        //In Direct3D 11, applications could call GetBuffer(0, ï¿½ï¿½) only once.Every call to Present implicitly changed the resource identity of the returned interface.
         backBuffer_ = BackBuffer{device, GetBuffer(Ref(swapChain_), 0) };
     }
 
@@ -143,7 +147,7 @@ namespace dx
         tex_.Reset();
     }
 
-    void DependentGraphics::Bind(ID3D11DeviceContext& context3D)
+    void DependentGraphics::Bind(ID3D11DeviceContext& context3D) const
     {
         auto& backBuffer = SwapChain_.Front();
         ID3D11RenderTargetView* views[] = { &backBuffer.RtView() };

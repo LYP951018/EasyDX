@@ -84,7 +84,7 @@ void MainScene::Update(const dx::UpdateArgs& args)
     //1, update frame constant buffer.
     auto& cbPerFrame = cpuCbPerFrame_->Data();
     cbPerFrame.Dlight.FromPoint(lightGlobal_);
-    cbPerFrame.EyePos = dx::MakePosition(GetMainCamera().GetEyePos());
+    cbPerFrame.EyePos = dx::MakePosition4(GetMainCamera().GetEyePos());
     cpuCbPerFrame_->Flush(args.Context3D);
     //2, invoke all behaviors
     dx::BehaviorSystem(ball, args);

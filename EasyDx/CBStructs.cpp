@@ -17,7 +17,7 @@ namespace dx::cb
     Light::Light(const dx::PointLight & point) noexcept
     {
         Type = LightType::PointLight;
-        Position = MakePosition(point.Position);
+        Position = MakePosition4(point.Position);
         const auto& att = point.Attr;
         ConstantAttenuation = att.x;
         LinearAttenuation = att.y;
@@ -30,7 +30,7 @@ namespace dx::cb
     Light::Light(const dx::DirectionalLight & directional) noexcept
     {
         Type = LightType::DirectionalLight;
-        Direction = MakeDirection(directional.Direction);
+        Direction = MakeDirection4(directional.Direction);
         Color = directional.Color;
         Enabled = directional.Enabled;
     }
@@ -38,13 +38,13 @@ namespace dx::cb
     Light::Light(const dx::SpotLight& spot) noexcept
     {
         Type = LightType::SpotLight;
-        Position = MakePosition(spot.Position);
+        Position = MakePosition4(spot.Position);
         Color = spot.Color;
         const auto& att = spot.Attr;
         ConstantAttenuation = att.x;
         LinearAttenuation = att.y;
         QuadraticAttenuation = att.z;
-        Direction = MakeDirection(spot.Direction);
+        Direction = MakeDirection4(spot.Direction);
         SpotAngle = spot.SpotAngle;
         Range = spot.Range;
         Enabled = spot.Enabled;

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <DirectXMath.h>
+#include <DirectXCollision.h>
 #include "AlignedAllocator.hpp"
 #include "Misc.hpp"
 
@@ -38,6 +39,7 @@ namespace dx
         DirectX::XMMATRIX GetView() const noexcept;
         DirectX::XMMATRIX GetProjection() const noexcept;
         DirectX::XMFLOAT3 GetEyePos() const noexcept;
+        const DirectX::BoundingFrustum& Frustum() const;
         void UseDefaultMoveEvents(bool use);
         void Walk(float d) noexcept;
         void Strafe(float d) noexcept;
@@ -45,8 +47,27 @@ namespace dx
         Rect& Viewport() noexcept { return *m_viewport; }
         const Rect& Viewport() const noexcept { return *m_viewport; }
 
-        float Fov;
-        float NearZ, FarZ;
+        //DirectX::XMMatrixPerspectiveFovLH 使用的是纵向 fov，这里也是纵向 fov。
+        float Fov() const { return m_fov; }
+        void SetFov(float fov)
+        {
+            m_fov = fov;
+            m_isProjectionDirty = true;
+        }
+
+        float NearZ() const { return m_nearZ; }
+        void SetNearZ(float nearZ)
+        {
+            m_nearZ = nearZ;
+            m_isProjectionDirty = true;
+        }
+
+        float FarZ() const { return m_farZ; }
+        void SetFarZ(float farZ)
+        {
+            m_farZ = farZ;
+            m_isProjectionDirty = true;
+        }
 
     private:
         friend class Scene;
@@ -58,9 +79,10 @@ namespace dx
         DirectX::XMVECTOR LoadTranslation() const noexcept;
         DirectX::XMVECTOR LoadRotation() const noexcept;
 
-        float aspectRatio_;
-        mutable bool isProjectionDirty_, isViewDirty_;
+        mutable bool m_isProjectionDirty, m_isViewDirty;
         bool m_defaultMove;
+        float aspectRatio_;
+        float m_fov, m_nearZ, m_farZ;
         DirectX::XMFLOAT4 rotation_;
         DirectX::XMFLOAT4 position_;
         aligned_unique_ptr<Internal::CameraData> data_;

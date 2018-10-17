@@ -3,6 +3,8 @@
 #include "InstancingVS.hpp"
 #include <d3d11.h>
 
+using namespace DirectX;
+
 void Bind(ID3D11DeviceContext& context3D, const Pipeline& pipeline)
 {
     dx::Bind(context3D, dx::Ref(pipeline.Layout), dx::MakeVbBinder(pipeline.Vbs), pipeline.Ib, pipeline.VS, pipeline.PS);
@@ -34,7 +36,37 @@ void GenerateInstancingData(dx::AlignedVec<InstancingVertex>& instancingData, st
     }
 }
 
-Pipeline MakePipeline(const dx::IndependentGraphics& independent, const dx::PredefinedResources& predefined)
+void Culling(const dx::Camera& camera,
+    gsl::span<const XMFLOAT3> position,
+    gsl::span<const InstancingVertex> transforms,
+    std::uint32_t vertexCountPerBall,
+    ID3D11DeviceContext& context3D,
+    dx::VertexBuffer& vertexBuffer)
+{
+    const auto& frustum = camera.Frustum();
+    std::vector<InstancingVertex> visibleTransforms;
+    BoundingBox aabb;
+    std::copy_if(transforms.begin(), transforms.end(), std::back_inserter(visibleTransforms), [&](const InstancingVertex& transform) {
+        GetAabb(position, transform.World, aabb);
+        return frustum.Contains(aabb);
+    });
+    vertexBuffer.UpdateWithDiscard(context3D, gsl::make_span(visibleTransforms));
+}
+
+void GetAabb(gsl::span<const XMFLOAT3> mesh, const XMMATRIX& transform, BoundingBox& aabb)
+{
+    std::vector<XMFLOAT3> positions;
+    positions.reserve(mesh.size());
+    std::transform(mesh.begin(), mesh.end(), std::back_inserter(positions), [&](const XMFLOAT3& point) {
+        const auto pointVec = XMLoadFloat3(&point);
+        return XMVector3Transform(pointVec, transform);
+    });
+    BoundingBox::CreateFromPoints(aabb, positions.size(), positions.data(), sizeof(XMFLOAT3));
+}
+
+Pipeline MakePipeline(const dx::IndependentGraphics& independent, 
+    const dx::PredefinedResources& predefined,
+    std::uint32_t ballCount)
 {
     using namespace dx;
     Pipeline po;
@@ -56,7 +88,7 @@ Pipeline MakePipeline(const dx::IndependentGraphics& independent, const dx::Pred
         MATRIX_VERTEX_UNITS("WORLDMATRIX", 3),
         MATRIX_VERTEX_UNITS("INVTRANSWORLDMATRIX", 3)
     };
-    po.Layout = MakeLayout(device, MakeDescArray(gsl::span(units)), po.VS.ByteCode());
+    po.Layout = AddLayout(device, MakeDescArray(gsl::span(units)), po.VS.ByteCode());
     return po;
 }
 

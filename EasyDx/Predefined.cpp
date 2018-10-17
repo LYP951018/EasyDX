@@ -8,13 +8,21 @@
 #include <DirectXTK/DirectXHelpers.h>
 #include "BasicVS.hpp"
 #include "BasicPS.hpp"
+#include "FakePosVS.hpp"
+#include "FakePosNormalVS.hpp"
+#include "FakePosNormalTexVS.hpp"
 #include "Bind.hpp"
+#include "Mesh.hpp"
+#include "Material.hpp"
+#include "MeshRenderer.hpp"
+#include "Transform.hpp"
 
 namespace dx
 {
+    using gsl::span;
+
     PredefinedResources::PredefinedResources(ID3D11Device& device)
-        : basicVS_{device, BasicVertexShader},
-        basicPS_{device, BasicPixelShader}
+        : basicVS_{device, AsBytes(BasicVertexShader)}, basicPS_{device, AsBytes(BasicPixelShader)}
     {
         MakeWhiteTex(device);
         MakeStencilStates(device);
@@ -23,25 +31,37 @@ namespace dx
         MakeLayouts(device);
     }
 
+    PredefinedResources::~PredefinedResources() {}
 
-    PredefinedResources::~PredefinedResources()
+    wrl::ComPtr<ID3D11DepthStencilState> PredefinedResources::GetStencilAlways() const
     {
+        return stencilAlways_;
     }
 
-    wrl::ComPtr<ID3D11DepthStencilState> PredefinedResources::GetStencilAlways() const { return stencilAlways_; }
-
-    wrl::ComPtr<ID3D11DepthStencilState> PredefinedResources::GetDrawnOnly() const { return drawnOnly_; }
+    wrl::ComPtr<ID3D11DepthStencilState> PredefinedResources::GetDrawnOnly() const
+    {
+        return drawnOnly_;
+    }
 
     wrl::ComPtr<ID3D11DepthStencilState> PredefinedResources::GetNoDoubleBlending() const
     {
         return noDoubleBlending_;
     }
 
-    wrl::ComPtr<ID3D11BlendState> PredefinedResources::GetNoWriteToRT() const { return noWriteToRt_; }
+    wrl::ComPtr<ID3D11BlendState> PredefinedResources::GetNoWriteToRT() const
+    {
+        return noWriteToRt_;
+    }
 
-    wrl::ComPtr<ID3D11BlendState> PredefinedResources::GetTransparent() const { return transparent_; }
+    wrl::ComPtr<ID3D11BlendState> PredefinedResources::GetTransparent() const
+    {
+        return transparent_;
+    }
 
-    wrl::ComPtr<ID3D11SamplerState> PredefinedResources::GetDefaultSampler() const { return defaultSampler_; }
+    wrl::ComPtr<ID3D11SamplerState> PredefinedResources::GetDefaultSampler() const
+    {
+        return defaultSampler_;
+    }
 
     wrl::ComPtr<ID3D11SamplerState> PredefinedResources::GetRepeatSampler() const
     {
@@ -53,23 +73,26 @@ namespace dx
         wrl::ComPtr<ID3D11Texture2D> tex;
         {
             auto pixels = std::vector<DirectX::XMFLOAT4>(kDefaultTexHeight * kDefaultTexWidth);
-            std::fill(pixels.begin(), pixels.end(), DirectX::XMFLOAT4{ 1.0f, 1.0f, 1.0f, 1.0f });
-            CD3D11_TEXTURE2D_DESC desc{ DXGI_FORMAT_R32G32B32A32_FLOAT, kDefaultTexWidth, kDefaultTexHeight };
+            std::fill(pixels.begin(), pixels.end(), DirectX::XMFLOAT4{1.0f, 1.0f, 1.0f, 1.0f});
+            CD3D11_TEXTURE2D_DESC desc{DXGI_FORMAT_R32G32B32A32_FLOAT, kDefaultTexWidth,
+                                       kDefaultTexHeight};
             desc.MipLevels = 1;
             D3D11_SUBRESOURCE_DATA resourceData{};
             resourceData.pSysMem = pixels.data();
             resourceData.SysMemPitch = kDefaultTexWidth;
-            resourceData.SysMemSlicePitch = gsl::narrow<UINT>(pixels.size() * sizeof(DirectX::XMFLOAT4));
+            resourceData.SysMemSlicePitch =
+                gsl::narrow<UINT>(pixels.size() * sizeof(DirectX::XMFLOAT4));
             TryHR(device.CreateTexture2D(&desc, &resourceData, tex.GetAddressOf()));
         }
         {
-            CD3D11_SAMPLER_DESC desc{ CD3D11_DEFAULT{} };
-            //desc.Filter = D3D11_FILTER_MIN_LINEAR_MAG_MIP_POINT;
+            CD3D11_SAMPLER_DESC desc{CD3D11_DEFAULT{}};
+            // desc.Filter = D3D11_FILTER_MIN_LINEAR_MAG_MIP_POINT;
             TryHR(device.CreateSamplerState(&desc, defaultSampler_.GetAddressOf()));
         }
         {
-            CD3D11_SAMPLER_DESC desc{ CD3D11_DEFAULT{} };
-            desc.AddressW = desc.AddressV = desc.AddressU = D3D11_TEXTURE_ADDRESS_MODE::D3D11_TEXTURE_ADDRESS_WRAP;
+            CD3D11_SAMPLER_DESC desc{CD3D11_DEFAULT{}};
+            desc.AddressW = desc.AddressV = desc.AddressU =
+                D3D11_TEXTURE_ADDRESS_MODE::D3D11_TEXTURE_ADDRESS_WRAP;
             TryHR(device.CreateSamplerState(&desc, repeatSampler_.GetAddressOf()));
         }
         white_ = Get2DTexView(device, Ref(tex));
@@ -142,7 +165,8 @@ namespace dx
             noDoubleBlendDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_INCR;
             noDoubleBlendDesc.BackFace.StencilFunc = D3D11_COMPARISON_EQUAL;
 
-            TryHR(device.CreateDepthStencilState(&noDoubleBlendDesc, noDoubleBlending_.GetAddressOf()));
+            TryHR(device.CreateDepthStencilState(&noDoubleBlendDesc,
+                                                 noDoubleBlending_.GetAddressOf()));
         }
     }
 
@@ -181,7 +205,6 @@ namespace dx
 
             TryHR(device.CreateBlendState(&transparentDesc, transparent_.GetAddressOf()));
         }
-        
     }
 
     void PredefinedResources::MakeRasterizerStates(ID3D11Device& device)
@@ -206,65 +229,48 @@ namespace dx
         }
     }
 
-    void PredefinedResources::MakeLayouts(ID3D11Device& /*device*/)
+    void PredefinedResources::MakeLayouts(ID3D11Device& device)
     {
-        /*const auto desc = SimpleVertex::GetDesc();
-        device.CreateInputLayout(desc.data(), gsl::narrow<UINT>(desc.size()), BasicVertexShader, std::size(BasicVertexShader), simpleLayout_.GetAddressOf());*/
+        /*m_globalInputLayoutAllocator.Register(device, PosNormal,
+                                              AsBytes(FakePosNormalVSByteCode));*/
+        m_globalInputLayoutAllocator.Register(device, PosDesc, AsBytes(FakePosVSByteCode));
+        m_globalInputLayoutAllocator.Register(device, PosNormalTexDescs, AsBytes(FakePosNormalTexVSByteCode));
     }
 
-    void SetupBasicLighting(const BasicDrawContext& drawContext, 
-        SimpleLightingPS& ps, 
-        const Smoothness& smoothness, 
-        ID3D11ShaderResourceView* tex, 
-        ID3D11SamplerState* sampler)
+    std::unique_ptr<Object> obj(Object obj) { return std::make_unique<Object>(std::move(obj)); }
+
+    std::shared_ptr<Material>
+    MakeBasicLightingMaterial(const PredefinedResources& predefined,
+                              wrl::ComPtr<ID3D11ShaderResourceView> mainTexture,
+                              const dx::Smoothness& smoothness)
     {
-        auto& context = drawContext.Context;
-        auto& camera = drawContext.Camera;
-        auto& lights = drawContext.Lights;
-        //const auto&[context, camera, lights] = drawContext;
-
-        cb::GlobalLightingInfo globalLights;
-        globalLights.EyePos = camera.GetEyePos();
-        std::transform(lights.begin(), lights.end(), globalLights.Lights, [](const Light& light) { return cb::Light{ light }; });
-        globalLights.LightCount = static_cast<std::uint32_t>(lights.size());
-        ps.UpdateCb(
-            context,
-            globalLights,
-            cb::PerObjectLightingInfo{
-            cb::Material{ smoothness, tex != nullptr }
-        });
-
-        if (tex != nullptr)
+        auto ps = predefined.GetBasicPS();
+        auto& psInputs = ps.Inputs;
+        auto& perObject = *psInputs.GetCbInfo("PerObjectLightingInfo");
+        perObject.Set("ObjectMaterial", dx::cb::Material{smoothness, mainTexture != nullptr});
+        if (mainTexture == nullptr)
         {
-            ps.SetResource(context, tex);
-            ps.SetSampler(context, sampler);
+            mainTexture = predefined.GetWhite();
         }
+        psInputs.Bind("Texture", std::move(mainTexture));
+        // TODO
+        psInputs.Bind("Sampler", predefined.GetDefaultSampler());
+        return std::make_shared<Material>(Material{
+            MakeVec(dx::Pass{dx::ShaderCollection{predefined.GetBasicVS(), std::move(ps)}})});
     }
 
-    void UpdateMvpCb(const BasicDrawContext& drawContext, const DirectX::XMMATRIX& world, MvpTransformVS & vs)
+    std::unique_ptr<dx::Object> MakeObjectWithDefaultRendering(
+        ID3D11Device& device3D, const PredefinedResources& predefined,
+        gsl::span<const dx::PositionType> positions, gsl::span<const dx::VectorType> normals,
+        gsl::span<const dx::TexCoordType> texCoords, gsl::span<const dx::ShortIndex> indices,
+        wrl::ComPtr<ID3D11ShaderResourceView> mainTexture, const dx::Smoothness& smoothness)
     {
-        auto[context, camera, lights] = drawContext;
-        const auto view = camera.GetView();
-        const auto proj = camera.GetProjection();
-        cb::MvpCb cb{
-            world * view * proj,
-            world,
-            DirectX::XMMatrixTranspose(DirectX::XMMatrixInverse(nullptr, world))
-        };
-        vs.UpdateCb(context, cb);
-    }
 
-    void Bind(ID3D11DeviceContext & context3D, BasicPipeline & pipeline)
-    {
-        dx::Bind(context3D, Ref(pipeline.Layout), MakeVbBinder(pipeline.Vbs), pipeline.Ib, pipeline.VS, pipeline.PS);
+        return obj(Object{MeshRenderer{
+            Mesh::CreateImmutable(device3D, predefined.InputLayouts().Query(PosNormalTexDescs),
+                                  span{indices}, span{positions}, span{normals}, span{texCoords}),
+            MakeBasicLightingMaterial(predefined, std::move(mainTexture), smoothness)},
+            //TODO: custom transform
+            TransformComponent{Transform{}}});
     }
-
-    void UpdateAndDraw(const BasicDrawContext& drawContext, const BasicObject& object)
-    {
-        auto[context, camera, lights] = drawContext;
-        auto[renderable, material, transform] = object;
-        UpdateMvpCb(drawContext, object.GetWorld(), renderable.VS);
-        SetupBasicLighting(drawContext, renderable.PS, material, renderable.Texture.Get(), renderable.Sampler.Get());
-        DrawAllIndexed(context, renderable);
-    }
-}
+} // namespace dx

@@ -16,7 +16,7 @@ struct ID3D10Blob;
 namespace dx
 {
     template<typename T>
-    using Ptr = T * ;
+    using Ptr = T*;
 
     template<typename T>
     using Rc = std::shared_ptr<T>;
@@ -30,11 +30,9 @@ namespace dx
     std::string ws2s(std::wstring_view wstr);
     std::wstring s2ws(std::string_view str);
 
-    [[noreturn]]
-    void ThrowHRException(long hr);
+    [[noreturn]] void ThrowHRException(long hr);
 
-    [[noreturn]]
-    void ThrowWin32();
+    [[noreturn]] void ThrowWin32();
 
     void TryHR(long hr);
 
@@ -45,7 +43,7 @@ namespace dx
     {
         if (cond)
         {
-            throw ExceptionT{ std::forward<Args>(args)... };
+            throw ExceptionT{std::forward<Args>(args)...};
         }
     }
 
@@ -66,18 +64,19 @@ namespace dx
     gsl::span<const std::byte> AsBytes(const T& object) noexcept
     {
         static_assert(std::is_standard_layout_v<T>);
-        return gsl::make_span(reinterpret_cast<const std::byte*>(std::addressof(object)), sizeof(T));
+        return gsl::make_span(reinterpret_cast<const std::byte*>(std::addressof(object)),
+                              sizeof(T));
     }
 
     template<std::size_t N>
-    gsl::span<std::byte> AsBytes(unsigned char(&arr)[N])
+    gsl::span<std::byte> AsBytes(unsigned char (&arr)[N])
     {
         const auto parr = reinterpret_cast<std::byte*>(arr);
         return gsl::make_span(parr, N);
     }
 
     template<std::size_t N>
-    gsl::span<const std::byte> AsBytes(const unsigned char(&arr)[N])
+    gsl::span<const std::byte> AsBytes(const unsigned char (&arr)[N])
     {
         const auto parr = reinterpret_cast<const std::byte*>(arr);
         return gsl::make_span(parr, N);
@@ -86,22 +85,25 @@ namespace dx
     template<typename T, std::ptrdiff_t N>
     gsl::span<const Ptr<T>, N> ComPtrsCast(gsl::span<const wrl::ComPtr<T>, N> comPtrs) noexcept
     {
-        static_assert(std::is_standard_layout_v<wrl::ComPtr<T>>, "wrl::ComPtr<T> should be a standard layout class.");
-        static_assert(sizeof(wrl::ComPtr<T>) == sizeof(Ptr<T>), "wrl::ComPtr<T> should have the same size as the raw pointer.");
+        static_assert(std::is_standard_layout_v<wrl::ComPtr<T>>,
+                      "wrl::ComPtr<T> should be a standard layout class.");
+        static_assert(sizeof(wrl::ComPtr<T>) == sizeof(Ptr<T>),
+                      "wrl::ComPtr<T> should have the same size as the raw pointer.");
         const auto start = reinterpret_cast<const Ptr<T>*>(comPtrs.data());
         const auto last = start + comPtrs.size();
-        return { start, last };
+        return {start, last};
     }
 
     template<typename T, std::ptrdiff_t N>
     gsl::span<Ptr<T>, N> ComPtrsCast(gsl::span<wrl::ComPtr<T>, N> comPtrs) noexcept
     {
-        static_assert(std::is_standard_layout_v<wrl::ComPtr<T>>, "wrl::ComPtr<T> should be a standard layout class.");
-        static_assert(sizeof(wrl::ComPtr<T>) == sizeof(Ptr<T>), "wrl::ComPtr<T> should have the same size as the raw pointer.");
+        static_assert(std::is_standard_layout_v<wrl::ComPtr<T>>,
+                      "wrl::ComPtr<T> should be a standard layout class.");
+        static_assert(sizeof(wrl::ComPtr<T>) == sizeof(Ptr<T>),
+                      "wrl::ComPtr<T> should have the same size as the raw pointer.");
         const auto start = reinterpret_cast<Ptr<T>*>(comPtrs.data());
         const auto last = start + comPtrs.size();
-        return { start, last };
-
+        return {start, last};
     }
 
     struct IntRect
@@ -114,9 +116,9 @@ namespace dx
     {
         Noncopyable() = default;
         Noncopyable(const Noncopyable&) = delete;
-        Noncopyable& operator= (const Noncopyable&) = delete;
+        Noncopyable& operator=(const Noncopyable&) = delete;
         Noncopyable(Noncopyable&&) = default;
-        Noncopyable& operator= (Noncopyable&&) = default;
+        Noncopyable& operator=(Noncopyable&&) = default;
     };
 
     template<typename T, typename... Args>
@@ -127,23 +129,26 @@ namespace dx
     }
 
     template<typename T, typename... Args>
-    auto MakeUnique(Args&&... args) -> std::enable_if_t<std::is_constructible_v<T, Args&&...>,
-        std::unique_ptr<T>>
+    auto MakeUnique(Args&&... args)
+        -> std::enable_if_t<std::is_constructible_v<T, Args&&...>, std::unique_ptr<T>>
     {
         return std::make_unique<T>(std::forward<Args>(args)...);
     }
 
     template<typename... Args>
-    void Swallow(Args&&...) noexcept {}
+    void Swallow(Args&&...) noexcept
+    {}
 
     template<typename T>
-    struct is_vertex : std::false_type {};
+    struct is_vertex : std::false_type
+    {};
 
     template<typename T>
     constexpr bool is_vertex_v = is_vertex<T>::value;
 
     template<typename>
-    struct always_false : std::false_type {};
+    struct always_false : std::false_type
+    {};
 
     template<typename T, typename... Args>
     using is_one_of = std::disjunction<std::is_same<T, Args>...>;
@@ -154,16 +159,40 @@ namespace dx
     template<typename T, typename... Args>
     T& construct_at(T* ptr, Args&&... args)
     {
-        ::new (static_cast<void*>(ptr)) T(std::forward<Args>(args)... );
+        ::new (static_cast<void*>(ptr)) T(std::forward<Args>(args)...);
         return *ptr;
     }
 
     gsl::span<const std::byte> AsSpan(::ID3D10Blob& blob);
 
+    template<typename T, std::ptrdiff_t N>
+    gsl::span<const T> AsCspan(gsl::span<T, N> sp)
+    {
+        return sp;
+    }
+
+    template<typename T, typename... Rs>
+    void Append(T& vec, const Rs&... r)
+    {
+        (vec.insert(vec.end(), r.begin(), r.end()), ...);
+    }
+
+    bool NearEqual(float lhs, float rhs);
+
+    template<typename T, typename... Args>
+    auto MakeVec(T&& t, Args&&... args) -> std::vector<std::remove_reference_t<T>>
+    {
+        std::vector<std::remove_reference_t<T>> vec;
+        vec.reserve(sizeof...(Args) + 1);
+        vec.push_back(std::forward<T>(t));
+        (vec.push_back(std::forward<Args>(args)), ...);
+        return vec;
+    }
+
     using Clock = std::chrono::high_resolution_clock;
     using Duration = Clock::duration;
     using TimePoint = Clock::time_point;
-}
+} // namespace dx
 
 #define exforward(v) std::forward<decltype(v)>(v)
 
@@ -171,5 +200,9 @@ namespace dx
 #define CONCAT(x, y) CONCAT_(x, y)
 
 #define DEF_INLINE_VAR_SINGLE(name) \
-template<typename T>    \
-inline constexpr bool CONCAT(name, _v) = name<T>::value
+    template<typename T>            \
+    inline constexpr bool CONCAT(name, _v) = name<T>::value
+
+#define DEFAULT_MOVE(T) \
+    T(T&&) = default;   \
+    T& operator=(T&&) = default;

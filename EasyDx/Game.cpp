@@ -4,6 +4,8 @@
 #include "Scene.hpp"
 #include "EventLoop.hpp"
 #include "InputSystem.hpp"
+#include "GraphicsDevices.hpp"
+#include "DependentGraphics.hpp"
 #include <stdexcept>
 #include <gsl/gsl_assert>
 #include <d3d11.h>
@@ -23,7 +25,7 @@ namespace dx
         auto& switcher = Switcher();
         auto& independent = IndependentResources();
         auto& context3D = independent.Context3D();
-        auto& context2D = independent.Context2D();
+        //auto& context2D = independent.Context2D();
         MainWindow().Show();
         loop.Run([&](WindowEventArgsPack e) {
             //wait until the first resize event reach.
@@ -57,11 +59,12 @@ namespace dx
                     auto& scene = switcher.MainScene();
                     scene.Update(args, *this);
                     auto& dependent = m_dependentGraphics.value();
-                    //TODO: clean up
-                    dependent.DepthStencil_.ClearBoth(context3D);
-                    dependent.SwapChain_.Front().Clear(context3D, DirectX::Colors::Black);
+                    //TODO: clean up, move these to the Camera class
+                    /*dependent.DepthStencil_.ClearBoth(context3D);
+                    dependent.SwapChain_.Front().Clear(context3D, DirectX::Colors::Black);*/
                     //Ugh
                     dependent.Bind(context3D);
+                    scene.MainCamera().PrepareForRendering(context3D, *this);
                     scene.Render(*this);
                     dependent.SwapChain_.Present();
                     m_inputSystem->OnFrameDone();
@@ -142,7 +145,7 @@ namespace dx
         auto& context3D = independent.Context3D();
         auto& device3D = independent.Device3D();
         //auto& debug = independent.D3DDebug();
-        auto& dependentGraphics = DependentResources();
+        auto& dependentGraphics = m_dependentGraphics;
         auto[newWidth, newHeight] = newSize;
         auto& camera = Switcher().MainScene().MainCamera();
         camera.OnResize(newSize);
@@ -247,27 +250,7 @@ namespace dx
 
     IndependentGraphics::IndependentGraphics()
     {
-        UINT creationFlags = {};
-#ifdef _DEBUG
-        creationFlags |= D3D11_CREATE_DEVICE_DEBUG;
-#endif
-        creationFlags |= D3D11_CREATE_DEVICE_BGRA_SUPPORT;
-
-        const D3D_FEATURE_LEVEL featureLevel[] = { D3D_FEATURE_LEVEL_11_0 };
-
-        TryHR(D3D11CreateDevice(
-            nullptr,
-            D3D_DRIVER_TYPE_HARDWARE,
-            nullptr,
-            creationFlags,
-            featureLevel,
-            gsl::narrow<UINT>(std::size(featureLevel)),
-            D3D11_SDK_VERSION,
-            device3D_.ReleaseAndGetAddressOf(),
-            nullptr,
-            context3D_.ReleaseAndGetAddressOf()
-        ));
-
+        std::tie(device3D_, context3D_) = MakeDevice3D();
         TryHR(device3D_->QueryInterface(dxgiDevice_.ReleaseAndGetAddressOf()));
         TryHR(device3D_->QueryInterface(d3dDebug_.ReleaseAndGetAddressOf()));
 

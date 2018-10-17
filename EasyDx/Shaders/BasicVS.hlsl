@@ -7,9 +7,11 @@ cbuffer TransformMatrices : register(b0)
     matrix WorldInvTranspose;
 }
 
-dx::VertexOutput main(dx::VertexInput input)
+dx::Outputs::PosNormalTex main(dx::Inputs::PosNormalTex input)
 {
-    dx::VertexOutput output;
+    dx::Outputs::PosNormalTex output;
+    input.Position.w = 0.0f;
+    input.Normal.w = 1.0f;
     output.PositionWS = mul(World, input.Position);
     output.Position = mul(WorldViewProj, input.Position);
     output.NormalWS = mul(WorldInvTranspose, input.Normal).xyz;

@@ -14,12 +14,13 @@ namespace dx
         {
             DirectX::XMMATRIX View;
             DirectX::XMMATRIX Projection;
+            DirectX::BoundingFrustum Frustum;
         };
     }
 
     Camera::Camera()
-        : isProjectionDirty_{ true },
-        isViewDirty_{ true },
+        : m_isProjectionDirty{ true },
+        m_isViewDirty{ true },
         rotation_{ 0.f, 0.f, 0.f, 1.f },
         position_{ 0.f, 0.f, 0.f, 1.f },
         data_{ aligned_unique<Internal::CameraData>() },
@@ -48,7 +49,7 @@ namespace dx
         }
         XMStoreFloat4(&position_, finalTranslation);
         position_.w = 1.f;
-        isViewDirty_ = true;
+        m_isViewDirty = true;
     }
 
     void Camera::Pitch(float angle)
@@ -78,7 +79,7 @@ namespace dx
     void Camera::Rotate(DirectX::XMVECTOR rotation) noexcept
     {
         DirectX::XMStoreFloat4(&rotation_, DirectX::XMQuaternionMultiply(LoadRotation(), rotation));
-        isViewDirty_ = true;
+        m_isViewDirty = true;
     }
 
     void Camera::PrepareForRendering(ID3D11DeviceContext& context3D, const Game& game)
@@ -130,7 +131,7 @@ namespace dx
 
     void Camera::OnResize(Size newSize)
     {
-        SetProjection(Fov, newSize.GetAspectRatio(), NearZ, FarZ);
+        SetProjection(Fov(), newSize.GetAspectRatio(), NearZ(), FarZ());
     }
 
     DirectX::XMVECTOR Camera::LoadTranslation() const noexcept
@@ -145,11 +146,11 @@ namespace dx
 
     void Camera::SetProjection(float fov, float aspectRatio, float nearZ, float farZ) noexcept
     {
-        isProjectionDirty_ = true;
-        Fov = fov;
+        m_isProjectionDirty = true;
+        m_fov = fov;
         aspectRatio_ = aspectRatio;
-        NearZ = nearZ;
-        FarZ = farZ;
+        m_nearZ = nearZ;
+        m_farZ = farZ;
     }
 
     void Camera::SetLookAt(const DirectX::XMFLOAT3& eye, const DirectX::XMFLOAT3& target, const DirectX::XMFLOAT3& up) noexcept
@@ -159,29 +160,29 @@ namespace dx
             DirectX::XMLoadFloat3(&up));
         position_ = { eye.x, eye.y, eye.z, 1.f };
         DirectX::XMStoreFloat4(&rotation_, DirectX::XMQuaternionRotationMatrix(XMMatrixTranspose(view)));
-        isViewDirty_ = true;
+        m_isViewDirty = true;
     }
 
     void Camera::UpdateAspectRatio(float aspectRatio) noexcept
     {
-        isProjectionDirty_ = true;
+        m_isProjectionDirty = true;
         aspectRatio_ = aspectRatio;
     }
 
     bool Camera::HasChanged() const noexcept
     {
-        return isViewDirty_ || isProjectionDirty_;
+        return m_isViewDirty || m_isProjectionDirty;
     }
 
     DirectX::XMMATRIX Camera::GetView() const noexcept
     {
         auto& view = data_->View;
-        if (isViewDirty_)
+        if (m_isViewDirty)
         {
             auto rotation = XMMatrixTranspose(DirectX::XMMatrixRotationQuaternion(DirectX::XMLoadFloat4(&rotation_)));
             auto translation = DirectX::XMMatrixTranslation(-position_.x, -position_.y, -position_.z);
             view = translation * rotation;
-            isViewDirty_ = false;
+            m_isViewDirty = false;
         }
         return view;
     }
@@ -189,10 +190,10 @@ namespace dx
     DirectX::XMMATRIX Camera::GetProjection() const noexcept
     {
         auto& projection = data_->Projection;
-        if (isProjectionDirty_)
+        if (m_isProjectionDirty)
         {
-            projection = DirectX::XMMatrixPerspectiveFovLH(Fov, aspectRatio_, NearZ, FarZ);
-            isProjectionDirty_ = false;
+            projection = DirectX::XMMatrixPerspectiveFovLH(Fov(), aspectRatio_, NearZ(), FarZ());
+            m_isProjectionDirty = false;
         }
         return projection;
     }
@@ -215,6 +216,25 @@ namespace dx
     void Camera::Strafe(float d) noexcept
     {
         Translate(d, 0.0f, 0.0f, Space::LocalSpace);
+    }
+
+    const DirectX::BoundingFrustum& Camera::Frustum() const
+    {
+        auto& frustum = data_->Frustum;
+        if (m_isProjectionDirty)
+        {
+            const auto tanYFov = std::tan(Fov());
+            const auto tanXFov = tanYFov * aspectRatio_;
+            frustum.Origin = GetEyePos();
+            frustum.Orientation = rotation_;
+            frustum.RightSlope = tanXFov;
+            frustum.LeftSlope = -tanXFov;
+            frustum.TopSlope = tanYFov;
+            frustum.BottomSlope = -tanYFov;
+            frustum.Near = NearZ();
+            frustum.Far = FarZ();
+        }
+        return frustum;
     }
 }
 

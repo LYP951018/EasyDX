@@ -65,6 +65,11 @@ namespace dx
         return { static_cast<const std::byte*>(blob.GetBufferPointer()), gsl::narrow<std::ptrdiff_t>(blob.GetBufferSize()) };
     }
 
+    bool NearEqual(float lhs, float rhs)
+    {
+        return std::abs(lhs - rhs) < std::numeric_limits<float>::epsilon();
+    }
+
     [[noreturn]]
     void ThrowHRException(HRESULT hr)
     {

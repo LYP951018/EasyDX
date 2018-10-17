@@ -1,7 +1,9 @@
-#pragma once
+ï»¿#pragma once
 
 #include "DXDef.hpp"
 #include <DirectXMath.h>
+#include "DxMathWrappers.hpp"
+#include <d3d11.h>
 
 namespace dx
 {
@@ -81,9 +83,8 @@ namespace dx
         }
     }
 
-    //TODO: ÕâÀï¿ÉÒÔ×öµ½²»ÊÖ¶¯ÊäÈë input slot£¬µ«ÊÇ¿ÉÄÜ»áÒıÈëÄ£°åÔª±à³ÌÖ®ÀàµÄÀÍÊ²×Ó¡­¡­»¹ÊÇÏÈÊÖ¶¯Ö¸¶¨°É¡£
-    //ÀíÏë×´Ì¬£º
-    //MakeDescArray(
+    // TODO: è¿™é‡Œå¯ä»¥åšåˆ°ä¸æ‰‹åŠ¨è¾“å…¥ input
+    // slotï¼Œä½†æ˜¯å¯èƒ½ä¼šå¼•å…¥æ¨¡æ¿å…ƒç¼–ç¨‹ä¹‹ç±»çš„åŠ³ä»€å­â€¦â€¦è¿˜æ˜¯å…ˆæ‰‹åŠ¨æŒ‡å®šå§ã€‚ ç†æƒ³çŠ¶æ€ï¼š MakeDescArray(
     // Cell {
     //      MakeVertex(VSSemantics::kPosition),
     //      MakeVertex(VSSemantics::kNormal)
@@ -92,18 +93,16 @@ namespace dx
     //});
     struct VertexUnit
     {
-        //construct a vertex unit from predefined semantics
+        // construct a vertex unit from predefined semantics
         constexpr VertexUnit(VSSemantics semantic, std::uint32_t slot, InputSlotKind kind = {})
-            : VertexUnit{ NameFromSemantic(semantic), kind, FormatFromSemantic(semantic), slot }
+            : VertexUnit{NameFromSemantic(semantic), kind, FormatFromSemantic(semantic), slot}
         {}
-        //construct a vertex unit from custom semantics
-        constexpr VertexUnit(std::string_view name, InputSlotKind kind, DxgiFormat format, std::uint32_t slot, std::uint32_t index = {}, std::uint32_t stepRate = {})
-            : SemanticName{ name },
-            SemanticIndex{ index },
-            SlotKind{ kind },
-            Format{ format },
-            StepRate{ stepRate },
-            Slot{slot}
+        // construct a vertex unit from custom semantics
+        constexpr VertexUnit(std::string_view name, InputSlotKind kind, DxgiFormat format,
+                             std::uint32_t slot, std::uint32_t index = {},
+                             std::uint32_t stepRate = {})
+            : SemanticName{name},
+              SemanticIndex{index}, SlotKind{kind}, Format{format}, StepRate{stepRate}, Slot{slot}
         {}
 
         std::string_view SemanticName;
@@ -116,41 +115,43 @@ namespace dx
 
     constexpr VertexUnit MakeInstancing(VSSemantics semantic, std::uint32_t slot)
     {
-        return VertexUnit{ semantic, slot, InputSlotKind::kPerinstance };
+        return VertexUnit{semantic, slot, InputSlotKind::kPerinstance};
     }
 
-    constexpr VertexUnit MakeInstancing(std::string_view name, std::uint32_t index, std::uint32_t slot,
-        DxgiFormat format = DxgiFormat::R32G32B32A32Float, std::uint32_t stepRate = 1)
+    constexpr VertexUnit MakeInstancing(std::string_view name, std::uint32_t index,
+                                        std::uint32_t slot,
+                                        DxgiFormat format = DxgiFormat::R32G32B32A32Float,
+                                        std::uint32_t stepRate = 1)
     {
-        return VertexUnit{ name, InputSlotKind::kPerinstance, format, slot, index, stepRate};
+        return VertexUnit{name, InputSlotKind::kPerinstance, format, slot, index, stepRate};
     }
 
     constexpr VertexUnit MakeVertex(VSSemantics semantic, std::uint32_t slot)
     {
-        return VertexUnit{ semantic, slot, InputSlotKind::kPervertex };
+        return VertexUnit{semantic, slot, InputSlotKind::kPervertex};
     }
 
-    constexpr VertexUnit MakeVertex(std::string_view name, std::uint32_t slot, DxgiFormat format = DxgiFormat::R32G32B32A32Float)
+    constexpr VertexUnit MakeVertex(std::string_view name, std::uint32_t slot,
+                                    DxgiFormat format = DxgiFormat::R32G32B32A32Float)
     {
-        return VertexUnit{ name, InputSlotKind::kPervertex, format, slot };
+        return VertexUnit{name, InputSlotKind::kPervertex, format, slot};
     }
 
-#define MATRIX_VERTEX_UNITS(name, slot) \
-    ::dx::MakeInstancing(name, 0, slot), \
-    ::dx::MakeInstancing(name, 1, slot), \
-    ::dx::MakeInstancing(name, 2, slot), \
-    ::dx::MakeInstancing(name, 3, slot)
+#define MATRIX_VERTEX_UNITS(name, slot)                                       \
+    ::dx::MakeInstancing(name, 0, slot), ::dx::MakeInstancing(name, 1, slot), \
+        ::dx::MakeInstancing(name, 2, slot), ::dx::MakeInstancing(name, 3, slot)
 
-    //Due to Variadic macro bugs in MSVC, we could not write `VERTEX_UNITS` macro.
+    // Due to Variadic macro bugs in MSVC, we could not write `VERTEX_UNITS` macro.
 
-    //template<std::size_t N>
-    //constexpr auto MakeUnits(std::array<VSSemantics, N> semantics) -> std::array<VertexUnit, N>
+    // template<std::size_t N>
+    // constexpr auto MakeUnits(std::array<VSSemantics, N> semantics) -> std::array<VertexUnit, N>
     //{
     //    return std::apply([](VSSemantics semantic) { return VertexUnit{ semantic }; }, semantics);
     //}
 
     template<std::ptrdiff_t N, typename = std::enable_if_t<N != gsl::dynamic_extent>>
-    constexpr auto MakeDescArray(gsl::span<const VertexUnit, N> units)->std::array<D3D11_INPUT_ELEMENT_DESC, N>
+    constexpr auto MakeDescArray(gsl::span<const VertexUnit, N> units)
+        -> std::array<D3D11_INPUT_ELEMENT_DESC, N>
     {
         std::array<D3D11_INPUT_ELEMENT_DESC, N> result{};
         std::size_t offset = {};
@@ -164,34 +165,60 @@ namespace dx
                 previousSlot = unit.Slot;
                 offset = {};
             }
+            const auto format = static_cast<DXGI_FORMAT>(unit.Format);
+            const auto classification = static_cast<D3D11_INPUT_CLASSIFICATION>(unit.SlotKind);
             result[si] = D3D11_INPUT_ELEMENT_DESC{
-                unit.SemanticName.data(),
-                unit.SemanticIndex,
-                static_cast<DXGI_FORMAT>(unit.Format),
-                unit.Slot,
-                //gsl::narrow is not constexpr.
-                D3D11_APPEND_ALIGNED_ELEMENT,
-                static_cast<D3D11_INPUT_CLASSIFICATION>(unit.SlotKind),
-                unit.StepRate
-            };
+                unit.SemanticName.data(), unit.SemanticIndex, format, unit.Slot,
+                // gsl::narrow is not constexpr.
+                D3D11_APPEND_ALIGNED_ELEMENT, classification, unit.StepRate};
             offset += SizeFromFormat(unit.Format);
         }
         return result;
     }
 
     template<std::size_t N>
-    constexpr auto MakeDescArray(std::array<const VertexUnit, N> units)->std::array<D3D11_INPUT_ELEMENT_DESC, N>
+    constexpr auto MakeDescArray(std::array<const VertexUnit, N> units)
+        -> std::array<D3D11_INPUT_ELEMENT_DESC, N>
     {
-        return MakeDescArray(gsl::span<const VertexUnit, N>{ units });
+        return MakeDescArray(gsl::span<const VertexUnit, N>{units});
     }
 
     template<std::size_t N>
-    constexpr auto MakeDescArray(std::array<VertexUnit, N> units)->std::array<D3D11_INPUT_ELEMENT_DESC, N>
+    constexpr auto MakeDescArray(std::array<VertexUnit, N> units)
+        -> std::array<D3D11_INPUT_ELEMENT_DESC, N>
     {
-        return MakeDescArray(gsl::span<const VertexUnit, N>{ units });
+        return MakeDescArray(gsl::span<const VertexUnit, N>{units});
     }
 
-    using Float4Stream = std::vector<DirectX::XMFLOAT4>;
-    using Float3Stream = std::vector<DirectX::XMFLOAT3A>;
-    using Float2Stream = std::vector<DirectX::XMFLOAT2A>;
-}
+    inline constexpr auto PosNormTexTanUnits =
+        std::array{MakeVertex(VSSemantics::kPosition, 0), MakeVertex(VSSemantics::kNormal, 1),
+                   MakeVertex(VSSemantics::kTexCoord, 2), MakeVertex(VSSemantics::kTangent, 3)};
+
+
+    inline constexpr auto PosNormTexUnits =
+        std::array{MakeVertex(VSSemantics::kPosition, 0), MakeVertex(VSSemantics::kNormal, 1),
+                   MakeVertex(VSSemantics::kTexCoord, 2)};
+
+    inline constexpr auto PosNormalTexDescs = MakeDescArray(PosNormTexUnits);
+
+    inline constexpr auto PosDesc =
+        MakeDescArray(std::array{MakeVertex(VSSemantics::kPosition, 0)});
+
+    using PositionType = DirectX::XMFLOAT3A;
+    using VectorType = DirectX::XMFLOAT3A;
+    using TexCoordType = DirectX::XMFLOAT2A;
+    using ColorType = DirectX::XMFLOAT4;
+
+    using PositionStream = std::vector<PositionType>;
+    using VectorStream = std::vector<VectorType>;
+    using TexCoordStream = std::vector<TexCoordType>;
+    using ColorStream = std::vector<ColorType>;
+
+    PositionType MakePosition(float x, float y, float z);
+    VectorType MakeDir(float x, float y, float z, float w = 0.0f);
+    TexCoordType MakeTexCoord(float x, float y);
+    ColorType MakeColor(float r, float g, float b, float a);
+
+    inline VectorType StoreVec(DirectX::XMVECTOR vec) { return Store<VectorType>(vec); }
+
+} // namespace dx

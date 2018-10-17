@@ -8,13 +8,13 @@ namespace dx
 {
     struct ModelResultUnit
     {
-        Float4Stream Positions;
-        Float4Stream Normals;
-        Float4Stream Tangents;
-        Float4Stream Bitangents;
-        Float4Stream Colors;
-        Float2Stream TexCoords;
-        std::vector<Index> Indices;
+        PositionStream Positions;
+        VectorStream Normals;
+        VectorStream Tangents;
+        VectorStream Bitangents;
+        ColorStream Colors;
+        TexCoordStream TexCoords;
+        std::vector<ShortIndex> Indices;
 
         void Reserve(std::size_t size);
     };
