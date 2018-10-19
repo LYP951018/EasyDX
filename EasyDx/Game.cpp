@@ -57,14 +57,16 @@ namespace dx
                     prev = now;
                     m_inputSystem->OnFrameStart();
                     auto& scene = switcher.MainScene();
+                    auto& camera = scene.MainCamera();
+                    camera.PrepareForRendering(context3D, *this);
                     scene.Update(args, *this);
+                    camera.Update(args, *this);
                     auto& dependent = m_dependentGraphics.value();
                     //TODO: clean up, move these to the Camera class
                     /*dependent.DepthStencil_.ClearBoth(context3D);
                     dependent.SwapChain_.Front().Clear(context3D, DirectX::Colors::Black);*/
                     //Ugh
                     dependent.Bind(context3D);
-                    scene.MainCamera().PrepareForRendering(context3D, *this);
                     scene.Render(*this);
                     dependent.SwapChain_.Present();
                     m_inputSystem->OnFrameDone();
