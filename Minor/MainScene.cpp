@@ -163,6 +163,10 @@ void MainScene::BuildCamera()
     camera.SetNearZ(1.0f);
     camera.SetFarZ(1000.0f);
     camera.SetFov(60.0f);
+    camera.UseDefaultMoveEvents(true);
+    auto& vp = camera.Viewport();
+    vp.Right = 1.0f;
+    vp.Bottom = 1.0f;
 }
 
 void MainScene::BuildLights()
@@ -221,42 +225,42 @@ void MainScene::Render(const dx::Game& game)
         render(*m_ball);
     }
 
-    // 2. Render mirror. stencil buffer only
-    {
-        auto& [shaders, blending, depthStencil, rasterizerState] = mirrorMat.Passes[0];
-        blending.BlendState = predefined.GetNoWriteToRT();
-        blending.SampleMask = static_cast<UINT>(-1);
-        depthStencil.StencilState = predefined.GetStencilAlways();
-        depthStencil.StencilRef = 1;
-        render(*m_mirror);
-    }
+    //// 2. Render mirror. stencil buffer only
+    //{
+    //    auto& [shaders, blending, depthStencil, rasterizerState] = mirrorMat.Passes[0];
+    //    blending.BlendState = predefined.GetNoWriteToRT();
+    //    blending.SampleMask = static_cast<UINT>(-1);
+    //    depthStencil.StencilState = predefined.GetStencilAlways();
+    //    depthStencil.StencilRef = 1;
+    //    render(*m_mirror);
+    //}
 
-    // 3. Draw the reflected sphere.
-    // rendering without an object
-    {
-        const auto meshRenderer = m_ball->GetComponent<dx::MeshRenderer>();
-        auto sharedMesh = meshRenderer->SharedMesh();
-        auto& material = meshRenderer->GetMaterial();
-        auto lights = Lights();
-        auto reflectionMatrix = DirectX::XMMatrixReflect(DirectX::XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f));
-        for (auto& light : lights)
-        {
-            auto& direction = std::get<dx::DirectionalLight>(light).Direction;
-            auto dirF4 = dx::MakeDirection4(direction);
-            auto reflected = DirectX::XMVector4Transform(DirectX::XMLoadFloat4(&dirF4), reflectionMatrix);
-            DirectX::XMStoreFloat3(&direction, reflected);
-        }
-        dx::DrawMesh(context3D, *sharedMesh, *m_reflectedMaterial);
-    }
+    //// 3. Draw the reflected sphere.
+    //// rendering without an object
+    //{
+    //    const auto meshRenderer = m_ball->GetComponent<dx::MeshRenderer>();
+    //    auto sharedMesh = meshRenderer->SharedMesh();
+    //    auto& material = meshRenderer->GetMaterial();
+    //    auto lights = Lights();
+    //    auto reflectionMatrix = DirectX::XMMatrixReflect(DirectX::XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f));
+    //    for (auto& light : lights)
+    //    {
+    //        auto& direction = std::get<dx::DirectionalLight>(light).Direction;
+    //        auto dirF4 = dx::MakeDirection4(direction);
+    //        auto reflected = DirectX::XMVector4Transform(DirectX::XMLoadFloat4(&dirF4), reflectionMatrix);
+    //        DirectX::XMStoreFloat3(&direction, reflected);
+    //    }
+    //    dx::DrawMesh(context3D, *sharedMesh, *m_reflectedMaterial);
+    //}
 
-    // 4. Draw the mirror with alpha blending.
-    {
-        auto& blending = mirrorMat.Passes[0].Blending;
-        blending.BlendFactor = {0.5f, 0.5f, 0.5f, 1.0f};
-        blending.BlendState = predefined.GetTransparent();
-        blending.SampleMask = static_cast<UINT>(-1);
-        render(*m_mirror);
-    }
+    //// 4. Draw the mirror with alpha blending.
+    //{
+    //    auto& blending = mirrorMat.Passes[0].Blending;
+    //    blending.BlendFactor = {0.5f, 0.5f, 0.5f, 1.0f};
+    //    blending.BlendState = predefined.GetTransparent();
+    //    blending.SampleMask = static_cast<UINT>(-1);
+    //    render(*m_mirror);
+    //}
 
     //// 5. Draw the shadow.
     //{
