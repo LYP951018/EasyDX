@@ -10,8 +10,8 @@ cbuffer TransformMatrices : register(b0)
 dx::Outputs::PosNormalTex main(dx::Inputs::PosNormalTex input)
 {
     dx::Outputs::PosNormalTex output;
-    input.Position.w = 0.0f;
-    input.Normal.w = 1.0f;
+    input.Position.w = 1.0f;
+    input.Normal.w = 0.0f;
     output.PositionWS = mul(World, input.Position);
     output.Position = mul(WorldViewProj, input.Position);
     output.NormalWS = mul(WorldInvTranspose, input.Normal).xyz;
