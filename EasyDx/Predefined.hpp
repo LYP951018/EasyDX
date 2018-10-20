@@ -8,6 +8,7 @@
 #include "Resources/InputLayout.hpp"
 #include "Vertex.hpp"
 #include "Object.hpp"
+#include "Transform.hpp"
 #include <d3d11.h>
 
 namespace dx
@@ -92,12 +93,31 @@ namespace dx
 
     std::shared_ptr<Material>
     MakeBasicLightingMaterial(const PredefinedResources& predefined,
-                              wrl::ComPtr<ID3D11ShaderResourceView> mainTexture,
-                              const dx::Smoothness& smoothness);
+                              const dx::Smoothness& smoothness,
+                              wrl::ComPtr<ID3D11ShaderResourceView> mainTexture = {}, 
+                                wrl::ComPtr<ID3D11SamplerState> sampler = {});
+
+    struct PosNormTexVertexInput
+    {
+        gsl::span<const dx::PositionType> Positions;
+        gsl::span<const dx::VectorType> Normals;
+        gsl::span<const dx::TexCoordType> TexCoords;
+        gsl::span<const dx::ShortIndex> Indices;
+    };
 
     std::unique_ptr<dx::Object>
-    MakeObjectWithDefaultRendering(ID3D11Device& device3D, const PredefinedResources& predefined, gsl::span<const dx::PositionType> positions,
-               gsl::span<const dx::VectorType> normals, gsl::span<const dx::TexCoordType> texCoords,
-               gsl::span<const dx::ShortIndex> indices,
-               wrl::ComPtr<ID3D11ShaderResourceView> mainTexture, const dx::Smoothness& smoothness);
+    MakeObjectWithDefaultRendering(ID3D11Device& device3D, const PredefinedResources& predefined,
+                                   const PosNormTexVertexInput& vertexInput,
+                                   const dx::Smoothness& smoothness,
+               wrl::ComPtr<ID3D11ShaderResourceView> mainTexture = {},
+                                   wrl::ComPtr<ID3D11SamplerState> sampler = {});
+
+    struct ModelResultUnit;
+
+    std::unique_ptr<dx::Object>
+    MakeObjectWithDefaultRendering(ID3D11Device& device3D, const PredefinedResources& predefined,
+                                   const ModelResultUnit& modelInput,
+                                   const dx::Smoothness& smoothness,
+                                   wrl::ComPtr<ID3D11ShaderResourceView> mainTexture = {},
+                                   wrl::ComPtr<ID3D11SamplerState> sampler = {});
 } // namespace dx

@@ -16,6 +16,7 @@
 #include "Material.hpp"
 #include "MeshRenderer.hpp"
 #include "Transform.hpp"
+#include "Model.hpp"
 
 namespace dx
 {
@@ -234,15 +235,17 @@ namespace dx
         /*m_globalInputLayoutAllocator.Register(device, PosNormal,
                                               AsBytes(FakePosNormalVSByteCode));*/
         m_globalInputLayoutAllocator.Register(device, PosDesc, AsBytes(FakePosVSByteCode));
-        m_globalInputLayoutAllocator.Register(device, PosNormalTexDescs, AsBytes(FakePosNormalTexVSByteCode));
+        m_globalInputLayoutAllocator.Register(device, PosNormalTexDescs,
+                                              AsBytes(FakePosNormalTexVSByteCode));
     }
 
     std::unique_ptr<Object> obj(Object obj) { return std::make_unique<Object>(std::move(obj)); }
 
     std::shared_ptr<Material>
     MakeBasicLightingMaterial(const PredefinedResources& predefined,
+                              const dx::Smoothness& smoothness,
                               wrl::ComPtr<ID3D11ShaderResourceView> mainTexture,
-                              const dx::Smoothness& smoothness)
+                              wrl::ComPtr<ID3D11SamplerState> sampler)
     {
         auto ps = predefined.GetBasicPS();
         auto& psInputs = ps.Inputs;
@@ -253,24 +256,40 @@ namespace dx
             mainTexture = predefined.GetWhite();
         }
         psInputs.Bind("Texture", std::move(mainTexture));
-        // TODO
-        psInputs.Bind("Sampler", predefined.GetDefaultSampler());
+        if (sampler == nullptr)
+        {
+            sampler = predefined.GetDefaultSampler();
+        }
+        psInputs.Bind("Sampler", std::move(sampler));
         return std::make_shared<Material>(Material{
             MakeVec(dx::Pass{dx::ShaderCollection{predefined.GetBasicVS(), std::move(ps)}})});
     }
 
     std::unique_ptr<dx::Object> MakeObjectWithDefaultRendering(
         ID3D11Device& device3D, const PredefinedResources& predefined,
-        gsl::span<const dx::PositionType> positions, gsl::span<const dx::VectorType> normals,
-        gsl::span<const dx::TexCoordType> texCoords, gsl::span<const dx::ShortIndex> indices,
-        wrl::ComPtr<ID3D11ShaderResourceView> mainTexture, const dx::Smoothness& smoothness)
+        const PosNormTexVertexInput& vertexInput, const dx::Smoothness& smoothness,
+        wrl::ComPtr<ID3D11ShaderResourceView> mainTexture, wrl::ComPtr<ID3D11SamplerState> sampler)
     {
-
+        const auto& [positions, normals, texCoords, indices] = vertexInput;
         return obj(Object{MeshRenderer{
             Mesh::CreateImmutable(device3D, predefined.InputLayouts().Query(PosNormalTexDescs),
                                   span{indices}, span{positions}, span{normals}, span{texCoords}),
-            MakeBasicLightingMaterial(predefined, std::move(mainTexture), smoothness)},
-            //TODO: custom transform
-            TransformComponent{Transform{}}});
+            MakeBasicLightingMaterial(predefined, smoothness, std::move(mainTexture),
+                                      std::move(sampler))}});
+    }
+
+    std::unique_ptr<dx::Object>
+    MakeObjectWithDefaultRendering(ID3D11Device& device3D, const PredefinedResources& predefined,
+                                   const ModelResultUnit& modelInput,
+                                   const dx::Smoothness& smoothness,
+                                   wrl::ComPtr<ID3D11ShaderResourceView> mainTexture,
+                                   wrl::ComPtr<ID3D11SamplerState> sampler)
+    {
+        return MakeObjectWithDefaultRendering(
+            device3D, predefined,
+            PosNormTexVertexInput{
+                gsl::make_span(modelInput.Positions), gsl::make_span(modelInput.Normals),
+                gsl::make_span(modelInput.TexCoords), gsl::make_span(modelInput.Indices)},
+            smoothness, std::move(mainTexture), std::move(sampler));
     }
 } // namespace dx
