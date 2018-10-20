@@ -29,7 +29,7 @@ namespace dx
         }
 
         template<typename... ComponentsT, typename = std::enable_if_t<std::conjunction_v<
-                     std::negation<std::disjunction<is_unique_ptr<ComponentsT>,
+                     std::negation<std::disjunction<is_unique_ptr<std::decay_t<ComponentsT>>,
                                                     std::is_same<std::decay_t<ComponentsT>, Object>>>...>>>
         Object(ComponentsT&&... components)
         {
@@ -50,6 +50,15 @@ namespace dx
             auto& ret = *component;
             AddComponentInternal(std::move(component));
             return ret;
+        }
+
+        template<typename T, typename... Args,
+                 typename =
+                     std::enable_if_t <
+                         !std::disjunction_v<is_unique_ptr<std::decay_t<Args>>...>>>
+        T& AddComponent(Args&&... args)
+        {
+            return AddComponent<T>(std::make_unique<T>(std::forward<Args>(args)...));
         }
 
         template<typename... Args>
