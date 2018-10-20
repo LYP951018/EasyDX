@@ -254,7 +254,11 @@ namespace dx
     {
         std::tie(device3D_, context3D_) = MakeDevice3D();
         TryHR(device3D_->QueryInterface(dxgiDevice_.ReleaseAndGetAddressOf()));
+#if _DEBUG
         TryHR(device3D_->QueryInterface(d3dDebug_.ReleaseAndGetAddressOf()));
+#else
+        device3D_->QueryInterface(d3dDebug_.ReleaseAndGetAddressOf());
+#endif
 
         D2D1_FACTORY_OPTIONS options = {};
 #ifdef _DEBUG
