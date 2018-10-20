@@ -241,14 +241,11 @@ namespace dx
 
     std::unique_ptr<Object> obj(Object obj) { return std::make_unique<Object>(std::move(obj)); }
 
-    std::shared_ptr<Material>
-    MakeBasicLightingMaterial(const PredefinedResources& predefined,
-                              const dx::Smoothness& smoothness,
-                              wrl::ComPtr<ID3D11ShaderResourceView> mainTexture,
-                              wrl::ComPtr<ID3D11SamplerState> sampler)
+    void PresetupBasicPsCb(ShaderInputs& psInputs, const PredefinedResources& predefined,
+                           const dx::Smoothness& smoothness,
+                           wrl::ComPtr<ID3D11ShaderResourceView> mainTexture,
+                           wrl::ComPtr<ID3D11SamplerState> sampler)
     {
-        auto ps = predefined.GetBasicPS();
-        auto& psInputs = ps.Inputs;
         auto& perObject = *psInputs.GetCbInfo("PerObjectLightingInfo");
         perObject.Set("ObjectMaterial", dx::cb::Material{smoothness, mainTexture != nullptr});
         if (mainTexture == nullptr)
@@ -261,6 +258,18 @@ namespace dx
             sampler = predefined.GetDefaultSampler();
         }
         psInputs.Bind("Sampler", std::move(sampler));
+    
+    }
+
+    std::shared_ptr<Material>
+    MakeBasicLightingMaterial(const PredefinedResources& predefined,
+                              const dx::Smoothness& smoothness,
+                              wrl::ComPtr<ID3D11ShaderResourceView> mainTexture,
+                              wrl::ComPtr<ID3D11SamplerState> sampler)
+    {
+        auto ps = predefined.GetBasicPS();
+        PresetupBasicPsCb(ps.Inputs, predefined, smoothness, std::move(mainTexture),
+                          std::move(sampler));
         return std::make_shared<Material>(Material{
             MakeVec(dx::Pass{dx::ShaderCollection{predefined.GetBasicVS(), std::move(ps)}})});
     }
