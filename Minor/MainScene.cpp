@@ -24,9 +24,10 @@ std::unique_ptr<dx::Object> MainScene::MakeFloor() const
         XMFLOAT4{0.5f, 0.5f, 0.5f, 1.0f}, XMFLOAT4{1.0f, 1.0f, 1.0f, 1.0f},
         XMFLOAT4{0.4f, 0.4f, 0.4f, 1.0f}, XMFLOAT4{1.0f, 1.0f, 1.0f, 1.0f}, 16.0f};
 
-    return dx::MakeObjectWithDefaultRendering(m_device3D, m_predefined, span{positions}, span{normals}, span{texCoords},
-                          span{indices}, dx::Get2DTexView(m_device3D, dx::Ref(m_checkBoardTex)),
-                          smoothness);
+    return dx::MakeObjectWithDefaultRendering(
+        m_device3D, m_predefined,
+        dx::PosNormTexVertexInput{span{positions}, span{normals}, span{texCoords}, span{indices}},
+        smoothness, dx::Get2DTexView(m_device3D, dx::Ref(m_checkBoardTex)), m_predefined.GetRepeatSampler());
 }
 
 std::unique_ptr<dx::Object> MainScene::MakeWall() const
@@ -56,9 +57,11 @@ std::unique_ptr<dx::Object> MainScene::MakeWall() const
         dx::Smoothness{XMFLOAT4{0.5f, 0.5f, 0.5f, 1.0f}, XMFLOAT4{1.0f, 1.0f, 1.0f, 1.0f},
                        XMFLOAT4{0.4f, 0.4f, 0.4f, 1.0f}, XMFLOAT4{1.0f, 1.0f, 1.0f, 1.0f}, 16.0f};
 
-    return dx::MakeObjectWithDefaultRendering(m_device3D, m_predefined, span{positions}, span{normals}, span{texCoords},
-                          span{indices}, dx::Get2DTexView(m_device3D, dx::Ref(m_brick01Tex)),
-                          smoothness);
+    return dx::MakeObjectWithDefaultRendering(
+        m_device3D, m_predefined,
+        dx::PosNormTexVertexInput{span{positions}, span{normals}, span{texCoords}, span{indices}},
+        smoothness,
+        dx::Get2DTexView(m_device3D, dx::Ref(m_brick01Tex)), m_predefined.GetRepeatSampler());
 }
 
 std::unique_ptr<dx::Object> MainScene::MakeMirror() const
@@ -83,36 +86,32 @@ std::unique_ptr<dx::Object> MainScene::MakeMirror() const
         dx::Smoothness{XMFLOAT4{0.5f, 0.5f, 0.5f, 1.0f}, XMFLOAT4{1.0f, 1.0f, 1.0f, 0.5f},
                        XMFLOAT4{0.4f, 0.4f, 0.4f, 1.0f}, XMFLOAT4{}, 16.0f};
 
-    return dx::MakeObjectWithDefaultRendering(m_device3D, m_predefined, span{positions}, span{normals}, span{texCoords},
-                          span{indices}, dx::Get2DTexView(m_device3D, dx::Ref(m_iceTex)),
-                          smoothness);
+    return dx::MakeObjectWithDefaultRendering(
+        m_device3D, m_predefined,
+        dx::PosNormTexVertexInput{span{positions}, span{normals}, span{texCoords}, span{indices}},
+        smoothness, dx::Get2DTexView(m_device3D, dx::Ref(m_iceTex)));
 }
 
 std::unique_ptr<dx::Object> MainScene::MakeBall() const
 {
     using namespace DirectX;
 
-    const dx::PositionType positions[] = {{-2.5f, 0.0f, 0.0f}, {-2.5f, 4.0f, 0.0f},
-                                          {2.5f, 4.0f, 0.0f},  {-2.5f, 0.0f, 0.0f},
-                                          {2.5f, 4.0f, 0.0f},  {2.5f, 0.0f, 0.0f}};
-
-    const dx::VectorType normals[] = {
-        {0.0f, 0.0f, -1.0f}, {0.0f, 0.0f, -1.0f}, {0.0f, 0.0f, -1.0f},
-        {0.0f, 0.0f, -1.0f}, {0.0f, 0.0f, -1.0f}, {0.0f, 0.0f, -1.0f},
-    };
-
-    const dx::TexCoordType texCoords[] = {{0.0f, 1.0f}, {0.0f, 0.0f}, {1.0f, 0.0f},
-                                          {0.0f, 1.0f}, {1.0f, 0.0f}, {1.0f, 1.0f}};
-
-    const std::uint16_t indices[] = {0, 1, 2, 3, 4, 5};
+    dx::ModelResultUnit sphereMesh;
+    dx::MakeUVSphere(1.0f, 30.0f, 30.0f, sphereMesh);
 
     auto smoothness =
         dx::Smoothness{XMFLOAT4{0.5f, 0.5f, 0.5f, 1.0f}, XMFLOAT4{1.0f, 1.0f, 1.0f, 0.5f},
                        XMFLOAT4{0.4f, 0.4f, 0.4f, 1.0f}, XMFLOAT4{}, 16.0f};
 
-    return dx::MakeObjectWithDefaultRendering(m_device3D, m_predefined, span{positions}, span{normals}, span{texCoords},
-                          span{indices}, dx::Get2DTexView(m_device3D, dx::Ref(m_iceTex)),
-                          smoothness);
+    auto ball = dx::MakeObjectWithDefaultRendering(
+        m_device3D, m_predefined,
+        sphereMesh,
+        smoothness, m_predefined.GetWhite());
+
+    dx::Transform transform;
+    transform.SetPosition({0.0f, 2.0f, -2.5f});
+    ball->AddComponent<dx::TransformComponent>(std::move(transform));
+    return ball;
 };
 
 MainScene::MainScene(dx::Game& game)
@@ -140,10 +139,11 @@ void MainScene::InitReflectedMaterial()
     using namespace DirectX;
 
     m_reflectedMaterial = dx::MakeBasicLightingMaterial(
-        m_predefined, dx::Get2DTexView(m_device3D, dx::Ref(m_iceTex)),
-        //the same smoothness with sphere
+        m_predefined,
+        // the same smoothness with sphere
         dx::Smoothness{XMFLOAT4{0.5f, 0.5f, 0.5f, 1.0f}, XMFLOAT4{1.0f, 1.0f, 1.0f, 0.5f},
-                       XMFLOAT4{0.4f, 0.4f, 0.4f, 1.0f}, XMFLOAT4{}, 16.0f});
+                       XMFLOAT4{0.4f, 0.4f, 0.4f, 1.0f}, XMFLOAT4{}, 16.0f},
+        m_predefined.GetWhite());
     auto& [shaders, blending, depthStencil, rasterizerState] = m_reflectedMaterial->Passes[0];
     rasterizerState = m_predefined.GetCullClockwise();
     depthStencil.StencilState = m_predefined.GetDrawnOnly();
@@ -162,7 +162,7 @@ void MainScene::BuildCamera()
     camera.SetLookAt({x, y, z}, {}, {0.0f, 1.0f, 0.0f});
     camera.SetNearZ(1.0f);
     camera.SetFarZ(1000.0f);
-    camera.SetFov(60.0f);
+    camera.SetFov(DirectX::XM_PIDIV4);
     camera.UseDefaultMoveEvents(true);
     auto& vp = camera.Viewport();
     vp.Right = 1.0f;
@@ -211,8 +211,7 @@ void MainScene::Render(const dx::Game& game)
 
     using namespace dx::systems;
 
-    const auto render = [&](const dx::Object& object)
-    {
+    const auto render = [&](const dx::Object& object) {
         SimpleRenderSystem(context3D, *this, object);
     };
 
@@ -225,42 +224,50 @@ void MainScene::Render(const dx::Game& game)
         render(*m_ball);
     }
 
-    //// 2. Render mirror. stencil buffer only
-    //{
-    //    auto& [shaders, blending, depthStencil, rasterizerState] = mirrorMat.Passes[0];
-    //    blending.BlendState = predefined.GetNoWriteToRT();
-    //    blending.SampleMask = static_cast<UINT>(-1);
-    //    depthStencil.StencilState = predefined.GetStencilAlways();
-    //    depthStencil.StencilRef = 1;
-    //    render(*m_mirror);
-    //}
+    // 2. Render mirror. stencil buffer only
+    {
+        auto& [shaders, blending, depthStencil, rasterizerState] = mirrorMat.Passes[0];
+        blending.BlendState = predefined.GetNoWriteToRT();
+        blending.SampleMask = static_cast<UINT>(-1);
+        depthStencil.StencilState = predefined.GetStencilAlways();
+        depthStencil.StencilRef = 1;
+        render(*m_mirror);
+    }
 
-    //// 3. Draw the reflected sphere.
-    //// rendering without an object
-    //{
-    //    const auto meshRenderer = m_ball->GetComponent<dx::MeshRenderer>();
-    //    auto sharedMesh = meshRenderer->SharedMesh();
-    //    auto& material = meshRenderer->GetMaterial();
-    //    auto lights = Lights();
-    //    auto reflectionMatrix = DirectX::XMMatrixReflect(DirectX::XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f));
-    //    for (auto& light : lights)
-    //    {
-    //        auto& direction = std::get<dx::DirectionalLight>(light).Direction;
-    //        auto dirF4 = dx::MakeDirection4(direction);
-    //        auto reflected = DirectX::XMVector4Transform(DirectX::XMLoadFloat4(&dirF4), reflectionMatrix);
-    //        DirectX::XMStoreFloat3(&direction, reflected);
-    //    }
-    //    dx::DrawMesh(context3D, *sharedMesh, *m_reflectedMaterial);
-    //}
+    // 3. Draw the reflected sphere.
+    // rendering without an object
+    {
+        const auto meshRenderer = m_ball->GetComponent<dx::MeshRenderer>();
+        auto sharedMesh = meshRenderer->SharedMesh();
+        auto& material = meshRenderer->GetMaterial();
+        auto lights = Lights();
+        auto reflectionMatrix =
+            DirectX::XMMatrixReflect(DirectX::XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f));
+        for (auto& light : lights)
+        {
+            auto& direction = std::get<dx::DirectionalLight>(light).Direction;
+            auto dirF4 = dx::MakeDirection4(direction);
+            auto reflected =
+                DirectX::XMVector4Transform(DirectX::XMLoadFloat4(&dirF4), reflectionMatrix);
+            DirectX::XMStoreFloat3(&direction, reflected);
+        }
+        auto& transform = m_ball->GetComponent<dx::TransformComponent>()->GetTransform();
+        auto& shaders = m_reflectedMaterial->Passes[0].Shaders;
+        dx::systems::PrepareVsCb(context3D, shaders.VertexShader_.Inputs,
+                                 transform.Matrix() * reflectionMatrix, gsl::make_span(lights), camera);
+        dx::systems::PreparePsCb(context3D, shaders.PixelShader_.Inputs, gsl::make_span(lights),
+                                 camera);
+        dx::DrawMesh(context3D, *sharedMesh, *m_reflectedMaterial);
+    }
 
-    //// 4. Draw the mirror with alpha blending.
-    //{
-    //    auto& blending = mirrorMat.Passes[0].Blending;
-    //    blending.BlendFactor = {0.5f, 0.5f, 0.5f, 1.0f};
-    //    blending.BlendState = predefined.GetTransparent();
-    //    blending.SampleMask = static_cast<UINT>(-1);
-    //    render(*m_mirror);
-    //}
+    // 4. Draw the mirror with alpha blending.
+    {
+        auto& blending = mirrorMat.Passes[0].Blending;
+        blending.BlendFactor = {0.5f, 0.5f, 0.5f, 1.0f};
+        blending.BlendState = predefined.GetTransparent();
+        blending.SampleMask = static_cast<UINT>(-1);
+        render(*m_mirror);
+    }
 
     //// 5. Draw the shadow.
     //{
@@ -270,5 +277,5 @@ void MainScene::Render(const dx::Game& game)
     //    context3D.OMSetDepthStencilState({}, 0);
     //}
 
-    //swapChain.Present();
+    // swapChain.Present();
 }
