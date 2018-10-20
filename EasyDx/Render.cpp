@@ -40,10 +40,7 @@ namespace dx
     {
         for (const auto& pass : material.Passes)
         {
-            SetupShaders(context3D, pass.Shaders);
-            SetupBlending(context3D, pass);
-            SetupDepthStencilStates(context3D, pass);
-            SetupRasterizerState(context3D, pass);
+            SetupPass(context3D, pass);
             context3D.DrawIndexed(mesh.IndexCount(),
                                   // TODO
                                   0,
@@ -53,7 +50,9 @@ namespace dx
     }
 
     void DrawMeshInstancing(ID3D11DeviceContext& context3D, const Mesh& mesh,
-                            const Material& material, gsl::span<const GpuBuffer> instancingBuffers)
+                            const Material& material, std::uint32_t instancingCount,
+                            gsl::span<const GpuBuffer> instancingBuffers,
+                            gsl::span<const std::uint32_t> strides)
     {
         const auto& vbBindData = mesh.BindData();
         const auto buffers = ComPtrsCast(mesh.GetGpuVbsWithoutFlush());
@@ -61,13 +60,16 @@ namespace dx
         // dirty here
         ClearVbDataStructures();
         Append(g_Buffers, buffers, ComPtrsCast(instancingBuffers));
+
+        //the non-instancing part
         g_Strides.insert(g_Strides.end(), vbBindData.Strides, vbBindData.Strides + bufferCount);
         g_Offsets.insert(g_Offsets.end(), vbBindData.Offsets, vbBindData.Offsets + bufferCount);
+
+        //the instancing part
+        g_Strides.insert(g_Strides.end(), strides.begin(), strides.end());
         for (auto& buffer : instancingBuffers)
         {
             const auto desc = GetDesc(Ref(buffer));
-            //FIXME!
-            //g_Strides.push_back(desc.StructureByteStride);
             g_Offsets.push_back(0);
         }
         CheckConsistency();
@@ -75,7 +77,11 @@ namespace dx
                                      g_Buffers.data(), g_Strides.data(), g_Offsets.data());
         context3D.IASetInputLayout(&mesh.InputLayout());
         SetupIndexBuffer(context3D, mesh.GpuIb());
-        RunPasses(context3D, material, mesh);
+        for (const auto& pass : material.Passes)
+        {
+            SetupPass(context3D, pass);
+            context3D.DrawIndexedInstanced(mesh.IndexCount(), instancingCount, 0, 0, 0);
+        }
     }
 
     void SetupBlending(ID3D11DeviceContext& context3D, const Pass& pass)
@@ -109,5 +115,13 @@ namespace dx
     void SetupRasterizerState(ID3D11DeviceContext& context3D, const Pass& pass)
     {
         context3D.RSSetState(pass.RasterizerState.Get());
+    }
+
+    void SetupPass(ID3D11DeviceContext& context3D, const Pass& pass)
+    {
+        SetupShaders(context3D, pass.Shaders);
+        SetupBlending(context3D, pass);
+        SetupDepthStencilStates(context3D, pass);
+        SetupRasterizerState(context3D, pass);
     }
 } // namespace dx
