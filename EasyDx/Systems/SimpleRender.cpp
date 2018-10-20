@@ -49,9 +49,10 @@ namespace dx::systems
         const auto meshRenderer = object.GetComponent<MeshRenderer>();
         if (meshRenderer == nullptr)
             return;
+        const auto transform = object.GetComponent<TransformComponent>();
         PrepareForRendering(context3D, gsl::make_span(scene.Lights()), scene.MainCamera(),
                             meshRenderer->GetMaterial(),
-                            object.GetComponent<TransformComponent>()->GetTransform().Matrix());
+                            transform == nullptr ? DirectX::XMMatrixIdentity() : transform->GetTransform().Matrix());
         DrawMesh(context3D, meshRenderer->GetMesh(), meshRenderer->GetMaterial());
     }
 } // namespace dx::systems
