@@ -4,3 +4,4 @@
 #pragma comment(lib, "D3DCompiler.lib")
 #pragma comment(lib, "D2d1.lib")
 #pragma comment(lib, "Dwrite.lib")
+#pragma comment(lib, "dxguid.lib")
