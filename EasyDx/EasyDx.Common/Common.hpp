@@ -189,6 +189,12 @@ namespace dx
         return vec;
     }
 
+    template<typename T>
+    gsl::span<T> SingleAsSpan(T& v)
+    {
+        return gsl::make_span(std::addressof(v), 1);
+    }
+
     using Clock = std::chrono::high_resolution_clock;
     using Duration = Clock::duration;
     using TimePoint = Clock::time_point;
