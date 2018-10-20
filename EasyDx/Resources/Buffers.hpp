@@ -63,9 +63,9 @@ namespace dx
     }
 
     template<typename T = std::byte>
-    TypedGpuBuffer<T> MakeDynamicGpuBuffer(ID3D11Device& device, std::uint32_t size, BindFlag bindFlags)
+    TypedGpuBuffer<T> MakeDynamicGpuBuffer(ID3D11Device& device, std::uint32_t size, BindFlag bindFlags, T* data = nullptr)
     {
-        return Internal::RawMakeD3DBuffer(device, nullptr, size, bindFlags, ResourceUsage::Dynamic);
+        return Internal::RawMakeD3DBuffer(device, data, size, bindFlags, ResourceUsage::Dynamic);
     }
 
     template<typename T>
@@ -78,6 +78,12 @@ namespace dx
     TypedGpuBuffer<T> MakeDynamicVertexBuffer(ID3D11Device& device, std::uint32_t size)
     {
         return MakeDynamicGpuBuffer(device, size, BindFlag::VertexBuffer);
+    }
+
+    template<typename T = std::byte>
+    TypedGpuBuffer<T> MakeDynamicVertexBuffer(ID3D11Device& device, gsl::span<T> data)
+    {
+        return MakeDynamicGpuBuffer(device, data.size_bytes(), BindFlag::VertexBuffer, data.data());
     }
 
     using ShortIndex = std::uint16_t;
