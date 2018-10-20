@@ -30,14 +30,22 @@ namespace dx
         context3D.IASetInputLayout(&layout);
     }
 
+    wrl::ComPtr<ID3D11InputLayout> MakeInputLayout(ID3D11Device& device,
+                                                   gsl::span<const D3D11_INPUT_ELEMENT_DESC> descs,
+                                                   gsl::span<const std::byte> byteCode)
+    {
+        wrl::ComPtr<ID3D11InputLayout> layout;
+        TryHR(device.CreateInputLayout(descs.data(), gsl::narrow<std::uint32_t>(descs.size()),
+                                       byteCode.data(), byteCode.size(), layout.GetAddressOf()));
+        return layout;
+    }
+
     wrl::ComPtr<ID3D11InputLayout>
     InputLayoutAllocator::Register(ID3D11Device& device,
                                    gsl::span<const D3D11_INPUT_ELEMENT_DESC> descs,
                                    gsl::span<const std::byte> byteCode)
     {
-        wrl::ComPtr<ID3D11InputLayout> layout;
-        TryHR(device.CreateInputLayout(descs.data(), gsl::narrow<std::uint32_t>(descs.size()), byteCode.data(), byteCode.size(),
-                                       layout.GetAddressOf()));
+        const auto layout = MakeInputLayout(device, descs, byteCode);
         m_inputLayouts.insert(std::make_pair(
             MaxStreamVector<D3D11_INPUT_ELEMENT_DESC>{descs.begin(), descs.end()}, layout));
         return layout;
