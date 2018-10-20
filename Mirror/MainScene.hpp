@@ -23,8 +23,6 @@ class MainScene : public dx::SceneBase
     std::unique_ptr<dx::Object> MakeFloor() const;
 
     wrl::ComPtr<ID3D11Texture2D> m_checkBoardTex, m_brick01Tex, m_iceTex;
-    ID3D11Device& m_device3D;
-    const dx::PredefinedResources& m_predefined;
     std::unique_ptr<dx::Object> m_floor, m_wall, m_mirror, m_ball;
     std::shared_ptr<dx::Material> m_reflectedMaterial;
 };

@@ -25,9 +25,9 @@ std::unique_ptr<dx::Object> MainScene::MakeFloor() const
         XMFLOAT4{0.4f, 0.4f, 0.4f, 1.0f}, XMFLOAT4{1.0f, 1.0f, 1.0f, 1.0f}, 16.0f};
 
     return dx::MakeObjectWithDefaultRendering(
-        m_device3D, m_predefined,
+        Device3D, Predefined,
         dx::PosNormTexVertexInput{span{positions}, span{normals}, span{texCoords}, span{indices}},
-        smoothness, dx::Get2DTexView(m_device3D, dx::Ref(m_checkBoardTex)), m_predefined.GetRepeatSampler());
+        smoothness, dx::Get2DTexView(Device3D, dx::Ref(m_checkBoardTex)), Predefined.GetRepeatSampler());
 }
 
 std::unique_ptr<dx::Object> MainScene::MakeWall() const
@@ -58,10 +58,10 @@ std::unique_ptr<dx::Object> MainScene::MakeWall() const
                        XMFLOAT4{0.4f, 0.4f, 0.4f, 1.0f}, XMFLOAT4{1.0f, 1.0f, 1.0f, 1.0f}, 16.0f};
 
     return dx::MakeObjectWithDefaultRendering(
-        m_device3D, m_predefined,
+        Device3D, Predefined,
         dx::PosNormTexVertexInput{span{positions}, span{normals}, span{texCoords}, span{indices}},
         smoothness,
-        dx::Get2DTexView(m_device3D, dx::Ref(m_brick01Tex)), m_predefined.GetRepeatSampler());
+        dx::Get2DTexView(Device3D, dx::Ref(m_brick01Tex)), Predefined.GetRepeatSampler());
 }
 
 std::unique_ptr<dx::Object> MainScene::MakeMirror() const
@@ -87,9 +87,9 @@ std::unique_ptr<dx::Object> MainScene::MakeMirror() const
                        XMFLOAT4{0.4f, 0.4f, 0.4f, 1.0f}, XMFLOAT4{}, 16.0f};
 
     return dx::MakeObjectWithDefaultRendering(
-        m_device3D, m_predefined,
+        Device3D, Predefined,
         dx::PosNormTexVertexInput{span{positions}, span{normals}, span{texCoords}, span{indices}},
-        smoothness, dx::Get2DTexView(m_device3D, dx::Ref(m_iceTex)));
+        smoothness, dx::Get2DTexView(Device3D, dx::Ref(m_iceTex)));
 }
 
 std::unique_ptr<dx::Object> MainScene::MakeBall() const
@@ -104,9 +104,9 @@ std::unique_ptr<dx::Object> MainScene::MakeBall() const
                        XMFLOAT4{0.4f, 0.4f, 0.4f, 1.0f}, XMFLOAT4{}, 16.0f};
 
     auto ball = dx::MakeObjectWithDefaultRendering(
-        m_device3D, m_predefined,
+        Device3D, Predefined,
         sphereMesh,
-        smoothness, m_predefined.GetWhite());
+        smoothness, Predefined.GetWhite());
 
     dx::Transform transform;
     transform.SetPosition({0.0f, 2.0f, -2.5f});
@@ -115,8 +115,7 @@ std::unique_ptr<dx::Object> MainScene::MakeBall() const
 };
 
 MainScene::MainScene(dx::Game& game)
-    : dx::SceneBase{game}, m_device3D{game.IndependentResources().Device3D()},
-      m_predefined{game.Predefined()}
+    : dx::SceneBase{game}
 {
     auto& resources = game.IndependentResources();
     auto& device = resources.Device3D();
@@ -140,14 +139,14 @@ void MainScene::InitReflectedMaterial()
     using namespace DirectX;
 
     m_reflectedMaterial = dx::MakeBasicLightingMaterial(
-        m_predefined,
+        Predefined,
         // the same smoothness with sphere
         dx::Smoothness{XMFLOAT4{0.5f, 0.5f, 0.5f, 1.0f}, XMFLOAT4{1.0f, 1.0f, 1.0f, 0.5f},
                        XMFLOAT4{0.4f, 0.4f, 0.4f, 1.0f}, XMFLOAT4{}, 16.0f},
-        m_predefined.GetWhite());
+        Predefined.GetWhite());
     auto& [shaders, blending, depthStencil, rasterizerState] = m_reflectedMaterial->Passes[0];
-    rasterizerState = m_predefined.GetCullClockwise();
-    depthStencil.StencilState = m_predefined.GetDrawnOnly();
+    rasterizerState = Predefined.GetCullClockwise();
+    depthStencil.StencilState = Predefined.GetDrawnOnly();
     depthStencil.StencilRef = 1;
 }
 
@@ -191,9 +190,9 @@ void MainScene::BuildLights()
 void MainScene::LoadTextures()
 {
     m_checkBoardTex =
-        dx::Load2DTexFromDdsFile(m_device3D, fs::current_path() / "Tex" / "checkboard.dds");
-    m_brick01Tex = dx::Load2DTexFromDdsFile(m_device3D, fs::current_path() / "Tex" / "brick01.dds");
-    m_iceTex = dx::Load2DTexFromDdsFile(m_device3D, fs::current_path() / "Tex" / "ice.dds");
+        dx::Load2DTexFromDdsFile(Device3D, fs::current_path() / "Tex" / "checkboard.dds");
+    m_brick01Tex = dx::Load2DTexFromDdsFile(Device3D, fs::current_path() / "Tex" / "brick01.dds");
+    m_iceTex = dx::Load2DTexFromDdsFile(Device3D, fs::current_path() / "Tex" / "ice.dds");
 }
 
 void MainScene::Render(const dx::Game& game)
