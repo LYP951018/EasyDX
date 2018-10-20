@@ -115,7 +115,8 @@ std::unique_ptr<dx::Object> MainScene::MakeBall() const
 };
 
 MainScene::MainScene(dx::Game& game)
-    : m_device3D{game.IndependentResources().Device3D()}, m_predefined{game.Predefined()}
+    : dx::SceneBase{game}, m_device3D{game.IndependentResources().Device3D()},
+      m_predefined{game.Predefined()}
 {
     auto& resources = game.IndependentResources();
     auto& device = resources.Device3D();
