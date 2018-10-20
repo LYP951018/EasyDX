@@ -133,7 +133,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Ball.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="MainScene.cpp" />
     <ClCompile Include="Pch.cpp">
@@ -141,7 +140,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Ball.hpp" />
     <ClInclude Include="MainScene.hpp" />
     <ClInclude Include="Pch.hpp" />
   </ItemGroup>
