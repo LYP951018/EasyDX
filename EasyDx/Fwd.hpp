@@ -2,10 +2,10 @@
 
 namespace dx
 {
-    struct IndependentGraphics;
-    struct DependentGraphics;
-    struct PredefinedResources;
+    class IndependentGraphics;
+    class DependentGraphics;
+    class PredefinedResources;
     struct UpdateArgs;
-    struct Object;
+    class Object;
     class Game;
 }
