@@ -38,6 +38,28 @@ void GenerateInstancingData(dx::AlignedVec<InstancingVertex>& instancingData, st
     }
 }
 
+using namespace DirectX;
+
+void Culling(const DirectX::BoundingFrustum& frustum, gsl::span<const dx::PositionType> mesh,
+             const XMMATRIX& view, gsl::span<const InstancingVertex> transforms,
+             std::vector<InstancingVertex>& visibleParts, ID3D11DeviceContext& context3D,
+             dx::GpuBuffer& instancingBuffer)
+{
+    visibleParts.clear();
+    const auto invView = XMMatrixInverse({}, view);
+    BoundingBox aabb;
+    DirectX::BoundingFrustum localFrustum;
+    std::copy_if(transforms.begin(), transforms.end(), std::back_inserter(visibleParts),
+                 [&](const InstancingVertex& v) {
+                     BoundingBox::CreateFromPoints(aabb, mesh.size(), mesh.data(),
+                                                   sizeof(dx::PositionType));
+                     const auto inv = invView* XMMatrixInverse({}, v.World);
+                     frustum.Transform(localFrustum, inv);
+                     return localFrustum.Contains(aabb) == ContainmentType::CONTAINS;
+                 });
+    dx::UpdateWithDiscard(context3D, dx::Ref(instancingBuffer), gsl::make_span(visibleParts));
+}
+
 MainScene::MainScene(dx::Game& game) : dx::SceneBase{game}
 {
     BuildCamera();
@@ -77,8 +99,7 @@ void MainScene::InitBall()
     dx::ModelResultUnit sphereMesh;
     dx::MakeUVSphere(0.2f, 10, 10, sphereMesh);
     auto inputLayout =
-        dx::MakeInputLayout(Device3D, kInstancingVertexDescs,
-                                                          dx::AsBytes(InstancingVSByteCode));
+        dx::MakeInputLayout(Device3D, kInstancingVertexDescs, dx::AsBytes(InstancingVSByteCode));
     using namespace gsl;
     using namespace dx;
     m_ballMesh =
@@ -112,7 +133,9 @@ void MainScene::Render(const dx::Game& game)
                                      camera.GetView() * camera.GetProjection());
     PreparePsCb(context3D, shaders.PixelShader_.Inputs, gsl::make_span(Lights()), camera);
     const std::uint32_t instancingVertexSize = static_cast<std::uint32_t>(sizeof(InstancingVertex));
-    dx::DrawMeshInstancing(context3D, *m_ballMesh, *m_ballMaterial, m_instancingData.size(),
+    Culling(camera.Frustum(), m_ballMesh->Positions(), camera.GetView(),
+            m_instancingData, m_visibleBuffer, context3D, m_instancingBuffer);
+    dx::DrawMeshInstancing(context3D, *m_ballMesh, *m_ballMaterial, m_visibleBuffer.size(),
                            dx::SingleAsSpan(m_instancingBuffer),
                            dx::SingleAsSpan(instancingVertexSize));
 }
