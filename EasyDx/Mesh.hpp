@@ -50,16 +50,6 @@ namespace dx
             return GetStream<PositionType>(kPositionStreamId);
         }
 
-        gsl::span<const VectorType> Normals() const
-        {
-            return GetStream<VectorType>(kNormalStreamId);
-        }
-
-        gsl::span<const TexCoordType> UVs() const
-        {
-            return GetStream<TexCoordType>(kTexCoordStreamId);
-        }
-
         template<typename T>
         gsl::span<std::add_const_t<T>> GetStream(std::uint32_t streamId) const
         {
@@ -75,13 +65,6 @@ namespace dx
         {
             SetStream(kPositionStreamId, positions);
         }
-
-        void SetNormals(gsl::span<const VectorType> normals)
-        {
-            SetStream(kNormalStreamId, normals);
-        }
-
-        void SetUVs(gsl::span<const TexCoordType> uvs) { SetStream(kTexCoordStreamId, uvs); }
 
         template<typename T>
         void SetStream(std::uint32_t streamId, gsl::span<T> vertices)
