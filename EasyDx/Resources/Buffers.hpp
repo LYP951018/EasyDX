@@ -111,9 +111,9 @@ namespace dx
     {
         const auto desc = GetDesc(gpuBuffer);
         //Ensures(sizeof(T) == desc.StructureByteStride);
-        Ensures(vertices.size() <= desc.ByteWidth);
+        Ensures(vertices.size_bytes() <= desc.ByteWidth);
         auto resource = Map(context, gpuBuffer, ResourceMapType::WriteDiscard);
-        gsl::copy(vertices, resource.Bytes());
+        gsl::copy(gsl::as_bytes(vertices), resource.Bytes());
     }
 
     template<typename T>
