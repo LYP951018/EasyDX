@@ -75,6 +75,7 @@ namespace dx
         void PrepareForRendering(ID3D11DeviceContext& context3D, const Game& game);
         void Update(const UpdateArgs& args, const Game& game);
         void OnResize(Size newSize);
+        void FlushProjectionDirty() const;
 
         DirectX::XMVECTOR LoadTranslation() const noexcept;
         DirectX::XMVECTOR LoadRotation() const noexcept;

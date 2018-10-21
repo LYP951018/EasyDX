@@ -27,6 +27,9 @@ namespace dx
         m_viewport{ std::make_unique<Rect>() },
         m_defaultMove{}
     {
+        auto& frustum = data_->Frustum;
+        frustum.Origin = {};
+        DirectX::XMStoreFloat4(&frustum.Orientation, DirectX::XMQuaternionIdentity());
     }
 
     void Camera::Translate(float x, float y, float z, Space space) noexcept
@@ -134,6 +137,24 @@ namespace dx
         SetProjection(Fov(), newSize.GetAspectRatio(), NearZ(), FarZ());
     }
 
+    void Camera::FlushProjectionDirty() const
+    {
+        if (!m_isProjectionDirty)
+            return;
+        data_->Projection =
+            DirectX::XMMatrixPerspectiveFovLH(Fov(), aspectRatio_, NearZ(), FarZ());
+        auto& frustum = data_->Frustum;
+        const auto tanYFov = std::tan(Fov());
+        const auto tanXFov = tanYFov * aspectRatio_;
+        frustum.RightSlope = tanXFov;
+        frustum.LeftSlope = -tanXFov;
+        frustum.TopSlope = tanYFov;
+        frustum.BottomSlope = -tanYFov;
+        frustum.Near = NearZ();
+        frustum.Far = FarZ();
+        m_isProjectionDirty = false;
+    }
+
     DirectX::XMVECTOR Camera::LoadTranslation() const noexcept
     {
         return DirectX::XMLoadFloat4(&position_);
@@ -190,11 +211,7 @@ namespace dx
     DirectX::XMMATRIX Camera::GetProjection() const noexcept
     {
         auto& projection = data_->Projection;
-        if (m_isProjectionDirty)
-        {
-            projection = DirectX::XMMatrixPerspectiveFovLH(Fov(), aspectRatio_, NearZ(), FarZ());
-            m_isProjectionDirty = false;
-        }
+        FlushProjectionDirty();
         return projection;
     }
 
@@ -221,19 +238,7 @@ namespace dx
     const DirectX::BoundingFrustum& Camera::Frustum() const
     {
         auto& frustum = data_->Frustum;
-        if (m_isProjectionDirty)
-        {
-            const auto tanYFov = std::tan(Fov());
-            const auto tanXFov = tanYFov * aspectRatio_;
-            frustum.Origin = GetEyePos();
-            frustum.Orientation = rotation_;
-            frustum.RightSlope = tanXFov;
-            frustum.LeftSlope = -tanXFov;
-            frustum.TopSlope = tanYFov;
-            frustum.BottomSlope = -tanYFov;
-            frustum.Near = NearZ();
-            frustum.Far = FarZ();
-        }
+        FlushProjectionDirty();
         return frustum;
     }
 }
