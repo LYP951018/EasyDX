@@ -115,6 +115,7 @@ namespace dx
     void EventLoop::PushResizeEvent(GameWindow* window, ResizeEventArgs args)
     {
         PushEvent(window, std::move(args));
+        //https://github.com/tomaka/winit/pull/250
         std::unique_lock<std::mutex> lg{ resizeLock_ };
         resizeCv_.wait(lg, [&]() { return resized_; });
         resized_ = false;

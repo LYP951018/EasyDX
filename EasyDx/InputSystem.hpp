@@ -44,7 +44,7 @@ namespace dx
         ElementState GetKeyState(VirtualKey key) const;
 
     private:
-        //不应该把 MessageDispatcher 这种 TU 的内部类作为友元，但是为了方便。
+        //锟斤拷应锟矫帮拷 MessageDispatcher 锟斤拷锟斤拷 TU 锟斤拷锟节诧拷锟斤拷锟斤拷为锟斤拷元锟斤拷锟斤拷锟斤拷为锟剿凤拷锟姐。
         friend struct MessageDispatcher;
         friend class Game;
 

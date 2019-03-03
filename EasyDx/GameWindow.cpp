@@ -38,8 +38,9 @@ namespace dx
             std::condition_variable creationCv;
             bool created = false;
 
+            //sorry, we disable window resizement.
             loop.ExecuteInThread([&] {
-                windowHandle_ = ::CreateWindow(kWindowClassName, title, WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT,
+                windowHandle_ = ::CreateWindow(kWindowClassName, title, WS_OVERLAPPEDWINDOW & ~WS_THICKFRAME, CW_USEDEFAULT, CW_USEDEFAULT,
                         width ? width.value() : CW_USEDEFAULT,
                         height ? height.value() : CW_USEDEFAULT,
                         nullptr, nullptr, GetInstanceHandle(), static_cast<void*>(this));

@@ -34,6 +34,9 @@
     <Filter Include="Shaders\FakeShaders">
       <UniqueIdentifier>{cac2e241-33df-4010-b575-13476c9cf82a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Shaders\UITexture">
+      <UniqueIdentifier>{30c145ac-6258-4fd3-8dd6-53b7d8ff8916}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Game.hpp">
@@ -102,9 +105,6 @@
     <ClInclude Include="DependentGraphics.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Detection.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Bind.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -135,9 +135,6 @@
     <ClInclude Include="ComponentBase.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="RenderQueue.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Transform.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -163,6 +160,27 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Render.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GlobalShaderContext.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ShaderCbKeyDef.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ShaderCbKeyShaderDef.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Internal\ShaderCbKeyDefXMacros.hpp">
+      <Filter>Header Files\Internal</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderNode.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CallbackComponent.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ShaderDeclarations.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -254,19 +272,25 @@
     <ClCompile Include="Vertex.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Resources\LoadDefaultShaders.cpp">
+      <Filter>Source Files\Resources</Filter>
+    </ClCompile>
+    <ClCompile Include="GlobalShaderContext.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Material.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\BasicLighting.hlsli">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="Shaders\UITexture\Common.hlsli">
+      <Filter>Shaders\UITexture</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="Shaders\Basic3D.hlsli">
-      <Filter>Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\BasicVS.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
     <FxCompile Include="Shaders\BasicPS.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
@@ -278,6 +302,21 @@
     </FxCompile>
     <FxCompile Include="Shaders\FakeShaders\PosNormalTex.hlsl">
       <Filter>Shaders\FakeShaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\FakeShaders\PosNormTanTex.hlsl">
+      <Filter>Shaders\FakeShaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\UITexture\UITextureVS.hlsl">
+      <Filter>Shaders\UITexture</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\UITexture\UITexturePS.hlsl">
+      <Filter>Shaders\UITexture</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\BasicVS.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\Basic3D.hlsli">
+      <Filter>Shaders</Filter>
     </FxCompile>
   </ItemGroup>
 </Project>

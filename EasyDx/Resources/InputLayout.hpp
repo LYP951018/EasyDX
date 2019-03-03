@@ -38,17 +38,25 @@ namespace dx
     {
       public:
         template<std::size_t N>
-        wrl::ComPtr<ID3D11InputLayout> Register(ID3D11Device& device,
+        static wrl::ComPtr<ID3D11InputLayout> Register(ID3D11Device& device,
                                                 const std::array<D3D11_INPUT_ELEMENT_DESC, N>& desc,
                                                 gsl::span<const std::byte> byteCode)
         {
             return Register(device, gsl::make_span(desc), byteCode);
         }
 
-        wrl::ComPtr<ID3D11InputLayout> Register(ID3D11Device& device,
+        static wrl::ComPtr<ID3D11InputLayout> Register(ID3D11Device& device,
+            const gsl::span<const D3D11_INPUT_ELEMENT_DESC>& desc,
+            const fs::path& csoPath);
+
+        static wrl::ComPtr<ID3D11InputLayout> Register(ID3D11Device& device,
                                                  gsl::span<const D3D11_INPUT_ELEMENT_DESC> descs,
                                                  gsl::span<const std::byte> byteCode);
-        wrl::ComPtr<ID3D11InputLayout> Query(gsl::span<const D3D11_INPUT_ELEMENT_DESC> descs) const;
+        static wrl::ComPtr<ID3D11InputLayout> Query(gsl::span<const D3D11_INPUT_ELEMENT_DESC> descs);
+
+        static void Setup();
+        static void LoadDefaultInputLayouts(ID3D11Device& device3D);
+        static InputLayoutAllocator& GetInstance();
 
       private:
         boost::unordered_map<MaxStreamVector<D3D11_INPUT_ELEMENT_DESC>,

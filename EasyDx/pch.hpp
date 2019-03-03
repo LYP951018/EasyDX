@@ -1,6 +1,4 @@
 #pragma once
-//qualifier applied to function type has no meaning; ignored 1> unique_ptr(pointer _Ptr,
-#pragma warning(disable : 4180)
 
 #define NOMINMAX
 
@@ -29,6 +27,6 @@
 #include <boost/container/static_vector.hpp>
 #include <boost/container_hash/hash.hpp>
 #include <boost/unordered/unordered_map.hpp>
+#include <fmt/format.h>
 #include "DXDef.hpp"
-#include "Detection.hpp"
-#include "EasyDx.Common/Common.hpp"
+#include "EasyDx.Common/One.hpp"

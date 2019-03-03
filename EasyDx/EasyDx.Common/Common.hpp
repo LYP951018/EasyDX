@@ -212,3 +212,7 @@ namespace dx
 #define DEFAULT_MOVE(T) \
     T(T&&) = default;   \
     T& operator=(T&&) = default;
+
+#define DELETE_COPY(T)    \
+    T(const T&) = delete; \
+    T& operator=(const T&) = delete;

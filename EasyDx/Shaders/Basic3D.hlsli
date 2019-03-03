@@ -1,3 +1,5 @@
+#include "../ShaderDeclarations.hpp"
+
 namespace dx
 {
     namespace Inputs
@@ -5,6 +7,13 @@ namespace dx
         struct Pos
         {
             float4 Position : POSITION;
+        };
+
+        struct PosColorTex
+        {
+            float4 Position : POSITION;
+            float4 Color: COLOR;
+            float2 TexCoord : TEXCOORD0;
         };
 
         struct PosNormal
@@ -17,7 +26,7 @@ namespace dx
         {
             float4 Position : POSITION;
             float4 Normal : NORMAL;
-            float2 TexCoord : TEXCOORD;
+            float2 TexCoord : TEXCOORD0;
         };
 
         struct PosNormalTanTex
@@ -25,7 +34,7 @@ namespace dx
             float4 Position : POSITION;
             float4 Normal : NORMAL;
             float4 TangentU : TANGENT;
-            float2 TexCoord : TEXCOORD;
+            float2 TexCoord : TEXCOORD0;
         };
     } // namespace Inputs
 

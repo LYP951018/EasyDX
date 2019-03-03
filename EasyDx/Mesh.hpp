@@ -3,74 +3,52 @@
 #include "Resources/Buffers.hpp"
 #include "ComponentBase.hpp"
 #include "Vertex.hpp"
+#include <d3d11.h> //for D3D11_PRIMITIVE_TOPOLOGY
 
 namespace dx
 {
+    constexpr std::uint32_t kMaxInputSlotCount = 8;
+
     struct StreamInfo
     {
       public:
-        StreamInfo(std::uint32_t stride) : Stride{stride}, IsDirty{true} {}
+        StreamInfo(std::uint32_t stride) : m_stride{stride}, IsDirty{true} {}
 
+        std::uint32_t GetStride() const { return m_stride; }
         gsl::span<std::byte> BytesSpan();
         gsl::span<const std::byte> BytesSpan() const;
         void UpdateBytesWithSameLength(gsl::span<const std::byte> bytes);
         void ResetBytes(gsl::span<const std::byte> bytes);
 
-        const std::uint32_t Stride;
         mutable bool IsDirty;
 
       private:
+        std::uint32_t m_stride;
         std::vector<std::byte> Bytes;
-    };
-
-    struct VbBindData
-    {
-        std::uint32_t* Strides;
-        std::uint32_t* Offsets;
     };
 
     // TODO: Copy-on-write, BufferAllocator
     class Mesh : Noncopyable
     {
       public:
-        enum DefaultStreamIds
-        {
-            kPositionStreamId = 0,
-            kNormalStreamId = 1,
-            kTexCoordStreamId = 2
-        };
-
         DEFAULT_MOVE(Mesh)
-
-        /*
-           如果没有遵循 DefaultStreamIds 的约定请不要使用 Positions()、Normals() 以及 UVs()。
-        */
-        gsl::span<const PositionType> Positions() const
-        {
-            return GetStream<PositionType>(kPositionStreamId);
-        }
 
         template<typename T>
         gsl::span<std::add_const_t<T>> GetStream(std::uint32_t streamId) const
         {
-            const auto& stream = m_streams.at(streamId);
-            Ensures(stream.Stride == sizeof(T));
+            const StreamInfo& stream = m_streams.at(streamId);
+            Ensures(stream.GetStride() == sizeof(T));
             const auto bytes = stream.BytesSpan();
             const auto start = reinterpret_cast<std::add_const_t<T>*>(bytes.data());
             const auto end = reinterpret_cast<std::add_const_t<T>*>(bytes.data() + bytes.size());
             return {start, end};
         }
 
-        void SetPositions(gsl::span<const PositionType> positions)
-        {
-            SetStream(kPositionStreamId, positions);
-        }
-
         template<typename T>
         void SetStream(std::uint32_t streamId, gsl::span<T> vertices)
         {
-            auto& stream = m_streams.at(streamId);
-            Ensures(stream.Stride == sizeof(T));
+            StreamInfo& stream = m_streams.at(streamId);
+            Ensures(stream.GetStride() == sizeof(T));
             stream.UpdateBytesWithSameLength(gsl::as_bytes(vertices));
         }
 
@@ -87,61 +65,76 @@ namespace dx
         }
 
         gsl::span<const GpuBuffer> GetGpuVbsWithoutFlush() const;
-        ID3D11Buffer& GpuIb() const;
-        std::uint32_t VertexCount() const;
-        std::uint32_t IndexCount() const;
-        ID3D11InputLayout& InputLayout() const;
-        const VbBindData& BindData() const;
+        ID3D11Buffer& GetGpuIndexBuffer() const;
+        std::uint32_t GetVertexCount() const;
+        std::uint32_t GetIndexCount() const;
+		gsl::span<const D3D11_INPUT_ELEMENT_DESC> GetFullInputElementDesces() const;
+        D3D11_PRIMITIVE_TOPOLOGY GetPrimitiveTopology() const;
+		gsl::span<const StreamInfo> GetStreamsInfo() const { return gsl::make_span(m_streams); }
+		gsl::span<const VSSemantics> GetChannelMasks() const { return gsl::make_span(m_vsSemantics); }
 
-        //TODO: optimize flush
+        // TODO: optimize flush
         void FlushAll(ID3D11DeviceContext& context3D) const;
         void FlushStream(ID3D11DeviceContext& context3D, std::uint32_t streamId) const;
 
-        template<typename... Args, std::ptrdiff_t... N>
+		//unowned
+        template<typename... Args>
         static std::shared_ptr<Mesh>
-        CreateImmutable(ID3D11Device& device, wrl::ComPtr<ID3D11InputLayout> inputLayout,
-                        gsl::span<const ShortIndex> indices, gsl::span<Args, N>... vertices)
+        CreateImmutable(ID3D11Device& device, D3D11_PRIMITIVE_TOPOLOGY topology,
+                        gsl::span<const ShortIndex> indices, const VSSemantics* semantics,
+                        std::uint32_t vertexCount, std::vector<D3D11_INPUT_ELEMENT_DESC> inputElementDesces, Args*... vertices)
         {
-            const auto channelsInBytes = std::array{gsl::span<const std::byte, -1>{gsl::as_bytes(vertices)}...};
+            const auto channelsInBytes =
+                std::array{gsl::as_bytes(gsl::make_span(vertices, vertexCount))...};
             const auto strides = std::array{gsl::narrow<std::uint32_t>(sizeof(Args))...};
-            return std::make_shared<Mesh>(CreateImmutableInternal(
-                device, gsl::make_span(channelsInBytes), gsl::make_span(strides), indices, std::move(inputLayout)));
+            return std::make_shared<Mesh>(
+                CreateImmutable(device, channelsInBytes.size(), channelsInBytes.data(),
+                                        strides.data(), semantics, std::move(inputElementDesces), indices, topology));
         }
 
-        static Mesh CreateDynamic(ID3D11Device& device, gsl::span<VertexUnit> units,
-                                  wrl::ComPtr<ID3D11InputLayout> layout);
+		//template<typename... Args>
+		//static std::shared_ptr<Mesh>
+		//	CreateImmutable(ID3D11Device& device, D3D11_PRIMITIVE_TOPOLOGY topology,
+		//		gsl::span<const ShortIndex> indices, const VSSemantics* semantics,
+		//		std::uint32_t vertexCount, std::vector<Args> ... vertices)
+		//{
+		//	CreateImmutable()
+		//}
+
+		static Mesh CreateImmutable(ID3D11Device& device, std::uint32_t channelCount,
+			const gsl::span<const std::byte>* bytes,
+			const std::uint32_t* strides,
+			const VSSemantics* semantics,
+			std::vector<D3D11_INPUT_ELEMENT_DESC> inputElementDesces,
+			gsl::span<const ShortIndex> indices,
+			D3D_PRIMITIVE_TOPOLOGY topology);
 
       private:
         Mesh() = default;
         Mesh(std::vector<GpuBuffer> gpuBuffer, std::vector<StreamInfo> streams,
-             wrl::ComPtr<ID3D11InputLayout> inputLayout, std::vector<std::uint32_t> stridesAndOffsets,
-             GpuBuffer indexBuffer, std::uint32_t indexCount, bool isImmutable);
+				std::vector<D3D11_INPUT_ELEMENT_DESC> fullInputElementDesces,
+             std::vector<VSSemantics> vsSemantics, std::vector<std::uint32_t> stridesAndOffsets,
+             GpuBuffer indexBuffer, std::uint32_t indexCount, bool isImmutable,
+             D3D_PRIMITIVE_TOPOLOGY topology);
 
-        static Mesh CreateImmutableInternal(ID3D11Device& device,
-                                            gsl::span<const gsl::span<const std::byte>> bytes,
-                                            gsl::span<const std::uint32_t> strides,
-                                            gsl::span<const ShortIndex> indices,
-                                            wrl::ComPtr<ID3D11InputLayout> inputLayout);
-
+        
         void SetAllStreamsInternal(gsl::span<const gsl::span<const std::byte>> streamsInBytes);
         bool AnyDirty() const;
 
         std::vector<GpuBuffer> m_gpuVertexBuffers;
         GpuBuffer m_indexBuffer;
-        wrl::ComPtr<ID3D11InputLayout> m_inputLayout;
 
+        // TODO: 这里用 vector 太浪费了，倾向于 unique_ptr<T[]> + m_channelCount
         std::vector<StreamInfo> m_streams;
-        VbBindData m_bindData;
+		std::vector<D3D11_INPUT_ELEMENT_DESC> m_fullInputElementDesces;
+        std::vector<VSSemantics> m_vsSemantics;
         std::vector<std::uint32_t> m_stridesAndOffsets;
         std::uint32_t m_indexCount;
         bool m_isImmutable;
-
-        friend void Bind(ID3D11DeviceContext& context3D, const Mesh& mesh);
+        D3D11_PRIMITIVE_TOPOLOGY m_primitiveTopology;
     };
 
     // TODO: a submesh
 
-    // setup input layout; set up gpu buffers
-    void Bind(ID3D11DeviceContext& context3D, const Mesh& mesh);
-    void SetupVertexBuffer(ID3D11DeviceContext& context3D, const Mesh& mesh);
+	//void InputElementDescsFromMesh(std::vector<D3D11_INPUT_ELEMENT_DESC>& inputElementDesces, const Mesh& mesh, VSSemantics semanticesToUse);
 } // namespace dx

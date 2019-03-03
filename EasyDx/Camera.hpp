@@ -36,6 +36,7 @@ namespace dx
         void SetLookAt(const DirectX::XMFLOAT3& eye, const DirectX::XMFLOAT3& target, const DirectX::XMFLOAT3& up) noexcept;
         void UpdateAspectRatio(float aspectRatio) noexcept;
         bool HasChanged() const noexcept;
+        //TODO: 这里应该返回引用
         DirectX::XMMATRIX GetView() const noexcept;
         DirectX::XMMATRIX GetProjection() const noexcept;
         DirectX::XMFLOAT3 GetEyePos() const noexcept;

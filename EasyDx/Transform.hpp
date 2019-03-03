@@ -40,4 +40,7 @@ namespace dx
     };
 
     DEF_COMPONENT_WRAPPER_DEFAULT(Transform, GetTransform)
+
+    DirectX::XMMATRIX MatrixFromTransform(dx::TransformComponent * transform);
+
 }

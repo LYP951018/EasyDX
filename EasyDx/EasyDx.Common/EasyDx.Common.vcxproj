@@ -132,9 +132,18 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Common.hpp" />
+    <ClInclude Include="Detection.hpp" />
+    <ClInclude Include="File.hpp" />
+    <ClInclude Include="FlagEnums.hpp" />
+    <ClInclude Include="One.hpp" />
+    <ClInclude Include="UniqueHandle.hpp" />
+    <ClInclude Include="Win32Def.hpp" />
+    <ClInclude Include="Win32Handles.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Common.cpp" />
+    <ClCompile Include="File.cpp" />
+    <ClCompile Include="Win32Handles.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

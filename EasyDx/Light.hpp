@@ -40,4 +40,11 @@ namespace dx
     };
 
     using Light = std::variant<PointLight, DirectionalLight, SpotLight>;
+
+    enum LightIndexes : std::size_t
+    {
+        kPointLight,
+        kDirectionalLight,
+        kSpotLight
+    };
 }

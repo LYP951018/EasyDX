@@ -22,3 +22,8 @@
 #include "GraphicsDevices.hpp"
 #include "DxMathWrappers.hpp"
 #include "Render.hpp"
+#include "D3DHelpers.hpp"
+#include "Systems/SimpleRender.hpp"
+#include "EasyDx.Common/Common.hpp"
+#include "GlobalShaderContext.hpp"
+#include "RenderNode.hpp"

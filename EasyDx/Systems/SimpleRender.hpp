@@ -14,8 +14,8 @@ namespace dx
     {
         void PrepareVsCb(ID3D11DeviceContext& context3D, ShaderInputs& inputs,
                          const DirectX::XMMATRIX& world,
-                         gsl::span<const dx::Light> lights,
-                         const dx::Camera& camera);
+                         const DirectX::XMMATRIX& view,
+                        const DirectX::XMMATRIX& projection);
 
         void PreparePsCb(ID3D11DeviceContext& context3D, ShaderInputs& inputs,
                          gsl::span<const dx::Light> lights, const dx::Camera& camera);

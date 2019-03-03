@@ -8,6 +8,7 @@ namespace dx
 {
     struct UpdateArgs;
     class PredefinedResources;
+    class GlobalGraphicsContext;
 
     // TODO: camera/light 都要加上 dirty 标记。
     class SceneBase
@@ -22,12 +23,14 @@ namespace dx
         virtual ~SceneBase();
 
         ID3D11Device& Device3D;
-        const PredefinedResources& Predefined;
 
       private:
         friend class Game;
         virtual void Update(const UpdateArgs& args, const Game& game);
-        virtual void Render(const Game& game);
+        virtual void Render(ID3D11DeviceContext& context3D,
+                            GlobalGraphicsContext& globalGraphicsResources,
+                            // TODO: Is game necessary?
+                            const Game& game);
 
         Camera mainCamera_;
         std::vector<Light> m_lights;

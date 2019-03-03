@@ -22,32 +22,32 @@
     <VCProjectVersion>15.0</VCProjectVersion>
     <ProjectGuid>{9F913061-047E-4076-BE63-6A50043ACE82}</ProjectGuid>
     <RootNamespace>EasyDx</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.17134.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -92,7 +92,6 @@
       <PrecompiledHeaderFile>pch.hpp</PrecompiledHeaderFile>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <DiagnosticsFormat>Caret</DiagnosticsFormat>
-      <MinimalRebuild>true</MinimalRebuild>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalOptions>/experimental:preprocessor %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
@@ -111,7 +110,6 @@
       <PrecompiledHeaderFile>pch.hpp</PrecompiledHeaderFile>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <DiagnosticsFormat>Caret</DiagnosticsFormat>
-      <MinimalRebuild>true</MinimalRebuild>
       <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Manifest>
@@ -130,7 +128,6 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.hpp</PrecompiledHeaderFile>
       <DiagnosticsFormat>Caret</DiagnosticsFormat>
-      <MinimalRebuild>true</MinimalRebuild>
       <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
@@ -153,7 +150,6 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.hpp</PrecompiledHeaderFile>
       <DiagnosticsFormat>Caret</DiagnosticsFormat>
-      <MinimalRebuild>true</MinimalRebuild>
       <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
@@ -167,12 +163,12 @@
   <ItemGroup>
     <ClInclude Include="AlignedAllocator.hpp" />
     <ClInclude Include="Bind.hpp" />
+    <ClInclude Include="CallbackComponent.hpp" />
     <ClInclude Include="Camera.hpp" />
     <ClInclude Include="CBStructs.hpp" />
     <ClInclude Include="ComponentBase.hpp" />
     <ClInclude Include="D3DHelpers.hpp" />
     <ClInclude Include="DependentGraphics.hpp" />
-    <ClInclude Include="Detection.hpp" />
     <ClInclude Include="DXDef.hpp" />
     <ClInclude Include="DxMathWrappers.hpp" />
     <ClInclude Include="EventLoop.hpp" />
@@ -181,8 +177,10 @@
     <ClInclude Include="Game.hpp" />
     <ClInclude Include="GameWindow.hpp" />
     <ClInclude Include="GlobalD3DResources.hpp" />
+    <ClInclude Include="GlobalShaderContext.hpp" />
     <ClInclude Include="GraphicsDevices.hpp" />
     <ClInclude Include="InputSystem.hpp" />
+    <ClInclude Include="Internal\ShaderCbKeyDefXMacros.hpp" />
     <ClInclude Include="Light.hpp" />
     <ClInclude Include="LinkWithDirectX.hpp" />
     <ClInclude Include="Material.hpp" />
@@ -196,13 +194,16 @@
     <ClInclude Include="pch.hpp" />
     <ClInclude Include="Predefined.hpp" />
     <ClInclude Include="Render.hpp" />
-    <ClInclude Include="RenderQueue.hpp" />
+    <ClInclude Include="RenderNode.hpp" />
     <ClInclude Include="Resources.hpp" />
     <ClInclude Include="Resources\Buffers.hpp" />
     <ClInclude Include="Resources\DepthStencilState.hpp" />
     <ClInclude Include="Resources\InputLayout.hpp" />
     <ClInclude Include="Resources\Shaders.hpp" />
     <ClInclude Include="Scene.hpp" />
+    <ClInclude Include="ShaderCbKeyDef.hpp" />
+    <ClInclude Include="ShaderCbKeyShaderDef.hpp" />
+    <ClInclude Include="ShaderDeclarations.hpp" />
     <ClInclude Include="Systems\SimpleRender.hpp" />
     <ClInclude Include="Transform.hpp" />
     <ClInclude Include="Vertex.hpp" />
@@ -221,8 +222,10 @@
     <ClCompile Include="Events.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="GameWindow.cpp" />
+    <ClCompile Include="GlobalShaderContext.cpp" />
     <ClCompile Include="GraphicsDevices.cpp" />
     <ClCompile Include="InputSystem.cpp" />
+    <ClCompile Include="Material.cpp" />
     <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="MeshRenderer.cpp" />
     <ClCompile Include="Misc.cpp" />
@@ -243,6 +246,12 @@
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">../pch.hpp</PrecompiledHeaderFile>
     </ClCompile>
     <ClCompile Include="Resources\InputLayout.cpp">
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">../pch.hpp</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">../pch.hpp</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">../pch.hpp</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">../pch.hpp</PrecompiledHeaderFile>
+    </ClCompile>
+    <ClCompile Include="Resources\LoadDefaultShaders.cpp">
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">../pch.hpp</PrecompiledHeaderFile>
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">../pch.hpp</PrecompiledHeaderFile>
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">../pch.hpp</PrecompiledHeaderFile>
@@ -321,14 +330,22 @@
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">5.0</ShaderModel>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">5.0</ShaderModel>
-      <VariableName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">FakePosNormalVSByteCode</VariableName>
-      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">FakePosNormalVS.hpp</HeaderFileOutput>
-      <VariableName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">FakePosNormalVSByteCode</VariableName>
-      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">FakePosNormalVS.hpp</HeaderFileOutput>
-      <VariableName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">FakePosNormalVSByteCode</VariableName>
-      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">FakePosNormalVS.hpp</HeaderFileOutput>
-      <VariableName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">FakePosNormalVSByteCode</VariableName>
-      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">FakePosNormalVS.hpp</HeaderFileOutput>
+      <VariableName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+      </VariableName>
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+      </HeaderFileOutput>
+      <VariableName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </VariableName>
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </HeaderFileOutput>
+      <VariableName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+      </VariableName>
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+      </HeaderFileOutput>
+      <VariableName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+      </VariableName>
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+      </HeaderFileOutput>
     </FxCompile>
     <FxCompile Include="Shaders\FakeShaders\PosNormalTex.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
@@ -348,6 +365,24 @@
       <VariableName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">FakePosNormalTexVSByteCode</VariableName>
       <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">FakePosNormalTexVS.hpp</HeaderFileOutput>
     </FxCompile>
+    <FxCompile Include="Shaders\FakeShaders\PosNormTanTex.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">5.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Vertex</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">5.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">5.0</ShaderModel>
+      <VariableName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">FakePosNormTanTexVSByteCode</VariableName>
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">FakePosNormTanTexVS.hpp</HeaderFileOutput>
+      <VariableName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">FakePosNormTanTexVSByteCode</VariableName>
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">FakePosNormTanTexVS.hpp</HeaderFileOutput>
+      <VariableName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">FakePosNormTanTexVSByteCode</VariableName>
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">FakePosNormTanTexVS.hpp</HeaderFileOutput>
+      <VariableName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">FakePosNormTanTexVSByteCode</VariableName>
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">FakePosNormTanTexVS.hpp</HeaderFileOutput>
+    </FxCompile>
     <FxCompile Include="Shaders\FakeShaders\PosVS.hlsl">
       <VariableName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">FakePosVSByteCode</VariableName>
       <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">FakePosVS.hpp</HeaderFileOutput>
@@ -366,6 +401,30 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">5.0</ShaderModel>
     </FxCompile>
+    <FxCompile Include="Shaders\UITexture\UITexturePS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">5.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">5.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">5.0</ShaderModel>
+    </FxCompile>
+    <FxCompile Include="Shaders\UITexture\UITextureVS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">5.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Vertex</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">5.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">5.0</ShaderModel>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">..</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..</AdditionalIncludeDirectories>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\BasicLighting.hlsli">
@@ -374,6 +433,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </None>
+    <None Include="Shaders\UITexture\Common.hlsli" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="EasyDx.Common\EasyDx.Common.vcxproj">

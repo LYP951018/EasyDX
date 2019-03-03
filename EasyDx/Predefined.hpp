@@ -1,6 +1,5 @@
 ﻿#pragma once
 
-#include "Resources/Shaders.hpp"
 #include "CBStructs.hpp"
 #include "Material.hpp"
 #include "Light.hpp"
@@ -46,46 +45,36 @@ namespace dx
         PredefinedResources(ID3D11Device&);
         ~PredefinedResources();
 
-        wrl::ComPtr<ID3D11ShaderResourceView> GetWhite() const { return white_; }
+        static wrl::ComPtr<ID3D11ShaderResourceView> GetWhite();
 
-        VertexShader GetBasicVS() const { return basicVS_; }
-        PixelShader GetBasicPS() const { return basicPS_; }
+        static wrl::ComPtr<ID3D11DepthStencilState> GetStencilAlways();
+        static wrl::ComPtr<ID3D11DepthStencilState> GetDrawnOnly();
+        static wrl::ComPtr<ID3D11DepthStencilState> GetNoDoubleBlending();
 
-        wrl::ComPtr<ID3D11DepthStencilState> GetStencilAlways() const;
-        wrl::ComPtr<ID3D11DepthStencilState> GetDrawnOnly() const;
-        wrl::ComPtr<ID3D11DepthStencilState> GetNoDoubleBlending() const;
+        static wrl::ComPtr<ID3D11BlendState> GetNoWriteToRT();
+        static wrl::ComPtr<ID3D11BlendState> GetTransparent();
 
-        wrl::ComPtr<ID3D11BlendState> GetNoWriteToRT() const;
-        wrl::ComPtr<ID3D11BlendState> GetTransparent() const;
+        static ID3D11RasterizerState* GetCullClockwise();
+        static ID3D11RasterizerState* GetWireFrameOnly();
 
-        ID3D11RasterizerState* GetCullClockwise() const { return cullClockWise_.Get(); }
-        ID3D11RasterizerState* GetWireFrameOnly() const { return wireFrameOnly_.Get(); }
+        static wrl::ComPtr<ID3D11SamplerState> GetDefaultSampler();
+        static wrl::ComPtr<ID3D11SamplerState> GetRepeatSampler();
+        static wrl::ComPtr<ID3D11SamplerState> GetShadowMapSampler();
 
-        wrl::ComPtr<ID3D11SamplerState> GetDefaultSampler() const;
-        wrl::ComPtr<ID3D11SamplerState> GetRepeatSampler() const;
-
-        InputLayoutAllocator& InputLayouts() { return m_globalInputLayoutAllocator; }
-        const InputLayoutAllocator& InputLayouts() const { return m_globalInputLayoutAllocator; }
+        static void Setup(ID3D11Device& device3D);
+        static const PredefinedResources& GetInstance();
 
       private:
         void MakeWhiteTex(ID3D11Device&);
         void MakeStencilStates(ID3D11Device&);
         void MakeBlendingStates(ID3D11Device&);
         void MakeRasterizerStates(ID3D11Device&);
-        void MakeLayouts(ID3D11Device& device);
 
         // Default white texture
         wrl::ComPtr<ID3D11ShaderResourceView> white_;
 
-        wrl::ComPtr<ID3D11SamplerState> defaultSampler_;
-        wrl::ComPtr<ID3D11SamplerState> repeatSampler_;
+        wrl::ComPtr<ID3D11SamplerState> defaultSampler_, repeatSampler_, m_shadowMapSampler;
 
-        std::unordered_map<std::string, VertexShader> m_vertexShaders;
-        std::unordered_map<std::string, PixelShader> m_pixelShaders;
-
-        InputLayoutAllocator m_globalInputLayoutAllocator;
-        VertexShader basicVS_;
-        PixelShader basicPS_;
         wrl::ComPtr<ID3D11DepthStencilState> stencilAlways_, drawnOnly_, noDoubleBlending_;
         wrl::ComPtr<ID3D11BlendState> noWriteToRt_, transparent_;
         wrl::ComPtr<ID3D11RasterizerState> cullClockWise_, wireFrameOnly_;
@@ -100,28 +89,4 @@ namespace dx
                               const dx::Smoothness& smoothness,
                               wrl::ComPtr<ID3D11ShaderResourceView> mainTexture = {}, 
                                 wrl::ComPtr<ID3D11SamplerState> sampler = {});
-
-    struct PosNormTexVertexInput
-    {
-        gsl::span<const dx::PositionType> Positions;
-        gsl::span<const dx::VectorType> Normals;
-        gsl::span<const dx::TexCoordType> TexCoords;
-        gsl::span<const dx::ShortIndex> Indices;
-    };
-
-    std::unique_ptr<dx::Object>
-    MakeObjectWithDefaultRendering(ID3D11Device& device3D, const PredefinedResources& predefined,
-                                   const PosNormTexVertexInput& vertexInput,
-                                   const dx::Smoothness& smoothness,
-               wrl::ComPtr<ID3D11ShaderResourceView> mainTexture = {},
-                                   wrl::ComPtr<ID3D11SamplerState> sampler = {});
-
-    struct ModelResultUnit;
-
-    std::unique_ptr<dx::Object>
-    MakeObjectWithDefaultRendering(ID3D11Device& device3D, const PredefinedResources& predefined,
-                                   const ModelResultUnit& modelInput,
-                                   const dx::Smoothness& smoothness,
-                                   wrl::ComPtr<ID3D11ShaderResourceView> mainTexture = {},
-                                   wrl::ComPtr<ID3D11SamplerState> sampler = {});
 } // namespace dx

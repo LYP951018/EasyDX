@@ -92,6 +92,14 @@ namespace dx
         WriteNoOverwrite = 5
     };
 
+    enum class DxgiSwapEffect
+    {
+        Discard = 0,
+        Sequential = 1,
+        FlipSequential = 2,
+        FlipDiscard = 3
+    };
+
     template<DxgiFormat>
     struct dxgi_format_map;
 
@@ -102,6 +110,7 @@ namespace dx
     };
 
     inline constexpr std::uint32_t kMaxStreamCount = 8;
+    inline constexpr std::uint32_t kMaxRenderTargetCount = 8;
 
     template<typename T>
     using MaxStreamVector = boost::container::static_vector<T, kMaxStreamCount>;

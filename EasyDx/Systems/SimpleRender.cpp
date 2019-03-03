@@ -12,25 +12,25 @@
 
 namespace dx::systems
 {
-    void PrepareVsCb(ID3D11DeviceContext& context3D, ShaderInputs& inputs,
-                     const DirectX::XMMATRIX& world,
-                     [[maybe_unused]] gsl::span<const dx::Light> lights, const dx::Camera& camera)
+    void PrepareVsCb(ID3D11DeviceContext&, ShaderInputs& inputs,
+                     const DirectX::XMMATRIX& world, const DirectX::XMMATRIX& view,
+                     const DirectX::XMMATRIX& projection)
     {
         // TODO: input validation.
-        auto& vsCb = *inputs.GetCbInfo("TransformMatrices");
-        vsCb.Set("WorldViewProj", world * camera.GetView() * camera.GetProjection());
-        vsCb.Set("World", world);
-        vsCb.Set("WorldInvTranspose",
-                 DirectX::XMMatrixInverse(nullptr, DirectX::XMMatrixTranspose(world)));
+        //auto& vsCb = *inputs.GetCbInfo("TransformMatrices");
+        /*inputs.SetField("WorldViewProj", world * view * projection);
+        inputs.SetField("World", world);
+        inputs.SetField("WorldInvTranspose",
+                 DirectX::XMMatrixInverse(nullptr, DirectX::XMMatrixTranspose(world)));*/
     }
 
     void PreparePsCb(ID3D11DeviceContext& context3D, ShaderInputs& inputs,
                      gsl::span<const dx::Light> lights, const dx::Camera& camera)
     {
-        auto& globalLights = *inputs.GetCbInfo("GlobalLightingInfo");
-        globalLights.Set("EyePos", camera.GetEyePos());
-        globalLights.Set("LightCount", static_cast<std::int32_t>(lights.size()));
-        auto& lightCbs = globalLights.BorrowMut<dx::cb::Light[10]>("Lights");
+        //auto& globalLights = *inputs.GetCbInfo("GlobalLightingInfo");
+        inputs.SetField("EyePos", camera.GetEyePos());
+        inputs.SetField("LightCount", static_cast<std::int32_t>(lights.size()));
+        auto& lightCbs = inputs.BorrowMut<dx::cb::Light[10]>("Lights");
         std::copy(lights.begin(), lights.end(), lightCbs);
     }
 
@@ -38,9 +38,9 @@ namespace dx::systems
                              const Camera& camera, Material& material,
                              const DirectX::XMMATRIX& world)
     {
-        auto& shaders = material.Passes[0].Shaders;
-        PrepareVsCb(context3D, shaders.VertexShader_.Inputs, world, lights, camera);
-        PreparePsCb(context3D, shaders.PixelShader_.Inputs, lights, camera);
+        ShaderInputs& inputs = material.mainPass.inputs;
+        PrepareVsCb(context3D, inputs, world, camera.GetView(), camera.GetProjection());
+        PreparePsCb(context3D, inputs, lights, camera);
     }
 
     void SimpleRenderSystem(ID3D11DeviceContext& context3D, const SceneBase& scene,

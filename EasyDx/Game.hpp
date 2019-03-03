@@ -3,7 +3,6 @@
 #include "Predefined.hpp"
 #include "Events.hpp"
 #include "DependentGraphics.hpp"
-#include "GlobalD3DResources.hpp"
 
 namespace dx
 {
@@ -13,36 +12,6 @@ namespace dx
     class InputSystem;
 
     using SceneCreator = std::function<std::unique_ptr<SceneBase>(Game&)>;
-
-    struct IndependentGraphics : Noncopyable
-    {
-    private:
-        wrl::ComPtr<ID3D11Device> device3D_;
-        wrl::ComPtr<ID3D11DeviceContext> context3D_;
-        wrl::ComPtr<ID2D1Factory1> fanctory2D_;
-        wrl::ComPtr<ID2D1Device> device2D_;
-        wrl::ComPtr<ID2D1DeviceContext> context2D_;
-        wrl::ComPtr<IDXGIDevice> dxgiDevice_;
-        wrl::ComPtr<IDWriteFactory1> dwFactory_;
-        wrl::ComPtr<ID3D11Debug> d3dDebug_;
-
-    public:
-        IndependentGraphics();
-
-        IndependentGraphics(IndependentGraphics&&) = default;
-
-        ID3D11Device& Device3D() const { return Ref(device3D_); }
-        wrl::ComPtr<ID3D11Device> SharedDevice3D() const { return device3D_; }
-        ID3D11DeviceContext& Context3D() const { return Ref(context3D_); }
-        ID2D1Factory1& Factory2D() const { return Ref(fanctory2D_); }
-        ID2D1Device& Device2D() const { return Ref(device2D_); }
-        ID2D1DeviceContext& Context2D() const { return Ref(context2D_); }
-        IDXGIDevice& DxgiDevice() const { return Ref(dxgiDevice_); }
-        IDWriteFactory1& DwFactory() const { return Ref(dwFactory_); }
-        ID3D11Debug& D3DDebug() const { return Ref(d3dDebug_); }
-
-        ~IndependentGraphics();
-    };
 
     class SceneSwitcher
     {
@@ -89,16 +58,14 @@ namespace dx
         friend void RunGame(Game&, std::unique_ptr<GameWindow>, std::uint32_t);
 
     public:
-        Game(IndependentGraphics independent, std::uint32_t fps);
+        Game(std::unique_ptr<GlobalGraphicsContext> globalGraphics, std::uint32_t fps);
         ~Game();
 
         WindowResizeEvent WindowResize;
         DpiChangedEvent DpiChanged;
 
         GameWindow& MainWindow() const { return *mainWindow_; }
-        const IndependentGraphics& IndependentResources() const noexcept { return grahicsResources_; }
-        DependentGraphics& DependentResources() const noexcept { return m_dependentGraphics.value(); }
-        const PredefinedResources& Predefined() const noexcept { return predefined_; }
+        GlobalGraphicsContext& GlobalGraphics() { return *m_globalGraphics; }
         SceneSwitcher& Switcher() noexcept { return sceneSwitcher_; }
         const SceneSwitcher& Switcher() const noexcept { return sceneSwitcher_; }
         const InputSystem& GetInputSystem() const noexcept { return *m_inputSystem; }
@@ -112,10 +79,7 @@ namespace dx
         void PrepareGraphicsForResizing(GameWindow* window, Size newSize);
         InputSystem& GetInputSystem() noexcept { return *m_inputSystem; }
 
-        const IndependentGraphics grahicsResources_;
-        //this guy's initalization will be delayed to the first WM_SIZE, so we mark it as optional
-        mutable std::optional<DependentGraphics> m_dependentGraphics;
-        const PredefinedResources predefined_;
+        std::unique_ptr<GlobalGraphicsContext> m_globalGraphics;
         SceneSwitcher sceneSwitcher_;
         //TODO: only one window?
         std::unique_ptr<GameWindow> mainWindow_;

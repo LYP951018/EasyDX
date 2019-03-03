@@ -23,29 +23,23 @@ namespace dx
         auto& loop = EventLoop::GetInstanceInCurrentThread();
         TimePoint prev = Clock::now();
         auto& switcher = Switcher();
-        auto& independent = IndependentResources();
-        auto& context3D = independent.Context3D();
+        auto& gfxContext = GlobalGraphics();
+        auto& context3D = gfxContext.Context3D();
+		bool resized = false;
         //auto& context2D = independent.Context2D();
         MainWindow().Show();
+        m_inputSystem->OnInitialized();
         loop.Run([&](WindowEventArgsPack e) {
             //wait until the first resize event reach.
             if (std::holds_alternative<ResizeEventArgs>(e.Arg))
             {
-                bool firstResize = !m_dependentGraphics.has_value();
                 auto& resizeArg = std::get<ResizeEventArgs>(e.Arg);
                 e.Window->OnResize(resizeArg.NewSize);
                 PrepareGraphicsForResizing(e.Window, resizeArg.NewSize);
-                if (firstResize)
-                {
-                    m_inputSystem->OnInitialized();
-                }
+				resized = true;
             }
-            else if (!m_dependentGraphics)
-            {
-                return;
-            }
-
-            //not resize event, and initialized.
+			if (!resized) return;
+            //not a resize event, and initialized.
             switcher.CheckAndSwitch();
             if (std::holds_alternative<IdleEventArgs>(e.Arg))
             {
@@ -59,16 +53,9 @@ namespace dx
                     auto& scene = switcher.MainScene();
                     auto& camera = scene.MainCamera();
                     camera.PrepareForRendering(context3D, *this);
-                    scene.Update(args, *this);
                     camera.Update(args, *this);
-                    auto& dependent = m_dependentGraphics.value();
-                    //TODO: clean up, move these to the Camera class
-                    /*dependent.DepthStencil_.ClearBoth(context3D);
-                    dependent.SwapChain_.Front().Clear(context3D, DirectX::Colors::Black);*/
-                    //Ugh
-                    dependent.Bind(context3D);
-                    scene.Render(*this);
-                    dependent.SwapChain_.Present();
+                    scene.Update(args, *this);
+                    scene.Render(context3D, gfxContext, *this);
                     m_inputSystem->OnFrameDone();
                 }
                 else
@@ -141,40 +128,12 @@ namespace dx
         std::visit(MessageDispatcher{ *this, event.Window }, std::move(event.Arg));
     }
 
-    void Game::PrepareGraphicsForResizing(GameWindow* window, Size newSize)
+    void Game::PrepareGraphicsForResizing(GameWindow*, Size newSize)
     {
-        auto& independent = IndependentResources();
-        auto& context3D = independent.Context3D();
-        auto& device3D = independent.Device3D();
-        //auto& debug = independent.D3DDebug();
-        auto& dependentGraphics = m_dependentGraphics;
-        auto[newWidth, newHeight] = newSize;
+        auto& globalGraphics = GlobalGraphics();
         auto& camera = Switcher().MainScene().MainCamera();
         camera.OnResize(newSize);
-        //first time resizement
-        if (!dependentGraphics)
-        {
-            dependentGraphics.emplace(dx::DependentGraphics{
-                dx::SwapChain{
-                    independent.Device3D(),
-                    *window,
-                    dx::SwapChainOptions{}
-                },
-                dx::DepthStencil(independent.Device3D(),
-                    newWidth, newHeight)
-                });
-            return;
-        }
-        auto&[swapChain, depthStencil] = dependentGraphics.value();
-        ID3D11RenderTargetView* nullViews[] = { nullptr };
-        context3D.OMSetRenderTargets(gsl::narrow<UINT>(std::size(nullViews)), nullViews, {});
-        depthStencil.Reset();
-        swapChain.Reset();
-        context3D.Flush();
-        //debug.ReportLiveDeviceObjects(D3D11_RLDO_FLAGS::D3D11_RLDO_DETAIL);
-        swapChain.Resize(device3D, newWidth, newHeight);
-        //TODO: format should be cached.
-        depthStencil = DepthStencil(device3D, newWidth, newHeight);
+        globalGraphics.OnResize(newSize);
     }
 
     void SceneSwitcher::ReallySwitchToScene([[maybe_unused]] Game& game, std::uint32_t index)
@@ -223,10 +182,9 @@ namespace dx
     IndependentGraphics::~IndependentGraphics()
     {}
 
-    Game::Game(IndependentGraphics graphics, std::uint32_t fps)
-        : fps_{ fps },
-        grahicsResources_{ std::move(graphics) },
-        predefined_{ IndependentResources().Device3D() },
+    Game::Game(std::unique_ptr<GlobalGraphicsContext> globalGraphics, 
+        std::uint32_t fps)
+        : fps_{fps}, m_globalGraphics{std::move(globalGraphics)},
         sceneSwitcher_{ *this },
         m_inputSystem{ MakeUnique<InputSystem>() }
     {
@@ -250,28 +208,5 @@ namespace dx
         game.Run();
     }
 
-    IndependentGraphics::IndependentGraphics()
-    {
-        std::tie(device3D_, context3D_) = MakeDevice3D();
-        TryHR(device3D_->QueryInterface(dxgiDevice_.ReleaseAndGetAddressOf()));
-#if _DEBUG
-        TryHR(device3D_->QueryInterface(d3dDebug_.ReleaseAndGetAddressOf()));
-#else
-        device3D_->QueryInterface(d3dDebug_.ReleaseAndGetAddressOf());
-#endif
 
-        D2D1_FACTORY_OPTIONS options = {};
-#ifdef _DEBUG
-        options.debugLevel = D2D1_DEBUG_LEVEL_INFORMATION;
-#endif
-
-        TryHR(D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, options, fanctory2D_.ReleaseAndGetAddressOf()));
-        TryHR(fanctory2D_->CreateDevice(dxgiDevice_.Get(), device2D_.ReleaseAndGetAddressOf()));
-        TryHR(device2D_->CreateDeviceContext(D2D1_DEVICE_CONTEXT_OPTIONS_NONE, context2D_.ReleaseAndGetAddressOf()));
-
-        TryHR(DWriteCreateFactory(
-            DWRITE_FACTORY_TYPE_SHARED,
-            __uuidof(IDWriteFactory1),
-            reinterpret_cast<IUnknown**>(dwFactory_.ReleaseAndGetAddressOf())));
-    }
 }

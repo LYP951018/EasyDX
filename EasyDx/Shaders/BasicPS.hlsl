@@ -6,12 +6,13 @@ cbuffer GlobalLightingInfo : register(b0)
     float3 EyePos;
     int LightCount;
     Light Lights[10];
+	Material ObjectMaterial;
+
 }
 
-cbuffer PerObjectLightingInfo : register(b1)
-{
-    Material ObjectMaterial;
-}
+//cbuffer PerObjectLightingInfo : register(b1)
+//{
+//}
 
 Texture2D Texture;
 SamplerState Sampler;
