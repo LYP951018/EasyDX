@@ -17,4 +17,4 @@ namespace dx
     }
 
     void AlignedFree(void* ptr) noexcept { _aligned_free(ptr); }
-}
+} // namespace dx

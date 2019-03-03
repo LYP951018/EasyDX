@@ -19,4 +19,5 @@ namespace dx
                                                    ResourceUsage usage = ResourceUsage::Default);
     wrl::ComPtr<ID3D11ShaderResourceView> Get2DTexView(ID3D11Device& device,
                                                        ID3D11Texture2D& texture);
+
 } // namespace dx

@@ -5,7 +5,7 @@
 namespace dx
 {
 
-    DeviceContext3DPair MakeDevice3D() 
+    DeviceContext3DPair MakeDevice3D()
     {
         DeviceContext3DPair pair;
         UINT creationFlags = {};
@@ -23,5 +23,4 @@ namespace dx
         return pair;
     }
 
-}
-
+} // namespace dx

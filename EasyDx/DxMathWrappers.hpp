@@ -8,7 +8,6 @@ namespace dx
     DirectX::XMVECTOR Load(const DirectX::XMFLOAT4& f4);
     DirectX::XMVECTOR Load(const DirectX::XMFLOAT3A& f3a);
 
-
     template<typename T>
     T Store(DirectX::XMVECTOR vec)
     {

@@ -8,13 +8,13 @@ namespace dx::cb
 {
     DirectX::XMFLOAT4 AsFloat4(const DirectX::XMFLOAT3& float3) noexcept
     {
-        return { float3.x, float3.y, float3.z, 1.f };
+        return {float3.x, float3.y, float3.z, 1.f};
     }
-}
+} // namespace dx::cb
 
 namespace dx::cb
 {
-    Light::Light(const dx::PointLight & point) noexcept
+    Light::Light(const dx::PointLight& point) noexcept
     {
         Type = LightType::PointLight;
         Position = MakePosition4(point.Position);
@@ -27,7 +27,7 @@ namespace dx::cb
         Enabled = point.Enabled;
     }
 
-    Light::Light(const dx::DirectionalLight & directional) noexcept
+    Light::Light(const dx::DirectionalLight& directional) noexcept
     {
         Type = LightType::DirectionalLight;
         Direction = MakeDirection4(directional.Direction);
@@ -54,20 +54,14 @@ namespace dx::cb
     {
         struct Visitor
         {
-            Light operator()(const PointLight& point) const noexcept
-            {
-                return Light{ point };
-            }
+            Light operator()(const PointLight& point) const noexcept { return Light{point}; }
 
             Light operator()(const DirectionalLight& directional) const noexcept
             {
-                return Light{ directional };
+                return Light{directional};
             }
 
-            Light operator()(const SpotLight& spot) const noexcept
-            {
-                return Light{ spot };
-            }
+            Light operator()(const SpotLight& spot) const noexcept { return Light{spot}; }
         };
         *this = std::visit(Visitor{}, light);
     }
@@ -81,6 +75,4 @@ namespace dx::cb
         SpecularPower = smoothness.SpecularPower;
         UseTexture = useTexture ? 1 : 0;
     }
-}
-
-
+} // namespace dx::cb

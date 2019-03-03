@@ -47,4 +47,4 @@ namespace dx
         kDirectionalLight,
         kSpotLight
     };
-}
+} // namespace dx

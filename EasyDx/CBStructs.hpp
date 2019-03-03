@@ -45,5 +45,5 @@ namespace dx
 
             Material(const Smoothness& smoothness, bool useTexture) noexcept;
         };
-    }
-}
+    } // namespace cb
+} // namespace dx

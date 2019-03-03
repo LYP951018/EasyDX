@@ -10,20 +10,17 @@ namespace dx
     void EventLoop::Run(std::function<void(WindowEventArgsPack)> callback)
     {
         assert(std::this_thread::get_id() == threadRunning_);
-        
+
         while (true)
         {
             {
-                std::unique_lock<std::mutex> lg{ swapLock_ };
+                std::unique_lock<std::mutex> lg{swapLock_};
                 backEvents_.clear();
                 swap(frontEvents_, backEvents_);
             }
             if (backEvents_.empty())
             {
-                callback(WindowEventArgsPack{
-                    nullptr,
-                    IdleEventArgs{}
-                });
+                callback(WindowEventArgsPack{nullptr, IdleEventArgs{}});
             }
             else
             {
@@ -38,14 +35,13 @@ namespace dx
                     if (std::holds_alternative<ResizeEventArgs>(arg))
                     {
                         {
-                            std::unique_lock<std::mutex> lg{ resizeLock_ };
+                            std::unique_lock<std::mutex> lg{resizeLock_};
                             resized_ = true;
                         }
                         resizeCv_.notify_one();
                     }
                 }
             }
-            
         }
     exit:
         if (pumpingThread_.joinable())
@@ -62,15 +58,13 @@ namespace dx
 
     void EventLoop::ExecuteInThread(std::function<void()> action)
     {
-        std::lock_guard<std::mutex> lg{ queuedMutex_ };
+        std::lock_guard<std::mutex> lg{queuedMutex_};
         queuedCallbacks_.push(std::move(action));
     }
 
-    EventLoop::EventLoop()
-        : resized_ {},
-        threadRunning_ {std::this_thread::get_id()}
+    EventLoop::EventLoop() : resized_{}, threadRunning_{std::this_thread::get_id()}
     {
-        pumpingThread_ = std::thread{ [&] {MessagePump(); } };
+        pumpingThread_ = std::thread{[&] { MessagePump(); }};
         pumpingThread_.detach();
     }
 
@@ -94,7 +88,7 @@ namespace dx
             }
             else
             {
-                std::lock_guard<std::mutex> lg{ queuedMutex_ };
+                std::lock_guard<std::mutex> lg{queuedMutex_};
                 if (queuedCallbacks_.empty())
                 {
                     std::this_thread::yield();
@@ -115,28 +109,27 @@ namespace dx
     void EventLoop::PushResizeEvent(GameWindow* window, ResizeEventArgs args)
     {
         PushEvent(window, std::move(args));
-        //https://github.com/tomaka/winit/pull/250
-        std::unique_lock<std::mutex> lg{ resizeLock_ };
+        // https://github.com/tomaka/winit/pull/250
+        std::unique_lock<std::mutex> lg{resizeLock_};
         resizeCv_.wait(lg, [&]() { return resized_; });
         resized_ = false;
     }
 
     Point PosFromLParam(LPARAM lParam) noexcept
     {
-        return { static_cast<std::int32_t>(GET_X_LPARAM(lParam)),
-            static_cast<std::int32_t>(GET_Y_LPARAM(lParam)) };
+        return {static_cast<std::int32_t>(GET_X_LPARAM(lParam)),
+                static_cast<std::int32_t>(GET_Y_LPARAM(lParam))};
     }
 
-    void ProcessMessage(GameWindow& window, std::uint32_t messageId, std::uintptr_t wParam, std::intptr_t lParam) noexcept
+    void ProcessMessage(GameWindow& window, std::uint32_t messageId, std::uintptr_t wParam,
+                        std::intptr_t lParam) noexcept
     {
-        const auto MakeKeyStates = [&]() noexcept {
-            return KeyStates{ static_cast<std::uint32_t>(wParam) };
+        const auto MakeKeyStates = [&]() noexcept
+        {
+            return KeyStates{static_cast<std::uint32_t>(wParam)};
         };
         auto& eventLoop = EventLoop::GetInstanceInCurrentThread();
-        const auto PushEvent = [&](auto arg)
-        {
-            eventLoop.PushEvent(&window, std::move(arg));
-        };
+        const auto PushEvent = [&](auto arg) { eventLoop.PushEvent(&window, std::move(arg)); };
 
         switch (messageId)
         {
@@ -144,11 +137,11 @@ namespace dx
         {
             const auto newWidth = static_cast<std::uint32_t>(lParam & 0xFFFF);
             const auto newHeight = static_cast<std::uint32_t>(lParam >> 16);
-            eventLoop.PushResizeEvent(&window, ResizeEventArgs{ newWidth, newHeight });
+            eventLoop.PushResizeEvent(&window, ResizeEventArgs{newWidth, newHeight});
         }
         break;
         case WM_DESTROY:
-            //TODO
+            // TODO
             ::PostQuitMessage(0);
             break;
         case WM_DPICHANGED:
@@ -157,28 +150,33 @@ namespace dx
             const auto newDpiY = static_cast<std::uint32_t>(HIWORD(wParam));
             const auto rect = *reinterpret_cast<const RECT*>(lParam);
             const auto newRect = IntRect::FromRECT(rect);
-            PushEvent(DpiChangedEventArgs{ newDpiX, newDpiY, newRect });
+            PushEvent(DpiChangedEventArgs{newDpiX, newDpiY, newRect});
         }
         break;
-        //TODO: Right buttons
+        // TODO: Right buttons
         case WM_LBUTTONDOWN:
-            PushEvent(KeyEventArgs{ static_cast<std::uint32_t>(VirtualKey::kLeftButton), ElementState::Pressed, MakeKeyStates() });
+            PushEvent(KeyEventArgs{static_cast<std::uint32_t>(VirtualKey::kLeftButton),
+                                   ElementState::Pressed, MakeKeyStates()});
             break;
         case WM_LBUTTONUP:
-            PushEvent(KeyEventArgs{ static_cast<std::uint32_t>(VirtualKey::kLeftButton), ElementState::Released, MakeKeyStates() });
+            PushEvent(KeyEventArgs{static_cast<std::uint32_t>(VirtualKey::kLeftButton),
+                                   ElementState::Released, MakeKeyStates()});
             break;
         case WM_KEYDOWN:
-            PushEvent(KeyEventArgs{ static_cast<std::uint32_t>(wParam), ElementState::Pressed, MakeKeyStates() });
+            PushEvent(KeyEventArgs{static_cast<std::uint32_t>(wParam), ElementState::Pressed,
+                                   MakeKeyStates()});
             break;
         case WM_KEYUP:
-            PushEvent(KeyEventArgs{ static_cast<std::uint32_t>(wParam), ElementState::Released, MakeKeyStates() });
+            PushEvent(KeyEventArgs{static_cast<std::uint32_t>(wParam), ElementState::Released,
+                                   MakeKeyStates()});
             break;
         default:
             break;
         }
     }
 
-    ::LRESULT __stdcall EventLoop::WndProc(::HWND windowHandle, ::UINT messageId, ::WPARAM wParam, ::LPARAM lParam) noexcept
+    ::LRESULT __stdcall EventLoop::WndProc(::HWND windowHandle, ::UINT messageId, ::WPARAM wParam,
+                                           ::LPARAM lParam) noexcept
     {
         GameWindow* window = {};
         if (messageId == WM_NCCREATE)
@@ -193,9 +191,11 @@ namespace dx
             window = reinterpret_cast<GameWindow*>(::GetWindowLongPtr(windowHandle, GWLP_USERDATA));
             if (window != nullptr)
             {
-                ProcessMessage(*window, static_cast<std::uint32_t>(messageId), static_cast<std::uintptr_t>(wParam), static_cast<std::intptr_t>(lParam));
+                ProcessMessage(*window, static_cast<std::uint32_t>(messageId),
+                               static_cast<std::uintptr_t>(wParam),
+                               static_cast<std::intptr_t>(lParam));
             }
         }
         return ::DefWindowProc(windowHandle, messageId, wParam, lParam);
     }
-}
+} // namespace dx

@@ -10,7 +10,7 @@ namespace dx
 {
     class GameWindow;
 
-    struct IEventHandle 
+    struct IEventHandle
     {
         virtual ~IEventHandle();
     };
@@ -18,14 +18,12 @@ namespace dx
     template<typename EventT>
     struct EventHandle : IEventHandle
     {
-    public:
-        EventHandle(EventT& event, std::uint32_t handle)
-            : event_{event}, handle_{handle}
-        {}
+      public:
+        EventHandle(EventT& event, std::uint32_t handle) : event_{event}, handle_{handle} {}
 
         ~EventHandle() override;
 
-    private:
+      private:
         std::reference_wrapper<EventT> event_;
         std::uint32_t handle_;
     };
@@ -36,11 +34,11 @@ namespace dx
         kBreak
     };
 
-    //TODO: enable_share_from_this & weak_ptr?
+    // TODO: enable_share_from_this & weak_ptr?
     template<typename... Args>
     class Events
     {
-    public:
+      public:
         using Handler = std::function<ControlFlow(Args...)>;
         using HandleType = EventHandle<Events>;
 
@@ -49,23 +47,22 @@ namespace dx
         Events(const Events&) = delete;
         Events& operator=(const Events&) = delete;
 
-        //TODO: 支持少参数的情况。
+        // TODO: 支持少参数的情况。
         template<typename Func>
-        [[nodiscard]]
-        std::unique_ptr<IEventHandle> Add(Func func)
+        [[nodiscard]] std::unique_ptr<IEventHandle> Add(Func func)
         {
             const auto handle = AllocateHandle();
             using RetType = std::invoke_result_t<Func, Args...>;
             if constexpr (std::is_same_v<RetType, void>)
             {
-                handlers_.insert({ handle, [func = std::move(func)](Args&&... args) {
-                    func(exforward(args)...);
-                    return ControlFlow::kContinue;
-                } });
+                handlers_.insert({handle, [func = std::move(func)](Args&&... args) {
+                                      func(exforward(args)...);
+                                      return ControlFlow::kContinue;
+                                  }});
             }
-            else if constexpr(std::is_same_v<RetType, ControlFlow>)
+            else if constexpr (std::is_same_v<RetType, ControlFlow>)
             {
-                handlers_.insert({ handle, std::move(func) });
+                handlers_.insert({handle, std::move(func)});
             }
             else
             {
@@ -74,10 +71,7 @@ namespace dx
             return std::make_unique<HandleType>(*this, handle);
         }
 
-        void Remove(std::uint32_t handle)
-        {
-            handlers_.erase(handle);
-        }
+        void Remove(std::uint32_t handle) { handlers_.erase(handle); }
 
         void operator()(Args... args) const
         {
@@ -90,7 +84,7 @@ namespace dx
             }
         }
 
-    private:
+      private:
         std::uint32_t AllocateHandle() noexcept
         {
             return std::exchange(currentHandle_, currentHandle_ + 1);
@@ -111,10 +105,10 @@ namespace dx
 
     enum class MouseButton
     {
-        kLeft, kRight, kMiddle
+        kLeft,
+        kRight,
+        kMiddle
     };
-
-
 
     struct KeyStates
     {
@@ -160,12 +154,13 @@ namespace dx
         IntRect NewRect;
     };
 
-    struct QuitEventArgs {};
+    struct QuitEventArgs
+    {};
 
-    struct IdleEventArgs 
+    struct IdleEventArgs
     {
-        //duration since last idle.
-        //Duration duration;
+        // duration since last idle.
+        // Duration duration;
     };
 
 #define DefWindowEvent(name, arg) using name = WindowEvents<arg&>
@@ -173,7 +168,8 @@ namespace dx
     DefWindowEvent(WindowResizeEvent, ResizeEventArgs);
     DefWindowEvent(DpiChangedEvent, DpiChangedEventArgs);
 
-    using WindowEventArgs = std::variant<KeyEventArgs, MouseEventArgs, CursorMoved, ResizeEventArgs, DpiChangedEventArgs, QuitEventArgs, IdleEventArgs>;
+    using WindowEventArgs = std::variant<KeyEventArgs, MouseEventArgs, CursorMoved, ResizeEventArgs,
+                                         DpiChangedEventArgs, QuitEventArgs, IdleEventArgs>;
 
     struct WindowEventArgsPack
     {
@@ -182,4 +178,4 @@ namespace dx
     };
 
 #undef DefWindowEvent
-}
+} // namespace dx

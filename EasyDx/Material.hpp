@@ -13,13 +13,9 @@ namespace dx
         float SpecularPower;
     };
 
-	inline constexpr Smoothness kDefaultSmoothness = Smoothness{
-		DirectX::XMFLOAT4{0, 0, 0, 1.0},
-		DirectX::XMFLOAT4{0.55, 0.55, 0.55, 1.0},
-		DirectX::XMFLOAT4{0.7, 0.7, 0.7, 1.0},
-		DirectX::XMFLOAT4{},
-		float{32.0f}
-	};
+    inline constexpr Smoothness kDefaultSmoothness =
+        Smoothness{DirectX::XMFLOAT4{0, 0, 0, 1.0}, DirectX::XMFLOAT4{0.55, 0.55, 0.55, 1.0},
+                   DirectX::XMFLOAT4{0.7, 0.7, 0.7, 1.0}, DirectX::XMFLOAT4{}, float{32.0f}};
 
     struct BlendSettings
     {
@@ -48,13 +44,13 @@ namespace dx
         std::string_view Name;
     };
 
-	struct PassWithShaderInputs
-	{
-		std::shared_ptr<Pass> pass;
-		ShaderInputs inputs;
-	};
+    struct PassWithShaderInputs
+    {
+        std::shared_ptr<Pass> pass;
+        ShaderInputs inputs;
+    };
 
-	class PredefinedPasses
+    class PredefinedPasses
     {
       public:
         static void Initialize();

@@ -18,4 +18,4 @@ namespace dx
         DirectX::XMMATRIX World;
         CallbackComponent* const renderCallbacks;
     };
-}
+} // namespace dx

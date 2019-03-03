@@ -88,16 +88,15 @@ namespace dx
         return gsl::make_span(scene.mMeshes, scene.mNumMeshes);
     }
 
+    PositionType MakePosition(float x, float y, float z) { return PositionType{x, y, z}; }
 
-	PositionType MakePosition(float x, float y, float z) { return PositionType{ x, y, z }; }
+    VectorType MakeDir(float x, float y, float z, float w) { return VectorType{x, y, z}; }
 
-	VectorType MakeDir(float x, float y, float z, float w) { return VectorType{ x, y, z }; }
+    TexCoordType MakeTexCoord(float x, float y) { return TexCoordType{x, y}; }
 
-	TexCoordType MakeTexCoord(float x, float y) { return TexCoordType{ x, y }; }
+    ColorType MakeColor(float r, float g, float b, float a) { return ColorType{r, g, b, a}; }
 
-	ColorType MakeColor(float r, float g, float b, float a) { return ColorType{ r, g, b, a }; }
-
-	void IndicesFromMesh(const aiMesh& mesh, std::vector<ShortIndex>& indices)
+    void IndicesFromMesh(const aiMesh& mesh, std::vector<ShortIndex>& indices)
     {
         const auto faces = gsl::make_span(mesh.mFaces, mesh.mNumFaces);
         indices.clear();
@@ -105,9 +104,9 @@ namespace dx
         for (const auto& face : faces)
         {
             const auto faceIndices = gsl::make_span(face.mIndices, face.mNumIndices);
-           /* if (faceIndices.size() != 3)
-                continue;
-*/
+            /* if (faceIndices.size() != 3)
+                 continue;
+ */
             for (auto index : faceIndices)
             {
                 indices.push_back(static_cast<std::uint16_t>(index));
@@ -115,70 +114,74 @@ namespace dx
         }
     }
 
-	std::optional<Smoothness> SmoothnessFromMaterial(const aiMaterial& material)
+    std::optional<Smoothness> SmoothnessFromMaterial(const aiMaterial& material)
     {
         aiColor3D diffuse, specular, ambient, emissive;
 
-#define TRY_ASSIMP(expr) if ((expr) != aiReturn::aiReturn_SUCCESS) return std::nullopt;
-		TRY_ASSIMP(material.Get(AI_MATKEY_COLOR_DIFFUSE, diffuse));
-		TRY_ASSIMP(material.Get(AI_MATKEY_COLOR_SPECULAR, specular));
-		TRY_ASSIMP(material.Get(AI_MATKEY_COLOR_AMBIENT, ambient));
-		TRY_ASSIMP(material.Get(AI_MATKEY_COLOR_EMISSIVE, emissive));
+#define TRY_ASSIMP(expr)                      \
+    if ((expr) != aiReturn::aiReturn_SUCCESS) \
+        return std::nullopt;
+        TRY_ASSIMP(material.Get(AI_MATKEY_COLOR_DIFFUSE, diffuse));
+        TRY_ASSIMP(material.Get(AI_MATKEY_COLOR_SPECULAR, specular));
+        TRY_ASSIMP(material.Get(AI_MATKEY_COLOR_AMBIENT, ambient));
+        TRY_ASSIMP(material.Get(AI_MATKEY_COLOR_EMISSIVE, emissive));
         float specularPower;
-		TRY_ASSIMP(material.Get(AI_MATKEY_SHININESS, specularPower)); 
-		Smoothness smoothness;
+        TRY_ASSIMP(material.Get(AI_MATKEY_SHININESS, specularPower));
+        Smoothness smoothness;
         smoothness.Amibient = AiColorToFloat4(ambient);
         smoothness.Specular = AiColorToFloat4(specular);
         smoothness.Diffuse = AiColorToFloat4(diffuse);
-		smoothness.Emissive = AiColorToFloat4(emissive);
+        smoothness.Emissive = AiColorToFloat4(emissive);
         smoothness.SpecularPower = specularPower;
-		return smoothness;
+        return smoothness;
     }
 
     std::shared_ptr<Mesh> ConvertToImmutableMesh(ID3D11Device& device3D, const aiMesh& aiMesh_)
     {
         std::vector<ShortIndex> indices;
         IndicesFromMesh(aiMesh_, indices);
-        //const VSSemantics semanticsMask = VSSemanticsFromMesh(aiMesh_);
+        // const VSSemantics semanticsMask = VSSemanticsFromMesh(aiMesh_);
         const std::uint32_t vertexCount = aiMesh_.mNumVertices;
-		std::vector<gsl::span<const std::byte>> channels;
-		std::vector<VSSemantics> semantices;
-		VSSemantics allSemantics;
-		std::vector<std::uint32_t> strides;
-		std::vector<DxgiFormat> formats;
-		std::vector<std::uint32_t> semanticsIndices;
-		const auto pushChannel = [&](VSSemantics semantics, const auto p) {
-			semantices.push_back(semantics);
-			channels.push_back(gsl::as_bytes(gsl::make_span(p, aiMesh_.mNumVertices)));
-			strides.push_back(sizeof(*p));
-			formats.push_back(FormatFromSemantic(semantics));
-			semanticsIndices.push_back(0);
-		};
+        std::vector<gsl::span<const std::byte>> channels;
+        std::vector<VSSemantics> semantices;
+        VSSemantics allSemantics;
+        std::vector<std::uint32_t> strides;
+        std::vector<DxgiFormat> formats;
+        std::vector<std::uint32_t> semanticsIndices;
+        const auto pushChannel = [&](VSSemantics semantics, const auto p) {
+            semantices.push_back(semantics);
+            channels.push_back(gsl::as_bytes(gsl::make_span(p, aiMesh_.mNumVertices)));
+            strides.push_back(sizeof(*p));
+            formats.push_back(FormatFromSemantic(semantics));
+            semanticsIndices.push_back(0);
+        };
 
-		pushChannel(VSSemantics::kPosition, aiMesh_.mVertices);
-		if (aiMesh_.HasNormals())
-		{
-			pushChannel(VSSemantics::kNormal, aiMesh_.mNormals);
-		}
-		if (aiMesh_.HasTangentsAndBitangents())
-		{
-			pushChannel(VSSemantics::kTangent, aiMesh_.mTangents);
-		}
-		if (aiMesh_.HasVertexColors(0))
-		{
-			pushChannel(VSSemantics::kColor, aiMesh_.mColors[0]);
-		}
-		// TODO: multi-uv
-		if (aiMesh_.HasTextureCoords(0))
-		{
-			pushChannel(VSSemantics::kTexCoord, aiMesh_.mTextureCoords[0]);
-		}
+        pushChannel(VSSemantics::kPosition, aiMesh_.mVertices);
+        if (aiMesh_.HasNormals())
+        {
+            pushChannel(VSSemantics::kNormal, aiMesh_.mNormals);
+        }
+        if (aiMesh_.HasTangentsAndBitangents())
+        {
+            pushChannel(VSSemantics::kTangent, aiMesh_.mTangents);
+        }
+        if (aiMesh_.HasVertexColors(0))
+        {
+            pushChannel(VSSemantics::kColor, aiMesh_.mColors[0]);
+        }
+        // TODO: multi-uv
+        if (aiMesh_.HasTextureCoords(0))
+        {
+            pushChannel(VSSemantics::kTexCoord, aiMesh_.mTextureCoords[0]);
+        }
 
-		const D3D11_PRIMITIVE_TOPOLOGY topology = AsD3DPrimitiveTopology(static_cast<aiPrimitiveType>(aiMesh_.mPrimitiveTypes));
-		std::vector<D3D11_INPUT_ELEMENT_DESC> inputElementsDesces;
-		FillInputElementsDesc(inputElementsDesces, semantices, formats, semanticsIndices);
-		return std::make_shared<Mesh>(Mesh::CreateImmutable(device3D, channels.size(), channels.data(), strides.data(), semantices.data(), std::move(inputElementsDesces),
-			gsl::span<const ShortIndex>{indices}, topology));
+        const D3D11_PRIMITIVE_TOPOLOGY topology =
+            AsD3DPrimitiveTopology(static_cast<aiPrimitiveType>(aiMesh_.mPrimitiveTypes));
+        std::vector<D3D11_INPUT_ELEMENT_DESC> inputElementsDesces;
+        FillInputElementsDesc(inputElementsDesces, semantices, formats, semanticsIndices);
+        return std::make_shared<Mesh>(Mesh::CreateImmutable(
+            device3D, channels.size(), channels.data(), strides.data(), semantices.data(),
+            std::move(inputElementsDesces), gsl::span<const ShortIndex>{indices}, topology));
     }
 
     D3D11_PRIMITIVE_TOPOLOGY AsD3DPrimitiveTopology(aiPrimitiveType primitiveType)

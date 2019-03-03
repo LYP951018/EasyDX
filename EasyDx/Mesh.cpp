@@ -30,17 +30,17 @@ namespace dx
 
     std::uint32_t Mesh::GetVertexCount() const
     {
-		const StreamInfo& streamInfo = m_streams[0];
-		//FIXME
+        const StreamInfo& streamInfo = m_streams[0];
+        // FIXME
         return gsl::narrow<std::uint32_t>(streamInfo.BytesSpan().size() / streamInfo.GetStride());
     }
 
     std::uint32_t Mesh::GetIndexCount() const { return m_indexCount; }
 
-	gsl::span<const D3D11_INPUT_ELEMENT_DESC> Mesh::GetFullInputElementDesces() const
-	{
-		return gsl::make_span(m_fullInputElementDesces);
-	}
+    gsl::span<const D3D11_INPUT_ELEMENT_DESC> Mesh::GetFullInputElementDesces() const
+    {
+        return gsl::make_span(m_fullInputElementDesces);
+    }
 
     D3D11_PRIMITIVE_TOPOLOGY Mesh::GetPrimitiveTopology() const { return m_primitiveTopology; }
 
@@ -137,26 +137,27 @@ namespace dx
         stream.IsDirty = false;
     }
 
-	void InputElementDescsFromMesh(std::vector<D3D11_INPUT_ELEMENT_DESC>& inputElementDesces, const Mesh& mesh, VSSemantics mask)
-	{
-		const gsl::span<const VSSemantics> semanticses = mesh.GetChannelMasks();
-		const gsl::span<const D3D11_INPUT_ELEMENT_DESC> fullInputElementDesces =
-			mesh.GetFullInputElementDesces();
-		std::uint32_t inputLayoutIndex = 0;
-		for (std::ptrdiff_t i = 0; i < semanticses.size(); ++i)
-		{
-			const VSSemantics semantics = semanticses[i];
-			const std::uint32_t semanticsCount = __popcnt(static_cast<unsigned int>(semantics));
-			if ((semantics & mask) != VSSemantics::kNone)
-			{
-				//g_VSSemantics.push_back(semantics);
-				inputElementDesces.insert(
-					inputElementDesces.end(), fullInputElementDesces.begin() + inputLayoutIndex,
-					fullInputElementDesces.begin() + inputLayoutIndex + semanticsCount);
-				mask &= ~semantics;
-			}
-			inputLayoutIndex += semanticsCount;
-		}
-	}
+    void InputElementDescsFromMesh(std::vector<D3D11_INPUT_ELEMENT_DESC>& inputElementDesces,
+                                   const Mesh& mesh, VSSemantics mask)
+    {
+        const gsl::span<const VSSemantics> semanticses = mesh.GetChannelMasks();
+        const gsl::span<const D3D11_INPUT_ELEMENT_DESC> fullInputElementDesces =
+            mesh.GetFullInputElementDesces();
+        std::uint32_t inputLayoutIndex = 0;
+        for (std::ptrdiff_t i = 0; i < semanticses.size(); ++i)
+        {
+            const VSSemantics semantics = semanticses[i];
+            const std::uint32_t semanticsCount = __popcnt(static_cast<unsigned int>(semantics));
+            if ((semantics & mask) != VSSemantics::kNone)
+            {
+                // g_VSSemantics.push_back(semantics);
+                inputElementDesces.insert(
+                    inputElementDesces.end(), fullInputElementDesces.begin() + inputLayoutIndex,
+                    fullInputElementDesces.begin() + inputLayoutIndex + semanticsCount);
+                mask &= ~semantics;
+            }
+            inputLayoutIndex += semanticsCount;
+        }
+    }
 
 } // namespace dx

@@ -6,4 +6,3 @@
 #include "Internal/ShaderCbKeyDefXMacros.hpp"
 
 //#undef SHADER_DECL
-

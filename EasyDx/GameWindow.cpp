@@ -6,7 +6,6 @@
 #define NOMINMAX
 #include <Windows.h>
 
-
 namespace dx
 {
     ::HINSTANCE GetInstanceHandle()
@@ -21,8 +20,7 @@ namespace dx
     const wchar_t* kWindowClassName = L"EasyDxWindow";
 
     GameWindow::GameWindow(EventLoop& loop, const wchar_t* title,
-        std::optional<std::uint32_t> width,
-        std::optional<std::uint32_t> height)
+                           std::optional<std::uint32_t> width, std::optional<std::uint32_t> height)
     {
         ::WNDCLASSEX windowClass = {};
         windowClass.cbSize = sizeof(::WNDCLASSEX);
@@ -38,21 +36,22 @@ namespace dx
             std::condition_variable creationCv;
             bool created = false;
 
-            //sorry, we disable window resizement.
+            // sorry, we disable window resizement.
             loop.ExecuteInThread([&] {
-                windowHandle_ = ::CreateWindow(kWindowClassName, title, WS_OVERLAPPEDWINDOW & ~WS_THICKFRAME, CW_USEDEFAULT, CW_USEDEFAULT,
-                        width ? width.value() : CW_USEDEFAULT,
-                        height ? height.value() : CW_USEDEFAULT,
-                        nullptr, nullptr, GetInstanceHandle(), static_cast<void*>(this));
+                windowHandle_ = ::CreateWindow(
+                    kWindowClassName, title, WS_OVERLAPPEDWINDOW & ~WS_THICKFRAME, CW_USEDEFAULT,
+                    CW_USEDEFAULT, width ? width.value() : CW_USEDEFAULT,
+                    height ? height.value() : CW_USEDEFAULT, nullptr, nullptr, GetInstanceHandle(),
+                    static_cast<void*>(this));
                 {
-                    std::lock_guard<std::mutex> lg{ creationMutex };
+                    std::lock_guard<std::mutex> lg{creationMutex};
                     created = true;
                 }
                 creationCv.notify_one();
             });
 
-            std::unique_lock<std::mutex> ul{ creationMutex };
-            creationCv.wait(ul, [&] {return created; });
+            std::unique_lock<std::mutex> ul{creationMutex};
+            creationCv.wait(ul, [&] { return created; });
         }
 
         Ensures(windowHandle_ != nullptr);
@@ -68,40 +67,22 @@ namespace dx
 
     void GameWindow::Relocate(const IntRect& rect)
     {
-        TryWin32(SetWindowPos(NativeHandle(),
-            HWND_TOP,
-            rect.LeftTopX,
-            rect.LeftTopY,
-            rect.Width,
-            rect.Height,
-            SWP_NOZORDER | SWP_NOACTIVATE));
+        TryWin32(SetWindowPos(NativeHandle(), HWND_TOP, rect.LeftTopX, rect.LeftTopY, rect.Width,
+                              rect.Height, SWP_NOZORDER | SWP_NOACTIVATE));
     }
 
-    auto GameWindow::NativeHandle() const noexcept -> Win32WindowHandle
-    {
-        return windowHandle_;
-    }
+    auto GameWindow::NativeHandle() const noexcept -> Win32WindowHandle { return windowHandle_; }
 
-    Size GameWindow::GetSize() const noexcept
-    {
-        return { width_, height_ };
-    }
+    Size GameWindow::GetSize() const noexcept { return {width_, height_}; }
 
-    float GameWindow::GetDpiX() const noexcept
-    {
-        return static_cast<float>(dpiX_);
-    }
+    float GameWindow::GetDpiX() const noexcept { return static_cast<float>(dpiX_); }
 
-    float GameWindow::GetDpiY() const noexcept
-    {
-        return static_cast<float>(dpiY_);
-    }
+    float GameWindow::GetDpiY() const noexcept { return static_cast<float>(dpiY_); }
 
-    GameWindow::~GameWindow()
-    {
-    }
+    GameWindow::~GameWindow() {}
 
-    void GameWindow::PrepareForDpiChanging(std::uint32_t dpiX, std::uint32_t dpiY, const IntRect& newWindowRect)
+    void GameWindow::PrepareForDpiChanging(std::uint32_t dpiX, std::uint32_t dpiY,
+                                           const IntRect& newWindowRect)
     {
         dpiX_ = dpiX;
         dpiY_ = dpiY;
@@ -121,4 +102,4 @@ namespace dx
         dpiX_ = static_cast<std::uint32_t>(dpi);
         dpiY_ = static_cast<std::uint32_t>(dpi);
     }
-}
+} // namespace dx

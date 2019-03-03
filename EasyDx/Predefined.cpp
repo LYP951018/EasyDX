@@ -286,8 +286,8 @@ namespace dx
     {
         Shader defaultVS = Shaders::Get(Shaders::kPosNormalTexTransform).value();
         Shader defaultPS = Shaders::Get(Shaders::kBasicLighting).value();
-        ShaderCollection shaderCollection = MakeShaderCollection(
-            std::move(defaultVS), std::move(defaultPS));
+        ShaderCollection shaderCollection =
+            MakeShaderCollection(std::move(defaultVS), std::move(defaultPS));
         // TODO: default pass should be shared
         std::shared_ptr<Pass> defaultPass =
             std::make_shared<dx::Pass>(dx::Pass{std::move(shaderCollection)});
@@ -295,7 +295,7 @@ namespace dx
             std::make_shared<Material>(Material{std::move(defaultPass)});
         PresetupBasicPsCb(material->mainPass.inputs, predefined, smoothness, std::move(mainTexture),
                           std::move(sampler));
-		return material;
+        return material;
     }
 
     void PredefinedResources::Setup(ID3D11Device& device3D)

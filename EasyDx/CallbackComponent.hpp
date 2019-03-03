@@ -9,8 +9,9 @@ namespace dx
 
     class CallbackComponent : public ComponentBase
     {
-        //update cb, ...
-        virtual void OnPrerender(const GlobalShaderContext& shaderContext, MeshRenderer& renderer) noexcept;
+        // update cb, ...
+        virtual void OnPrerender(const GlobalShaderContext& shaderContext,
+                                 MeshRenderer& renderer) noexcept;
         virtual void OnPostrender() noexcept;
     };
-}
+} // namespace dx

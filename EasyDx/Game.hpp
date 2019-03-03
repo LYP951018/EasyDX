@@ -15,7 +15,7 @@ namespace dx
 
     class SceneSwitcher
     {
-    public:
+      public:
         friend void RunGame(Game&, std::unique_ptr<GameWindow>, std::uint32_t);
         friend class Game;
 
@@ -27,17 +27,18 @@ namespace dx
         void AddSceneCreator(EnumT index, SceneCreator creator)
         {
             using type = std::underlying_type_t<EnumT>;
-            static_assert(sizeof(type) < sizeof(std::uint32_t),
+            static_assert(
+                sizeof(type) < sizeof(std::uint32_t),
                 "The size of enum's underlying type should be less than sizeof(std::uint32_t).");
             AddSceneCreator(static_cast<type>(index), std::move(creator));
         }
 
-        //TODO: enum version.
+        // TODO: enum version.
         void WantToSwitchSceneTo(std::uint32_t index);
 
         SceneBase& MainScene() const { return *mainScene_; }
 
-    private:
+      private:
         void ReallySwitchToScene(Game& game, std::uint32_t index);
         void CheckAndSwitch();
         void Reset();
@@ -57,7 +58,7 @@ namespace dx
     {
         friend void RunGame(Game&, std::unique_ptr<GameWindow>, std::uint32_t);
 
-    public:
+      public:
         Game(std::unique_ptr<GlobalGraphicsContext> globalGraphics, std::uint32_t fps);
         ~Game();
 
@@ -70,7 +71,7 @@ namespace dx
         const SceneSwitcher& Switcher() const noexcept { return sceneSwitcher_; }
         const InputSystem& GetInputSystem() const noexcept { return *m_inputSystem; }
 
-    private:
+      private:
         friend struct MessageDispatcher;
 
         void Run();
@@ -81,11 +82,11 @@ namespace dx
 
         std::unique_ptr<GlobalGraphicsContext> m_globalGraphics;
         SceneSwitcher sceneSwitcher_;
-        //TODO: only one window?
+        // TODO: only one window?
         std::unique_ptr<GameWindow> mainWindow_;
         std::unique_ptr<InputSystem> m_inputSystem;
         std::uint32_t fps_;
     };
 
     void RunGame(Game& game, std::unique_ptr<GameWindow> mainWindow, std::uint32_t mainSceneIndex);
-}
+} // namespace dx

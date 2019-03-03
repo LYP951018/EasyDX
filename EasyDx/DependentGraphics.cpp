@@ -103,10 +103,10 @@ namespace dx
         auto& bufferTex = Front();
         D3D11_TEXTURE2D_DESC desc{};
         bufferTex.GetDesc(&desc);
-        return Size{ desc.Width, desc.Height };
+        return Size{desc.Width, desc.Height};
     }
 
-    //FIXME: why device here?
+    // FIXME: why device here?
     void SwapChain::UpdateBuffers(ID3D11Device&)
     {
         // https://msdn.microsoft.com/en-us/library/windows/desktop/mt427784%28v=vs.85%29.aspx
@@ -230,17 +230,17 @@ namespace dx
         ClearMainRt(Context3D(), color);
     }
 
-    DependentGraphics::DependentGraphics(ID3D11Device& device3D, const DXGI_SWAP_CHAIN_DESC& desc) : SwapChainDesc{ desc },
-        m_swapChain{ device3D, desc }
+    DependentGraphics::DependentGraphics(ID3D11Device& device3D, const DXGI_SWAP_CHAIN_DESC& desc)
+        : SwapChainDesc{desc}, m_swapChain{device3D, desc}
     {
-        //hack
+        // hack
         RecreateDepthStencil(device3D);
         CreateMainRt(device3D);
     }
 
     void DependentGraphics::RecreateDepthStencil(ID3D11Device& device3D)
     {
-        m_depthStencil = DepthStencil{ device3D, m_swapChain.BufferSize() };
+        m_depthStencil = DepthStencil{device3D, m_swapChain.BufferSize()};
     }
 
     void DependentGraphics::ClearMainRt(ID3D11DeviceContext& context3D, DirectX::XMVECTOR color)

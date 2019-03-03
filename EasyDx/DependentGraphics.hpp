@@ -101,10 +101,9 @@ namespace dx
         wrl::ComPtr<ID3D11DepthStencilView> view_;
     };
 
-
     class DependentGraphics
     {
-    public:
+      public:
         DXGI_SWAP_CHAIN_DESC SwapChainDesc;
 
         DependentGraphics(ID3D11Device& device3D, const DXGI_SWAP_CHAIN_DESC& desc);
@@ -133,7 +132,7 @@ namespace dx
     class GlobalGraphicsContext : IndependentGraphics, DependentGraphics
     {
       public:
-          //TODO: 这个构造函数做的事情有点多 = =
+        // TODO: 这个构造函数做的事情有点多 = =
         GlobalGraphicsContext(const DXGI_SWAP_CHAIN_DESC& swapChainDesc)
             : DependentGraphics{Device3D(), swapChainDesc}
         {}
@@ -142,7 +141,7 @@ namespace dx
         void ClearStencil(std::uint8_t stencil);
         void ClearBoth(float depth = 1.0f, std::uint8_t stencil = 0);
         void ClearMainRt(DirectX::XMVECTOR color);
-        //TODO
+        // TODO
         void SetResolution(std::uint32_t width, std::uint32_t height);
         using DependentGraphics::GetDepthStencil;
         using DependentGraphics::GetSwapChain;

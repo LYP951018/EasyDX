@@ -23,7 +23,7 @@ namespace dx
 
     class Camera : Noncopyable
     {
-    public:
+      public:
         Camera();
 
         void Translate(float x, float y, float z, Space space = Space::LocalSpace) noexcept;
@@ -33,10 +33,11 @@ namespace dx
         void RotateX(float angle);
         void Rotate(DirectX::XMVECTOR rotation) noexcept;
         void SetProjection(float fov, float aspectRatio, float nearZ, float farZ) noexcept;
-        void SetLookAt(const DirectX::XMFLOAT3& eye, const DirectX::XMFLOAT3& target, const DirectX::XMFLOAT3& up) noexcept;
+        void SetLookAt(const DirectX::XMFLOAT3& eye, const DirectX::XMFLOAT3& target,
+                       const DirectX::XMFLOAT3& up) noexcept;
         void UpdateAspectRatio(float aspectRatio) noexcept;
         bool HasChanged() const noexcept;
-        //TODO: 这里应该返回引用
+        // TODO: 这里应该返回引用
         DirectX::XMMATRIX GetView() const noexcept;
         DirectX::XMMATRIX GetProjection() const noexcept;
         DirectX::XMFLOAT3 GetEyePos() const noexcept;
@@ -48,7 +49,7 @@ namespace dx
         Rect& Viewport() noexcept { return *m_viewport; }
         const Rect& Viewport() const noexcept { return *m_viewport; }
 
-        //DirectX::XMMatrixPerspectiveFovLH 使用的是纵向 fov，这里也是纵向 fov。
+        // DirectX::XMMatrixPerspectiveFovLH 使用的是纵向 fov，这里也是纵向 fov。
         float Fov() const { return m_fov; }
         void SetFov(float fov)
         {
@@ -70,7 +71,7 @@ namespace dx
             m_isProjectionDirty = true;
         }
 
-    private:
+      private:
         friend class Scene;
         friend class Game;
         void PrepareForRendering(ID3D11DeviceContext& context3D, const Game& game);
@@ -91,4 +92,4 @@ namespace dx
         std::unique_ptr<Rect> m_viewport;
     };
 
-}
+} // namespace dx

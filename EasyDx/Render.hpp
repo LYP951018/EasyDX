@@ -8,7 +8,7 @@ namespace dx
     struct Material;
     struct Pass;
     class ShaderInputs;
-	enum class VSSemantics;
+    enum class VSSemantics;
 
     void DrawMesh(ID3D11DeviceContext& context3D, const Mesh& mesh, const Material& material);
     void DrawMesh(ID3D11DeviceContext& context3D, const Mesh& mesh, const Pass& pass);

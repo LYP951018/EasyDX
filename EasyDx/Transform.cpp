@@ -55,8 +55,9 @@ namespace dx
         return m_data->Matrix;
     }
 
-    DirectX::XMMATRIX MatrixFromTransform(dx::TransformComponent * transform)
+    DirectX::XMMATRIX MatrixFromTransform(dx::TransformComponent* transform)
     {
-        return transform == nullptr ? DirectX::XMMatrixIdentity() : transform->GetTransform().Matrix();
+        return transform == nullptr ? DirectX::XMMatrixIdentity()
+                                    : transform->GetTransform().Matrix();
     }
 } // namespace dx

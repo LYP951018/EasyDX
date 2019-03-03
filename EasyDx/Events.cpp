@@ -4,32 +4,15 @@
 
 namespace dx
 {
-    bool KeyStates::Control() const noexcept
-    {
-        return KeyStateBits & MK_CONTROL;
-    }
+    bool KeyStates::Control() const noexcept { return KeyStateBits & MK_CONTROL; }
 
-    bool KeyStates::Left() const noexcept
-    {
-        return KeyStateBits & MK_LBUTTON;
-    }
+    bool KeyStates::Left() const noexcept { return KeyStateBits & MK_LBUTTON; }
 
-    bool KeyStates::Middle() const noexcept
-    {
-        return KeyStateBits & MK_MBUTTON;
-    }
+    bool KeyStates::Middle() const noexcept { return KeyStateBits & MK_MBUTTON; }
 
-    bool KeyStates::Right() const noexcept
-    {
-        return KeyStateBits & MK_RBUTTON;
-    }
+    bool KeyStates::Right() const noexcept { return KeyStateBits & MK_RBUTTON; }
 
-    bool KeyStates::Shift() const noexcept
-    {
-        return KeyStateBits & MK_SHIFT;
-    }
+    bool KeyStates::Shift() const noexcept { return KeyStateBits & MK_SHIFT; }
 
-    IEventHandle::~IEventHandle()
-    {
-    }
-}
+    IEventHandle::~IEventHandle() {}
+} // namespace dx

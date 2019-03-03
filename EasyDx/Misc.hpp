@@ -36,4 +36,4 @@ namespace dx
 
     void Normalize(DirectX::XMFLOAT3& vec) noexcept;
     void Normalize(DirectX::XMFLOAT4& vec) noexcept;
-}
+} // namespace dx

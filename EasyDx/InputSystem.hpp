@@ -20,10 +20,42 @@ namespace dx
         kRight = 0x27,
         kDown = 0x28,
         k0 = 0x30,
-        k1 = 0x31, k2, k3, k4, k5, k6, k7, k8, k9,
-        kA = 0x41, kB, kC, kD, kE, kF, kG, kH, kI, kJ, kK, kL, kM, kN, kO, kP, kQ,
-        kR, kS, kT, kU, kV, kW, kX, kY, kZ,
-        kOemClear = 0xFE //the last key
+        k1 = 0x31,
+        k2,
+        k3,
+        k4,
+        k5,
+        k6,
+        k7,
+        k8,
+        k9,
+        kA = 0x41,
+        kB,
+        kC,
+        kD,
+        kE,
+        kF,
+        kG,
+        kH,
+        kI,
+        kJ,
+        kK,
+        kL,
+        kM,
+        kN,
+        kO,
+        kP,
+        kQ,
+        kR,
+        kS,
+        kT,
+        kU,
+        kV,
+        kW,
+        kX,
+        kY,
+        kZ,
+        kOemClear = 0xFE // the last key
     };
 
     enum class ElementState
@@ -34,17 +66,16 @@ namespace dx
 
     class InputSystem : Noncopyable
     {
-    public:
-        InputSystem()
-            : m_keyStates{}
-        {}
+      public:
+        InputSystem() : m_keyStates{} {}
 
         bool IsPressing(VirtualKey key) const;
         Point MouseMoved() const;
         ElementState GetKeyState(VirtualKey key) const;
 
-    private:
-        //��Ӧ�ð� MessageDispatcher ���� TU ���ڲ�����Ϊ��Ԫ������Ϊ�˷��㡣
+      private:
+        //��Ӧ�ð� MessageDispatcher ���� TU
+        //���ڲ�����Ϊ��Ԫ������Ϊ�˷��㡣
         friend struct MessageDispatcher;
         friend class Game;
 
@@ -57,4 +88,4 @@ namespace dx
         void OnFrameDone();
         void OnFrameStart();
     };
-}
+} // namespace dx

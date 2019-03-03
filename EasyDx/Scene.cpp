@@ -4,9 +4,7 @@
 
 namespace dx
 {
-    SceneBase::SceneBase(Game& game)
-        : Device3D{game.GlobalGraphics().Device3D()}
-    {}
+    SceneBase::SceneBase(Game& game) : Device3D{game.GlobalGraphics().Device3D()} {}
 
     SceneBase::~SceneBase() {}
 

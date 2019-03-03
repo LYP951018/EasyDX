@@ -9,15 +9,15 @@ namespace dx
 
     class GlobalShaderContext
     {
-    public:
+      public:
         DirectX::XMMATRIX ViewMatrix;
         DirectX::XMMATRIX ProjMatrix;
         DirectX::XMMATRIX ViewProjMatrix;
 
         void Flush();
 
-    private:
+      private:
         friend class Shader;
         void Apply(const std::unordered_map<std::string, gsl::span<std::byte>>& bytesMap) const;
     };
-}
+} // namespace dx

@@ -4,4 +4,4 @@
 namespace dx
 {
     ComponentBase::~ComponentBase() {}
-}
+} // namespace dx

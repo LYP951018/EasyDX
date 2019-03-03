@@ -80,13 +80,14 @@ namespace dx
         wrl::ComPtr<ID3D11RasterizerState> cullClockWise_, wireFrameOnly_;
     };
 
-    void PresetupBasicPsCb(ShaderInputs& psInputs, const PredefinedResources& predefined, const dx::Smoothness& smoothness,
+    void PresetupBasicPsCb(ShaderInputs& psInputs, const PredefinedResources& predefined,
+                           const dx::Smoothness& smoothness,
                            wrl::ComPtr<ID3D11ShaderResourceView> mainTexture = {},
                            wrl::ComPtr<ID3D11SamplerState> sampler = {});
 
     std::shared_ptr<Material>
     MakeBasicLightingMaterial(const PredefinedResources& predefined,
                               const dx::Smoothness& smoothness,
-                              wrl::ComPtr<ID3D11ShaderResourceView> mainTexture = {}, 
-                                wrl::ComPtr<ID3D11SamplerState> sampler = {});
+                              wrl::ComPtr<ID3D11ShaderResourceView> mainTexture = {},
+                              wrl::ComPtr<ID3D11SamplerState> sampler = {});
 } // namespace dx

@@ -8,9 +8,7 @@ namespace dx
     {
         ::POINT point{};
         ::GetCursorPos(&point);
-        return {
-            point.x, point.y
-        };
+        return {point.x, point.y};
     }
 
     bool InputSystem::IsPressing(VirtualKey key) const
@@ -21,11 +19,8 @@ namespace dx
     Point InputSystem::MouseMoved() const
     {
         assert(m_mousePosPair.has_value());
-        auto[orig, now] = *m_mousePosPair;
-        return Point{
-            now.X - orig.X,
-            now.Y - orig.Y
-        };
+        auto [orig, now] = *m_mousePosPair;
+        return Point{now.X - orig.X, now.Y - orig.Y};
     }
 
     ElementState InputSystem::GetKeyState(VirtualKey key) const
@@ -46,17 +41,14 @@ namespace dx
     void InputSystem::OnInitialized()
     {
         const auto point = GetMousePos();
-        m_mousePosPair = std::pair{ point, point };
+        m_mousePosPair = std::pair{point, point};
     }
 
-    void InputSystem::OnFrameDone()
-    {
-        m_mousePosPair->first = m_mousePosPair->second;
-    }
+    void InputSystem::OnFrameDone() { m_mousePosPair->first = m_mousePosPair->second; }
 
     void InputSystem::OnFrameStart()
     {
         const auto point = GetMousePos();
         m_mousePosPair->second = point;
     }
-}
+} // namespace dx

@@ -8,4 +8,4 @@ namespace dx
     struct UpdateArgs;
     class Object;
     class Game;
-}
+} // namespace dx
