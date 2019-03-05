@@ -103,15 +103,9 @@ namespace dx
         return ComPtrsCast(gsl::make_span(m_resourceViews.Resources));
     }
 
-	gsl::span<const std::byte> ShaderInputs::Bytes() const
-	{
-		return gsl::make_span(m_bytes);
-	}
+    gsl::span<const std::byte> ShaderInputs::Bytes() const { return gsl::make_span(m_bytes); }
 
-	gsl::span<std::byte> ShaderInputs::Bytes()
-	{
-		return gsl::make_span(m_bytes);
-	}
+    gsl::span<std::byte> ShaderInputs::Bytes() { return gsl::make_span(m_bytes); }
 
     std::vector<CbFieldInfo>
     ShaderInputs::CollectFields(std::uint32_t count,
@@ -141,7 +135,9 @@ namespace dx
         {
             const std::size_t newStart = m_bytes.size();
             m_bytes.resize(newStart + size);
-            return m_fields.emplace_back(CbFieldInfo{std::string{name}, gsl::narrow<std::uint32_t>(size), gsl::narrow<std::uint32_t>(newStart)});
+            return m_fields.emplace_back(CbFieldInfo{std::string{name},
+                                                     gsl::narrow<std::uint32_t>(size),
+                                                     gsl::narrow<std::uint32_t>(newStart)});
         }
     }
 
@@ -193,9 +189,9 @@ namespace dx
             SetBytes(fieldInfo.Name, inputs.BytesFromField(fieldInfo));
         }
 
-		//FIXME!!!
-		m_sharedData->ResourceViews = inputs.m_resourceViews;
-		m_sharedData->Samplers = inputs.m_samplers;
+        // FIXME!!!
+        m_sharedData->ResourceViews = inputs.m_resourceViews;
+        m_sharedData->Samplers = inputs.m_samplers;
     }
 
     void Shader::Apply(const GlobalShaderContext& shaderContext) const
@@ -344,10 +340,10 @@ namespace dx
     {
         for (const Shader& shader : shaders)
         {
-			if (shader)
-			{
-				shader.Setup(context3D);
-			}
+            if (shader)
+            {
+                shader.Setup(context3D);
+            }
         }
     }
 
@@ -369,7 +365,7 @@ namespace dx
                 shader.Apply(*additionalInput);
             }
             shader.SetField(WORLD_MATRIX, world);
-			shader.SetField(WORLD_VIEW_PROJ_MATRIX, world * shaderContext.ViewProjMatrix);
+            shader.SetField(WORLD_VIEW_PROJ_MATRIX, world * shaderContext.ViewProjMatrix);
             shader.Flush(context3D);
         }
     }
@@ -414,7 +410,7 @@ namespace dx
         return std::nullopt;
     }
 
-	void Shaders::Setup() { g_shaders = std::make_unique<Shaders>(Shaders{}); }
+    void Shaders::Setup() { g_shaders = std::make_unique<Shaders>(Shaders{}); }
 
     ShaderCollection ShadersBuilder::Build() const
     {
@@ -428,19 +424,19 @@ namespace dx
         return *this;
     }
 
-	VSSemantics ShaderCollection::MaskFromVertexShader()
+    VSSemantics ShaderCollection::MaskFromVertexShader()
     {
         const Shader& vs = GetVertexShader();
         ID3D11ShaderReflection* const reflection = vs.GetReflection().Get();
         D3D11_SHADER_DESC shaderDesc;
         TryHR(reflection->GetDesc(&shaderDesc));
-		VSSemantics mask = VSSemantics::kNone;
+        VSSemantics mask = VSSemantics::kNone;
         for (std::uint32_t i = 0; i < shaderDesc.InputParameters; ++i)
         {
             D3D11_SIGNATURE_PARAMETER_DESC paramDesc;
             TryHR(reflection->GetInputParameterDesc(i, &paramDesc));
             const std::string_view semantics = paramDesc.SemanticName;
-			//FIXME: semantics not found
+            // FIXME: semantics not found
             mask |= g_shaders->m_semanticsNameToMaskMap.find(semantics)->second;
         }
         return mask;

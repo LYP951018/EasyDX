@@ -7,10 +7,8 @@ namespace dx
 {
     namespace Internal
     {
-        wrl::ComPtr<ID3D11Buffer> RawMakeD3DBuffer(::ID3D11Device& device,
-                                                   const void* buffer,
-                                                   std::uint32_t bufferSize,
-                                                   BindFlag bindFlags,
+        wrl::ComPtr<ID3D11Buffer> RawMakeD3DBuffer(::ID3D11Device& device, const void* buffer,
+                                                   std::uint32_t bufferSize, BindFlag bindFlags,
                                                    ResourceUsage usage)
         {
             Ensures(buffer != nullptr || usage != ResourceUsage::Immutable);
@@ -25,11 +23,11 @@ namespace dx
             }
             D3D11_SUBRESOURCE_DATA initData = {};
             initData.pSysMem = buffer;
-            dx::TryHR(device.CreateBuffer(
-                &bufferDesc, buffer == nullptr ? nullptr : &initData, d3dBuffer.GetAddressOf()));
+            dx::TryHR(device.CreateBuffer(&bufferDesc, buffer == nullptr ? nullptr : &initData,
+                                          d3dBuffer.GetAddressOf()));
             return d3dBuffer;
         }
-    }
+    } // namespace Internal
 
     D3D11_BUFFER_DESC GetDesc(ID3D11Buffer& buffer)
     {
@@ -38,8 +36,7 @@ namespace dx
         return desc;
     }
 
-    MappedGpuResource Map(ID3D11DeviceContext& context,
-                          ID3D11Buffer& gpuBuffer,
+    MappedGpuResource Map(ID3D11DeviceContext& context, ID3D11Buffer& gpuBuffer,
                           ResourceMapType mapType)
     {
         D3D11_MAPPED_SUBRESOURCE data{};
@@ -66,9 +63,10 @@ namespace dx
                           std::uint32_t offset)
     {
         const auto desc = GetDesc(indexBuffer);
-        //Ensures(desc.StructureByteStride == sizeof(ShortIndex));
-        context3D.IASetIndexBuffer(&indexBuffer, static_cast<DXGI_FORMAT>(DxgiFormat::R16UInt), offset);
+        // Ensures(desc.StructureByteStride == sizeof(ShortIndex));
+        context3D.IASetIndexBuffer(&indexBuffer, static_cast<DXGI_FORMAT>(DxgiFormat::R16UInt),
+                                   offset);
     }
 
     MappedGpuResource::~MappedGpuResource() { m_context->Unmap(m_resource, 0); }
-}
+} // namespace dx

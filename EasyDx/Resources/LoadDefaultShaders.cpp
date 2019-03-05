@@ -7,8 +7,9 @@ namespace dx
     {
         const auto currentPath = fs::current_path();
         Add(kBasicLighting, Shader::FromCompiledCso(device3D, currentPath / L"BasicPS.cso"));
-        Add(kPosNormalTexTransform, Shader::FromCompiledCso(device3D, currentPath / L"BasicVS.cso"));
+        Add(kPosNormalTexTransform,
+            Shader::FromCompiledCso(device3D, currentPath / L"BasicVS.cso"));
         Add(kQuadVS, Shader::FromCompiledCso(device3D, currentPath / L"UITextureVS.cso"));
         Add(kQuadVS, Shader::FromCompiledCso(device3D, currentPath / L"UITexturePS.cso"));
     }
-}
+} // namespace dx

@@ -4,7 +4,7 @@
 //#include <cassert>
 //#include "Common.hpp"
 //
-//namespace dx
+// namespace dx
 //{
 //    template<typename T, std::size_t N>
 //    class static_vector

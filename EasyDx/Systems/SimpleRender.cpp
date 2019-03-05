@@ -12,12 +12,11 @@
 
 namespace dx::systems
 {
-    void PrepareVsCb(ID3D11DeviceContext&, ShaderInputs& inputs,
-                     const DirectX::XMMATRIX& world, const DirectX::XMMATRIX& view,
-                     const DirectX::XMMATRIX& projection)
+    void PrepareVsCb(ID3D11DeviceContext&, ShaderInputs& inputs, const DirectX::XMMATRIX& world,
+                     const DirectX::XMMATRIX& view, const DirectX::XMMATRIX& projection)
     {
         // TODO: input validation.
-        //auto& vsCb = *inputs.GetCbInfo("TransformMatrices");
+        // auto& vsCb = *inputs.GetCbInfo("TransformMatrices");
         /*inputs.SetField("WorldViewProj", world * view * projection);
         inputs.SetField("World", world);
         inputs.SetField("WorldInvTranspose",
@@ -27,7 +26,7 @@ namespace dx::systems
     void PreparePsCb(ID3D11DeviceContext& context3D, ShaderInputs& inputs,
                      gsl::span<const dx::Light> lights, const dx::Camera& camera)
     {
-        //auto& globalLights = *inputs.GetCbInfo("GlobalLightingInfo");
+        // auto& globalLights = *inputs.GetCbInfo("GlobalLightingInfo");
         inputs.SetField("EyePos", camera.GetEyePos());
         inputs.SetField("LightCount", static_cast<std::int32_t>(lights.size()));
         auto& lightCbs = inputs.BorrowMut<dx::cb::Light[10]>("Lights");
@@ -52,7 +51,8 @@ namespace dx::systems
         const auto transform = object.GetComponent<TransformComponent>();
         PrepareForRendering(context3D, gsl::make_span(scene.Lights()), scene.MainCamera(),
                             meshRenderer->GetMaterial(),
-                            transform == nullptr ? DirectX::XMMatrixIdentity() : transform->GetTransform().Matrix());
+                            transform == nullptr ? DirectX::XMMatrixIdentity()
+                                                 : transform->GetTransform().Matrix());
         DrawMesh(context3D, meshRenderer->GetMesh(), meshRenderer->GetMaterial());
     }
 } // namespace dx::systems

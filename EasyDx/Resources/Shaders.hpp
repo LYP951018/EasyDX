@@ -56,11 +56,11 @@ namespace dx
         std::uint32_t Start;
     };
 
-	struct BoundedResourcesInfo
-	{
-		std::string Name;
-		std::uint32_t Index;
-	};
+    struct BoundedResourcesInfo
+    {
+        std::string Name;
+        std::uint32_t Index;
+    };
 
     template<typename T>
     struct BoundedResources
@@ -73,7 +73,7 @@ namespace dx
             const std::uint32_t index = gsl::narrow<std::uint32_t>(Resources.size());
             Resources.push_back(nullptr);
             Infos.push_back(BoundedResourcesInfo{std::string{name}, index});
-			return index;
+            return index;
         }
 
         void Bind(std::string_view name, wrl::ComPtr<T> resource)
@@ -89,8 +89,8 @@ namespace dx
             }
             else
             {
-				const std::uint32_t index = AddInfo(name.data());
-				Resources[index] = std::move(resource);
+                const std::uint32_t index = AddInfo(name.data());
+                Resources[index] = std::move(resource);
             }
         }
     };
@@ -155,7 +155,6 @@ namespace dx
         FileMappingViewHandle m_mappedView;
         std::uint64_t m_size;
     };
-
 
     struct GpuCbFieldInfo
     {
@@ -228,7 +227,8 @@ namespace dx
         void Bind(std::string_view name, wrl::ComPtr<ID3D11ShaderResourceView> resourceView) const;
         void Bind(std::string_view name, wrl::ComPtr<ID3D11SamplerState> sampler) const;
 
-		explicit operator bool() const { return m_shaderObject != nullptr; }
+        explicit operator bool() const { return m_shaderObject != nullptr; }
+
       private:
         Shader(ID3D11Device& device3D, wrl::ComPtr<ID3DBlob> byteCode)
             : Shader{device3D, AsSpan(Ref(byteCode))}
@@ -238,7 +238,7 @@ namespace dx
                wrl::ComPtr<ID3D11ShaderReflection> reflection);
 
         std::shared_ptr<SharedShaderData> m_sharedData;
-		ShaderKind m_kind;
+        ShaderKind m_kind;
         wrl::ComPtr<ID3D11DeviceChild> m_shaderObject;
     };
 
@@ -253,16 +253,15 @@ namespace dx
 
       public:
         ShaderCollection(ShaderArray shaders)
-            : BaseType{std::move(shaders)},
-              m_mask{MaskFromVertexShader()}
+            : BaseType{std::move(shaders)}, m_mask{MaskFromVertexShader()}
         {}
 
         using BaseType::begin;
+        using BaseType::data;
         using BaseType::end;
-		using BaseType::size;
-		using BaseType::data;
+        using BaseType::size;
 
-		VSSemantics GetMask() const { return m_mask; }
+        VSSemantics GetMask() const { return m_mask; }
 
         const Shader& operator[](ShaderKind kind) const noexcept
         {
@@ -298,7 +297,7 @@ namespace dx
     };
 
     struct Pass;
-	struct PassWithShaderInputs;
+    struct PassWithShaderInputs;
 
     ShaderCollection MakeShaderCollection(Shader vertexShader, Shader pixelShader);
     void SetupShaders(ID3D11DeviceContext& context3D, const ShaderCollection& shaders);

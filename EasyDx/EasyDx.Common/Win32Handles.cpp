@@ -2,10 +2,7 @@
 
 namespace dx
 {
-    void CommonHandleCloser::operator()(HandleType handle) noexcept
-    {
-        ::CloseHandle(handle);
-    }
+    void CommonHandleCloser::operator()(HandleType handle) noexcept { ::CloseHandle(handle); }
 
     void FileMappingViewUnmapper::operator()(HandleType memoryAddr) noexcept
     {
@@ -13,10 +10,5 @@ namespace dx
         Ensures(err != 0);
     }
 
-    void FileHandleCloser::operator()(HandleType handle) noexcept
-    {
-        ::CloseHandle(handle);
-    }
-}
-
-
+    void FileHandleCloser::operator()(HandleType handle) noexcept { ::CloseHandle(handle); }
+} // namespace dx

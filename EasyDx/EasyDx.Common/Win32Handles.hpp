@@ -25,7 +25,7 @@ namespace dx
 
     using LocalMemoryHandle = UniqueHandle<LocalMemoryHandleCloser>;
 
-    //closing handles with ::CloseHandle
+    // closing handles with ::CloseHandle
     struct CommonHandleCloser
     {
         using HandleType = NativeHandle;
@@ -49,11 +49,11 @@ namespace dx
     template<typename UniqueHandleType>
     UniqueHandleType OpenWin32WithCheck(typename UniqueHandleType::HandleType handle)
     {
-        auto uniqueHandle = UniqueHandleType{ handle };
+        auto uniqueHandle = UniqueHandleType{handle};
         if (!uniqueHandle)
         {
             ThrowWin32();
         }
         return std::move(uniqueHandle);
     }
-}
+} // namespace dx

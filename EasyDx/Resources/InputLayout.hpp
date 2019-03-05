@@ -24,7 +24,7 @@ namespace boost
         }
     };
 
-}
+} // namespace boost
 
 namespace dx
 {
@@ -38,21 +38,22 @@ namespace dx
     {
       public:
         template<std::size_t N>
-        static wrl::ComPtr<ID3D11InputLayout> Register(ID3D11Device& device,
-                                                const std::array<D3D11_INPUT_ELEMENT_DESC, N>& desc,
-                                                gsl::span<const std::byte> byteCode)
+        static wrl::ComPtr<ID3D11InputLayout>
+        Register(ID3D11Device& device, const std::array<D3D11_INPUT_ELEMENT_DESC, N>& desc,
+                 gsl::span<const std::byte> byteCode)
         {
             return Register(device, gsl::make_span(desc), byteCode);
         }
 
-        static wrl::ComPtr<ID3D11InputLayout> Register(ID3D11Device& device,
-            const gsl::span<const D3D11_INPUT_ELEMENT_DESC>& desc,
-            const fs::path& csoPath);
+        static wrl::ComPtr<ID3D11InputLayout>
+        Register(ID3D11Device& device, const gsl::span<const D3D11_INPUT_ELEMENT_DESC>& desc,
+                 const fs::path& csoPath);
 
-        static wrl::ComPtr<ID3D11InputLayout> Register(ID3D11Device& device,
-                                                 gsl::span<const D3D11_INPUT_ELEMENT_DESC> descs,
-                                                 gsl::span<const std::byte> byteCode);
-        static wrl::ComPtr<ID3D11InputLayout> Query(gsl::span<const D3D11_INPUT_ELEMENT_DESC> descs);
+        static wrl::ComPtr<ID3D11InputLayout>
+        Register(ID3D11Device& device, gsl::span<const D3D11_INPUT_ELEMENT_DESC> descs,
+                 gsl::span<const std::byte> byteCode);
+        static wrl::ComPtr<ID3D11InputLayout>
+        Query(gsl::span<const D3D11_INPUT_ELEMENT_DESC> descs);
 
         static void Setup();
         static void LoadDefaultInputLayouts(ID3D11Device& device3D);
@@ -63,7 +64,7 @@ namespace dx
                              wrl::ComPtr<ID3D11InputLayout>>
             m_inputLayouts;
     };
-}
+} // namespace dx
 
 namespace boost
 {
@@ -71,9 +72,6 @@ namespace boost
     template<>
     struct hash<D3D11_INPUT_ELEMENT_DESC>
     {
-        size_t operator()(const D3D11_INPUT_ELEMENT_DESC& desc) const
-        {
-            return ::hash_value(desc);
-        }
+        size_t operator()(const D3D11_INPUT_ELEMENT_DESC& desc) const { return ::hash_value(desc); }
     };
-}
+} // namespace boost

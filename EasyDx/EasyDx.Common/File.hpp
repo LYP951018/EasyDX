@@ -7,7 +7,8 @@ namespace dx
 {
     enum class FileShareMode
     {
-        //Prevents other processes from opening a file or device if they request delete, read, or write access. 
+        // Prevents other processes from opening a file or device if they request delete, read, or
+        // write access.
         None = 0,
         Delete = 0x00000004,
         Read = 0x00000001,
@@ -33,10 +34,12 @@ namespace dx
         All = 0x10000000
     };
 
-    FileHandle CreateOrOpenFile(const fs::path& path, FileAccessMode accessMode, FileOpenMode openMode, FileShareMode shareMode);
+    FileHandle CreateOrOpenFile(const fs::path& path, FileAccessMode accessMode,
+                                FileOpenMode openMode, FileShareMode shareMode);
 
-    inline FileHandle OpenExistingFile(const fs::path& path, FileAccessMode accessMode, FileShareMode shareMode)
+    inline FileHandle OpenExistingFile(const fs::path& path, FileAccessMode accessMode,
+                                       FileShareMode shareMode)
     {
         return CreateOrOpenFile(path, accessMode, FileOpenMode::OpenExisting, shareMode);
     }
-}
+} // namespace dx

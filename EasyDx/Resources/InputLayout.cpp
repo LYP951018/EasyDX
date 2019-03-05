@@ -44,9 +44,12 @@ namespace dx
         return layout;
     }
 
-    wrl::ComPtr<ID3D11InputLayout> InputLayoutAllocator::Register(ID3D11Device & device, const gsl::span<const D3D11_INPUT_ELEMENT_DESC>& desc, const fs::path & csoPath)
+    wrl::ComPtr<ID3D11InputLayout>
+    InputLayoutAllocator::Register(ID3D11Device& device,
+                                   const gsl::span<const D3D11_INPUT_ELEMENT_DESC>& desc,
+                                   const fs::path& csoPath)
     {
-        const auto cso = MemoryMappedCso{ csoPath };
+        const auto cso = MemoryMappedCso{csoPath};
         return Register(device, desc, cso.Bytes());
     }
 
@@ -85,45 +88,46 @@ namespace dx
         g_inputAllocator = std::make_unique<InputLayoutAllocator>();
     }
 
-	void Arrange(gsl::span<D3D11_INPUT_ELEMENT_DESC> inputElementDesces)
-	{
-		for (std::ptrdiff_t i = 0; i < inputElementDesces.size(); ++i)
-		{
-			inputElementDesces[i].InputSlot = static_cast<std::uint32_t>(i);
-		}
-	}
+    void Arrange(gsl::span<D3D11_INPUT_ELEMENT_DESC> inputElementDesces)
+    {
+        for (std::ptrdiff_t i = 0; i < inputElementDesces.size(); ++i)
+        {
+            inputElementDesces[i].InputSlot = static_cast<std::uint32_t>(i);
+        }
+    }
 
-	template<std::size_t N>
-	void Gen(std::vector<D3D11_INPUT_ELEMENT_DESC>& inputElementDesces, std::array<VSSemantics, N> semanticses)
-	{
-		std::vector<DxgiFormat> formats;
-		std::vector<std::uint32_t> semanticsIndices;
-		for (const VSSemantics& semantics : semanticses)
-		{
-			formats.push_back(FormatFromSemantic(semantics));
-			semanticsIndices.push_back(0);
-		}
-		FillInputElementsDesc(inputElementDesces, semanticses, formats, semanticsIndices);
-	}
+    template<std::size_t N>
+    void Gen(std::vector<D3D11_INPUT_ELEMENT_DESC>& inputElementDesces,
+             std::array<VSSemantics, N> semanticses)
+    {
+        std::vector<DxgiFormat> formats;
+        std::vector<std::uint32_t> semanticsIndices;
+        for (const VSSemantics& semantics : semanticses)
+        {
+            formats.push_back(FormatFromSemantic(semantics));
+            semanticsIndices.push_back(0);
+        }
+        FillInputElementsDesc(inputElementDesces, semanticses, formats, semanticsIndices);
+    }
 
-
-	//FIXME: too ad-hoc
+    // FIXME: too ad-hoc
     void InputLayoutAllocator::LoadDefaultInputLayouts(ID3D11Device& device3D)
     {
         const auto currentPath = fs::current_path();
-		std::vector<D3D11_INPUT_ELEMENT_DESC> inputElementDesces;
-		const auto registerHelper = [&](auto s, const fs::path& path) {
-			Gen(inputElementDesces, s);
-			Register(device3D, gsl::make_span(inputElementDesces), path);
-		};
-		registerHelper(std::array{ VSSemantics::kPosition }, currentPath / L"PosVS.cso");
-		registerHelper(std::array{ VSSemantics::kPosition, VSSemantics::kNormal, VSSemantics::kTexCoord }, currentPath / L"PosNormalTex.cso");
-		registerHelper(std::array{ VSSemantics::kPosition, VSSemantics::kNormal, VSSemantics::kTangent, VSSemantics::kTexCoord }, currentPath / L"PosNormTanTex.cso");
-        //Register(device3D, QuadDescs, currentPath / L"UITextureVS.cso");
+        std::vector<D3D11_INPUT_ELEMENT_DESC> inputElementDesces;
+        const auto registerHelper = [&](auto s, const fs::path& path) {
+            Gen(inputElementDesces, s);
+            Register(device3D, gsl::make_span(inputElementDesces), path);
+        };
+        registerHelper(std::array{VSSemantics::kPosition}, currentPath / L"PosVS.cso");
+        registerHelper(
+            std::array{VSSemantics::kPosition, VSSemantics::kNormal, VSSemantics::kTexCoord},
+            currentPath / L"PosNormalTex.cso");
+        registerHelper(std::array{VSSemantics::kPosition, VSSemantics::kNormal,
+                                  VSSemantics::kTangent, VSSemantics::kTexCoord},
+                       currentPath / L"PosNormTanTex.cso");
+        // Register(device3D, QuadDescs, currentPath / L"UITextureVS.cso");
     }
 
-    InputLayoutAllocator& InputLayoutAllocator::GetInstance()
-    {
-        return *g_inputAllocator;
-    }
+    InputLayoutAllocator& InputLayoutAllocator::GetInstance() { return *g_inputAllocator; }
 } // namespace dx
