@@ -351,6 +351,7 @@ namespace dx
                        const DirectX::XMMATRIX& world, const ShaderInputs* additionalInput,
                        const GlobalShaderContext& shaderContext)
     {
+		using namespace DirectX;
         const ShaderInputs& inputs = passWithInputs.inputs;
         const Pass& pass = *passWithInputs.pass;
         for (std::size_t i = 0; i < pass.Shaders.size(); ++i)
@@ -365,6 +366,7 @@ namespace dx
                 shader.Apply(*additionalInput);
             }
             shader.SetField(WORLD_MATRIX, world);
+			shader.SetField(INV_TRANS_WORLD, XMMatrixInverse(nullptr, XMMatrixTranspose(world)));
             shader.SetField(WORLD_VIEW_PROJ_MATRIX, world * shaderContext.ViewProjMatrix);
             shader.Flush(context3D);
         }
