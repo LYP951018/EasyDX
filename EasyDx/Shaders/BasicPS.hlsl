@@ -3,9 +3,9 @@
 
 cbuffer GlobalLightingInfo : register(b0)
 {
-    float3 EyePos;
-    int LightCount;
-    Light Lights[10];
+    float3 dx_EyePos;
+    int dx_LightCount;
+    Light dx_Lights[10];
 	Material ObjectMaterial;
 
 }
@@ -20,10 +20,10 @@ SamplerState Sampler;
 float4 main(dx::Outputs::PosNormalTex input) : SV_TARGET
 {
     float4 totalDiffuse = float4(0.0f, 0.0f, 0.0f, 0.0f), totalSpec = float4(0.0f, 0.0f, 0.0f, 0.0f);
-    for (int i = 0; i < LightCount; ++i)
+    for (int i = 0; i < dx_LightCount; ++i)
     {
         float4 diffuse = 0.0f, spec = 0.0f;
-        ComputeLighting(EyePos, input.PositionWS.xyz, input.NormalWS, Lights[i], ObjectMaterial, diffuse, spec);
+        ComputeLighting(dx_EyePos, input.PositionWS.xyz, input.NormalWS, dx_Lights[i], ObjectMaterial, diffuse, spec);
         totalDiffuse += diffuse;
         totalSpec += spec;
     }

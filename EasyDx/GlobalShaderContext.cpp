@@ -20,6 +20,9 @@ namespace dx
         SetIfExists(PROJ_MATRIX, ProjMatrix);
         SetIfExists(VIEW_MATRIX, ViewMatrix);
         SetIfExists(VIEW_PROJ_MATRIX, ViewProjMatrix);
+		SetIfExists(EYE_POS, EyePos);
+		SetIfExists(LIGHTS, lights);
+		SetIfExists(LIGHT_COUNT, lightCount);
     }
 
 } // namespace dx

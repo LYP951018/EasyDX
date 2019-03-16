@@ -1,6 +1,7 @@
 #pragma once
 
 #include <DirectXMath.h>
+#include "CBStructs.hpp"
 
 namespace dx
 {
@@ -13,6 +14,9 @@ namespace dx
         DirectX::XMMATRIX ViewMatrix;
         DirectX::XMMATRIX ProjMatrix;
         DirectX::XMMATRIX ViewProjMatrix;
+		DirectX::XMFLOAT3 EyePos;
+		cb::Light lights[10];
+		int lightCount;
 
         void Flush();
 

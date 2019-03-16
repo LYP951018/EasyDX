@@ -6,3 +6,6 @@
 #define INV_TRANS_WORLD SHADER_DECL(dx_InvTransWorldMatrix)
 #define SHADOW_MAP SHADER_DECL(dx_ShadowMapTex)
 #define SSS_SHADOW_MAP SHADER_DECL(dx_SssShadowMapTex)
+#define EYE_POS SHADER_DECL(dx_EyePos)
+#define LIGHTS SHADER_DECL(dx_Lights)
+#define LIGHT_COUNT SHADER_DECL(dx_LightCount)
