@@ -73,8 +73,7 @@ namespace dx
         return std::abs(lhs - rhs) < std::numeric_limits<float>::epsilon();
     }
 
-    [[noreturn]] void ThrowHRException(HRESULT hr)
-    {
+    [[noreturn]] void ThrowHRException(HRESULT hr) {
         _com_error e{hr};
         const auto errorMessage = std::wstring_view{e.ErrorMessage()};
         throw std::runtime_error{ws2s(errorMessage)};

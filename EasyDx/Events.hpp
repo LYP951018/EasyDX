@@ -49,8 +49,7 @@ namespace dx
 
         // TODO: 支持少参数的情况。
         template<typename Func>
-        [[nodiscard]] std::unique_ptr<IEventHandle> Add(Func func)
-        {
+        [[nodiscard]] std::unique_ptr<IEventHandle> Add(Func func) {
             const auto handle = AllocateHandle();
             using RetType = std::invoke_result_t<Func, Args...>;
             if constexpr (std::is_same_v<RetType, void>)
@@ -71,7 +70,10 @@ namespace dx
             return std::make_unique<HandleType>(*this, handle);
         }
 
-        void Remove(std::uint32_t handle) { handlers_.erase(handle); }
+        void Remove(std::uint32_t handle)
+        {
+            handlers_.erase(handle);
+        }
 
         void operator()(Args... args) const
         {
