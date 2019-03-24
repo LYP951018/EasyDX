@@ -318,5 +318,11 @@
     <FxCompile Include="Shaders\Basic3D.hlsli">
       <Filter>Shaders</Filter>
     </FxCompile>
+    <FxCompile Include="Shaders\DefaultShadowCasterVS.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DefaultShadowCasterPS.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>
