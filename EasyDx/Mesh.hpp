@@ -3,6 +3,7 @@
 #include "Resources/Buffers.hpp"
 #include "ComponentBase.hpp"
 #include "Vertex.hpp"
+#include <DirectXCollision.h>
 #include <d3d11.h> //for D3D11_PRIMITIVE_TOPOLOGY
 
 namespace dx
@@ -75,6 +76,7 @@ namespace dx
         {
             return gsl::make_span(m_vsSemantics);
         }
+        const DirectX::BoundingBox& GetBoundingBox() const { return m_boundingBox; }
 
         // TODO: optimize flush
         void FlushAll(ID3D11DeviceContext& context3D) const;
@@ -118,7 +120,7 @@ namespace dx
              std::vector<D3D11_INPUT_ELEMENT_DESC> fullInputElementDesces,
              std::vector<VSSemantics> vsSemantics, std::vector<std::uint32_t> stridesAndOffsets,
              GpuBuffer indexBuffer, std::uint32_t indexCount, bool isImmutable,
-             D3D_PRIMITIVE_TOPOLOGY topology);
+             D3D_PRIMITIVE_TOPOLOGY topology, const DirectX::BoundingBox& boundingBox);
 
         void SetAllStreamsInternal(gsl::span<const gsl::span<const std::byte>> streamsInBytes);
         bool AnyDirty() const;
@@ -134,6 +136,8 @@ namespace dx
         std::uint32_t m_indexCount;
         bool m_isImmutable;
         D3D11_PRIMITIVE_TOPOLOGY m_primitiveTopology;
+        //这里假设第一个 stream 是 position
+        DirectX::BoundingBox m_boundingBox;
     };
 
     // TODO: a submesh

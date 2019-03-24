@@ -48,12 +48,12 @@ namespace dx
                std::vector<D3D11_INPUT_ELEMENT_DESC> fullInputElementDesces,
                std::vector<VSSemantics> vsSemantics, std::vector<std::uint32_t> stridesAndOffsets,
                GpuBuffer indexBuffer, std::uint32_t indexCount, bool isImmutable,
-               D3D_PRIMITIVE_TOPOLOGY topology)
+               D3D_PRIMITIVE_TOPOLOGY topology, const DirectX::BoundingBox& boundingBox)
         : m_gpuVertexBuffers{std::move(gpuBuffer)}, m_indexBuffer{std::move(indexBuffer)},
           m_fullInputElementDesces{std::move(fullInputElementDesces)},
           m_vsSemantics{std::move(vsSemantics)}, m_streams{std::move(streams)},
           m_stridesAndOffsets{std::move(stridesAndOffsets)}, m_indexCount{indexCount},
-          m_isImmutable{isImmutable}, m_primitiveTopology{topology}
+          m_isImmutable{isImmutable}, m_primitiveTopology{topology}, m_boundingBox{boundingBox}
     {}
 
     Mesh Mesh::CreateImmutable(ID3D11Device& device, std::uint32_t channelCount,
@@ -84,6 +84,11 @@ namespace dx
             ++current;
             vertexBuffers.push_back(MakeImmutableVertexBuffer(device, cpuVb));
         }
+        DirectX::BoundingBox boundingBox;
+        const std::uint32_t positionStride = strides[0];
+        DirectX::BoundingBox::CreateFromPoints(
+            boundingBox, bytes[0].size() / positionStride,
+            reinterpret_cast<const DirectX::XMFLOAT3*>(bytes[0].data()), positionStride);
         GpuBuffer indexBuffer = MakeImmutableIndexBuffer(device, indices);
         std::vector<VSSemantics> vsSemantics{semantics, semantics + channelCount};
         return Mesh{std::move(vertexBuffers),
@@ -94,7 +99,8 @@ namespace dx
                     std::move(indexBuffer),
                     gsl::narrow<std::uint32_t>(indices.size()),
                     true,
-                    topology};
+                    topology,
+                    boundingBox};
     }
 
     void Mesh::SetAllStreamsInternal(gsl::span<const gsl::span<const std::byte>> streamsInBytes)
