@@ -55,6 +55,9 @@ namespace dx
       public:
         static void Initialize();
         static std::shared_ptr<Pass> GetPlainShadowCaster();
+
+	private:
+		std::shared_ptr<Pass> m_defaultShadowCaster;
     };
 
     void SetupRasterizerState(ID3D11DeviceContext& context3D, ID3D11RasterizerState& rasterState);

@@ -42,10 +42,20 @@ namespace dx
         SetupDepthStencilStates(context3D, pass.DepthStencil);
         SetupRasterizerState(context3D, dx::Ref(pass.RasterizerState));
     }
-    void PredefinedPasses::Initialize() {}
+
+    std::unique_ptr<PredefinedPasses> g_predefinedPasses;
+
+    void PredefinedPasses::Initialize()
+    {
+        g_predefinedPasses = std::make_unique<PredefinedPasses>();
+
+        g_predefinedPasses->m_defaultShadowCaster = std::make_shared<Pass>(
+            Pass{MakeShaderCollection(Shaders::Get(Shaders::kDefaultShadowCasterVS).value(),
+                                      Shaders::Get(Shaders::kDefaultShadowCasterPS).value())});
+    }
 
     std::shared_ptr<Pass> PredefinedPasses::GetPlainShadowCaster()
     {
-        return std::shared_ptr<Pass>();
+        return g_predefinedPasses->m_defaultShadowCaster;
     }
 } // namespace dx
