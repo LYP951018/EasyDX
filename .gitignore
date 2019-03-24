@@ -270,3 +270,4 @@ Instanced/InstancingVS.hpp
 EasyDx/FakePosNormalTexVS.hpp
 EasyDx/FakePosNormalVS.hpp
 EasyDx/FakePosVS.hpp
+*.cso
