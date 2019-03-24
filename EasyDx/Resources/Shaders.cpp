@@ -201,8 +201,11 @@ namespace dx
 
     void Shader::Flush(ID3D11DeviceContext& context3D) const
     {
-        UpdateWithDiscard(context3D, dx::Ref(m_sharedData->GpuCb),
-                          gsl::span<const std::byte>(m_sharedData->CpuBuffer));
+		if (m_sharedData->GpuCb)
+		{
+			UpdateWithDiscard(context3D, dx::Ref(m_sharedData->GpuCb),
+				gsl::span<const std::byte>(m_sharedData->CpuBuffer));
+		}
     }
 
 #define BIND_WITH_PREFIX(prefix, type)                                                            \
