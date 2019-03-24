@@ -322,6 +322,8 @@ namespace dx
         DEF_SHADER_NAME(PosVS);
         DEF_SHADER_NAME(PosNormalTexVS);
         DEF_SHADER_NAME(PosNormTanTexVS);
+		DEF_SHADER_NAME(DefaultShadowCasterVS);
+		DEF_SHADER_NAME(DefaultShadowCasterPS);
 #undef DEF_SHADER_NAME
 
       private:
