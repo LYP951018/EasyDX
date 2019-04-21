@@ -21,9 +21,10 @@ int main()
     auto& loop = dx::EventLoop::GetInstanceInCurrentThread();
     // TODO: GameWindow should support fixed size
     auto window = dx::MakeUnique<dx::GameWindow>(loop, L"EasyDx", 1024, 1024);
-    dx::Game game{std::make_unique<dx::GlobalGraphicsContext>(
-                      dx::DefaultSwapChainDescFromWindowHandle(window->NativeHandle())),
-                  30};
+    dx::Game game{
+        std::make_unique<dx::GlobalGraphicsContext>(
+            dx::DefaultSwapChainDescFromWindowHandle(window->NativeHandle())),
+        30};
     auto& device3D = game.GlobalGraphics().Device3D();
     dx::Shaders::Setup();
     dx::Shaders::LoadDefaultShaders(device3D);
@@ -31,7 +32,7 @@ int main()
     dx::InputLayoutAllocator::LoadDefaultInputLayouts(device3D);
     dx::PredefinedResources::Setup(device3D);
     dx::PredefinedPasses::Initialize();
-    game.Switcher().AddSceneCreator(0,
-                                    [](dx::Game& game) { return dx::MakeUnique<MainScene>(game); });
+    game.Switcher().AddSceneCreator(
+        0, [](dx::Game& game) { return dx::MakeUnique<MainScene>(game); });
     dx::RunGame(game, std::move(window), 0);
 }

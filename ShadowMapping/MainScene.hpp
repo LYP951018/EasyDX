@@ -14,13 +14,16 @@ class MainScene : public dx::SceneBase
   private:
     void LoadScene(const dx::PredefinedResources& predefinedRes);
 
-    void CollectMaterials(const aiScene& scene, const dx::PredefinedResources& predefinedResource,
-                          std::vector<std::shared_ptr<dx::Material>>& materials);
-    void Render(ID3D11DeviceContext& context3D, dx::GlobalGraphicsContext& gfxContext,
-                const dx::Game& game);
+    void
+    CollectMaterials(const aiScene& scene, const fs::path& materialParent,
+                     const dx::PredefinedResources& predefinedResource,
+                     std::vector<std::shared_ptr<dx::Material>>& materials);
+    void Render(ID3D11DeviceContext& context3D,
+                dx::GlobalGraphicsContext& gfxContext, const dx::Game& game);
     // void InitShadowMapping(dx::Game& game);
 
-    void PrepareRenderParams(std::vector<dx::RenderNode>& nodes, dx::GlobalShaderContext& context);
+    void PrepareRenderParams(std::vector<dx::RenderNode>& nodes,
+                             dx::GlobalShaderContext& context);
     std::vector<std::shared_ptr<dx::Object>> m_objects;
     std::vector<std::shared_ptr<dx::Material>> m_materials;
     std::shared_ptr<dx::Mesh> m_quad;

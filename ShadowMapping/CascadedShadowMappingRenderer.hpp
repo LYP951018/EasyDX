@@ -15,10 +15,11 @@ struct CascadedShadowMapConfig
 class CascadedShadowMappingRenderer
 {
   public:
-    CascadedShadowMappingRenderer(ID3D11Device& device3D,
-                                  const CascadedShadowMapConfig& shadowMapConfig);
+    CascadedShadowMappingRenderer(
+        ID3D11Device& device3D, const CascadedShadowMapConfig& shadowMapConfig);
 
-    void GenerateShadowMap(const dx::GlobalGraphicsContext& gfxContext, const dx::Camera& camera,
+    void GenerateShadowMap(const dx::GlobalGraphicsContext& gfxContext,
+                           const dx::Camera& camera,
                            gsl::span<const dx::Light> lights,
                            gsl::span<const dx::RenderNode> renderNodes,
                            const dx::GlobalShaderContext& shaderContext);
@@ -26,18 +27,26 @@ class CascadedShadowMappingRenderer
     wrl::ComPtr<ID3D11ShaderResourceView> GetCsmTexArray() const;
 
   private:
-    DirectX::XMMATRIX CalcLightProjMatrix(const dx::Light& light,
-                                          DirectX::BoundingFrustum& existingFrustum, float low,
-                                          float high);
+    DirectX::XMMATRIX
+    CalcLightProjMatrix(const dx::Light& light,
+                        DirectX::BoundingFrustum& existingFrustum, float low,
+                        float high, const DirectX::XMMATRIX& lightProjMatrix,
+                        const DirectX::BoundingBox& lightSpaceViewAabb,
+                        const DirectX::XMMATRIX& viewToLight);
     void CreateCsmGenerationResources(ID3D11Device& device3D, dx::Size size);
     void CreateSssmRt(ID3D11Device& device3D, dx::Size size);
     void CreateDepthGenerationResources(ID3D11Device& device3D);
     dx::Pass MakeCollectionPass(ID3D11Device& device3D);
     // dx::Pass MakeCollectionPass(ID3D11Device& device3D);
-    void RunShadowCaster(gsl::span<const dx::RenderNode>& renderNodes,
-                         const dx::GlobalShaderContext& shaderContextForShadowMapping,
-                         ID3D11DeviceContext& context3D);
-
+    void RunShadowCaster(
+        gsl::span<const dx::RenderNode>& renderNodes,
+        const dx::GlobalShaderContext& shaderContextForShadowMapping,
+        ID3D11DeviceContext& context3D);
+    void DrawCube(gsl::span<const DirectX::XMFLOAT3> points);
+    std::shared_ptr<dx::Mesh>
+    MeshFromFrustum(ID3D11Device& device3D,
+                    const DirectX::BoundingFrustum& frustum,
+                    const DirectX::XMFLOAT4& color);
     std::array<float, kCascadedCount + 1> m_partitions;
 
     // first depth pass
@@ -51,6 +60,8 @@ class CascadedShadowMappingRenderer
     dx::DepthStencil m_shadowMapRtDepthStencil;
     CascadedArray<wrl::ComPtr<ID3D11RenderTargetView>> m_shadowMapRtViews;
     wrl::ComPtr<ID3D11SamplerState> m_nearestPointSampler;
+    std::array<std::shared_ptr<dx::Mesh>, kCascadedCount> m_lightSpaceFrustum;
+    std::shared_ptr<dx::Pass> m_cubePass;
     // dx::Pass m_generateLightSpaceDepthPass;
 
     // screen space pass
