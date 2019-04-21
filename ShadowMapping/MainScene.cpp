@@ -57,19 +57,23 @@ void MainScene::LoadScene(const dx::PredefinedResources& predefinedRes)
                                     aiProcessPreset_TargetRealtime_MaxQuality));
     CollectMaterials(*scene, modelPath.parent_path(), predefinedRes,
                      m_materials);
-	using namespace DirectX;
+    using namespace DirectX;
     for (const aiMesh* aiMesh_ : dx::GetMeshesInScene(*scene))
     {
         std::shared_ptr<dx::Mesh> mesh =
             dx::ConvertToImmutableMesh(Device3D, *aiMesh_);
-        m_objects.push_back(std::make_shared<dx::Object>(dx::MeshRenderer{
-			mesh, m_materials[aiMesh_->mMaterialIndex] }));
-		m_objects.push_back(std::make_shared<dx::Object>(dx::MeshRenderer{
-			mesh, m_materials[aiMesh_->mMaterialIndex] }, dx::TransformComponent{ dx::Transform(XMVectorSet(1.0f, 1.0f, 1.0f, 1.0f), XMQuaternionIdentity(),
-			XMVectorSet(0.0f, 0.0f, 15.0f, 0.0f)) }));
-		m_objects.push_back(std::make_shared<dx::Object>(dx::MeshRenderer{
-			mesh, m_materials[aiMesh_->mMaterialIndex] }, dx::TransformComponent{ dx::Transform(XMVectorSet(1.0f, 1.0f, 1.0f, 1.0f), XMQuaternionIdentity(),
-			XMVectorSet(0.0f, 0.0f, 20.0f, 0.0f)) }));
+        m_objects.push_back(std::make_shared<dx::Object>(
+            dx::MeshRenderer{mesh, m_materials[aiMesh_->mMaterialIndex]}));
+        m_objects.push_back(std::make_shared<dx::Object>(
+            dx::MeshRenderer{mesh, m_materials[aiMesh_->mMaterialIndex]},
+            dx::TransformComponent{dx::Transform(
+                XMVectorSet(1.0f, 1.0f, 1.0f, 1.0f), XMQuaternionIdentity(),
+                XMVectorSet(0.0f, 0.0f, 15.0f, 0.0f))}));
+        m_objects.push_back(std::make_shared<dx::Object>(
+            dx::MeshRenderer{mesh, m_materials[aiMesh_->mMaterialIndex]},
+            dx::TransformComponent{dx::Transform(
+                XMVectorSet(1.0f, 1.0f, 1.0f, 1.0f), XMQuaternionIdentity(),
+                XMVectorSet(0.0f, 0.0f, 20.0f, 0.0f))}));
     }
 }
 

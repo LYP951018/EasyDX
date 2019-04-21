@@ -66,7 +66,7 @@ void CascadedShadowMappingRenderer::GenerateShadowMap(
     BoundingFrustum lightSpaceFrustum;
     XMMATRIX lightSpaceViewMatrix;
     XMMATRIX lightSpaceProjMatrix;
-	XMMATRIX viewToLight;
+    XMMATRIX viewToLight;
     switch (mainLight.index())
     {
         case dx::kDirectionalLight:
@@ -75,12 +75,11 @@ void CascadedShadowMappingRenderer::GenerateShadowMap(
             lightSpaceViewMatrix = XMMatrixLookToLH(
                 XMVectorZero(), Load(directionalLight.Direction),
                 XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f));
-			viewToLight =
-				XMMatrixInverse({}, camera.GetView()) * lightSpaceViewMatrix;
-			BoundingBox lightSpaceAabb;
-			viewSpaceSceneAabb.Transform(lightSpaceAabb, viewToLight);
-            lightSpaceProjMatrix =
-                OrthographicFromBoundingBox(lightSpaceAabb);
+            viewToLight =
+                XMMatrixInverse({}, camera.GetView()) * lightSpaceViewMatrix;
+            BoundingBox lightSpaceAabb;
+            viewSpaceSceneAabb.Transform(lightSpaceAabb, viewToLight);
+            lightSpaceProjMatrix = OrthographicFromBoundingBox(lightSpaceAabb);
         }
     }
 
@@ -251,50 +250,54 @@ DirectX::XMMATRIX CascadedShadowMappingRenderer::CalcLightProjMatrix(
             existingFrustum.Near = low;
             existingFrustum.Far = high;
             XMFLOAT3 frustumCorners[8];
-			XMFLOAT3 boxCorners[8];
-			XMFLOAT3 corners[8];
-			BoundingBox frustumBox;
+            XMFLOAT3 boxCorners[8];
+            XMFLOAT3 corners[8];
+            BoundingBox frustumBox;
             existingFrustum.GetCorners(frustumCorners);
-			BoundingBox::CreateFromPoints(frustumBox, 8, frustumCorners, sizeof(XMFLOAT3));
-			frustumBox.GetCorners(frustumCorners);
+            BoundingBox::CreateFromPoints(frustumBox, 8, frustumCorners,
+                                          sizeof(XMFLOAT3));
+            frustumBox.GetCorners(frustumCorners);
             viewSpaceAabb.GetCorners(boxCorners);
-			/*
-			const auto select = [&](int index) {
-				const XMFLOAT3& boxCorner = boxCorners[index];
-				const XMFLOAT3& frustumCorner = frustumCorners[index];
-				const XMVECTOR minBox = XMLoadFloat3(&boxCorner);
-				const XMVECTOR minFrustum = XMLoadFloat3(&frustumCorner);
-				return XMVectorMin(g_BoxOffset[index] * minBox, g_BoxOffset[index] * minFrustum);
-				
-			};
+            /*
+            const auto select = [&](int index) {
+                    const XMFLOAT3& boxCorner = boxCorners[index];
+                    const XMFLOAT3& frustumCorner = frustumCorners[index];
+                    const XMVECTOR minBox = XMLoadFloat3(&boxCorner);
+                    const XMVECTOR minFrustum = XMLoadFloat3(&frustumCorner);
+                    return XMVectorMin(g_BoxOffset[index] * minBox,
+            g_BoxOffset[index] * minFrustum);
+                    
+            };
 
-			BoundingBox newBox;
-			BoundingBox::CreateFromPoints(newBox, select(2), select(4));
-			newBox.GetCorners(corners);*/
-			for (int i = 0; i < 8; ++i)
-			{
-				const float* offset = g_BoxOffset[i];
-				const XMFLOAT3& boxCorner = boxCorners[i];
-				const XMFLOAT3& frustumCorner = frustumCorners[i];
-				const auto select = [&](int index)
-				{
-					const float selector = offset[index];
-					return selector * std::min(selector * (&boxCorner.x)[index], selector * (&frustumCorner.x)[index]);
-				};
-				corners[i] = { select(0), select(1), select(2) };
-			}
+            BoundingBox newBox;
+            BoundingBox::CreateFromPoints(newBox, select(2), select(4));
+            newBox.GetCorners(corners);*/
+            for (int i = 0; i < 8; ++i)
+            {
+                const float* offset = g_BoxOffset[i];
+                const XMFLOAT3& boxCorner = boxCorners[i];
+                const XMFLOAT3& frustumCorner = frustumCorners[i];
+                const auto select = [&](int index) {
+                    const float selector = offset[index];
+                    return selector *
+                           std::min(selector * (&boxCorner.x)[index],
+                                    selector * (&frustumCorner.x)[index]);
+                };
+                corners[i] = {select(0), select(1), select(2)};
+            }
 
-			BoundingBox newBox;
-			BoundingBox::CreateFromPoints(newBox, 8, corners, sizeof(XMFLOAT3));
-			newBox.Transform(newBox, viewToLight);
-			newBox.GetCorners(corners);
-			//for (int i = 0; i < 8; ++i)
-			//{
-			//	const XMFLOAT3& frustumCorner = frustumCorners[i];
-			//	const XMFLOAT3& boxCorner = boxCorners[i];
-			//	const XMVECTOR minimum = XMVectorMin(XMLoadFloat3(&frustumCorner), XMLoadFloat3(&boxCorner));
-			//	XMStoreFloat3(corners + i, minimum);
-			//}
+            BoundingBox newBox;
+            BoundingBox::CreateFromPoints(newBox, 8, corners, sizeof(XMFLOAT3));
+            newBox.Transform(newBox, viewToLight);
+            newBox.GetCorners(corners);
+            // for (int i = 0; i < 8; ++i)
+            //{
+            //	const XMFLOAT3& frustumCorner = frustumCorners[i];
+            //	const XMFLOAT3& boxCorner = boxCorners[i];
+            //	const XMVECTOR minimum =
+            //XMVectorMin(XMLoadFloat3(&frustumCorner),
+            //XMLoadFloat3(&boxCorner)); 	XMStoreFloat3(corners + i, minimum);
+            //}
 
             // Then, each corner point p of the camera’s
             // frustum slice is projected into p h = PMp in the light’s
