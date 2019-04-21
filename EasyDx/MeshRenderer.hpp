@@ -10,7 +10,8 @@ namespace dx
     class MeshRenderer : public ComponentBase
     {
       public:
-        MeshRenderer(std::shared_ptr<Mesh> mesh, std::shared_ptr<Material> material);
+        MeshRenderer(std::shared_ptr<Mesh> mesh,
+                     std::shared_ptr<Material> material);
 
         Mesh& GetMesh() const;
         std::shared_ptr<Mesh> SharedMesh() const { return m_mesh; }

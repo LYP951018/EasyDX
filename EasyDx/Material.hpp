@@ -14,8 +14,10 @@ namespace dx
     };
 
     inline constexpr Smoothness kDefaultSmoothness =
-        Smoothness{DirectX::XMFLOAT4{0, 0, 0, 1.0}, DirectX::XMFLOAT4{0.55, 0.55, 0.55, 1.0},
-                   DirectX::XMFLOAT4{0.7, 0.7, 0.7, 1.0}, DirectX::XMFLOAT4{}, float{32.0f}};
+        Smoothness{DirectX::XMFLOAT4{0, 0, 0, 1.0},
+                   DirectX::XMFLOAT4{0.55, 0.55, 0.55, 1.0},
+                   DirectX::XMFLOAT4{0.7, 0.7, 0.7, 1.0}, DirectX::XMFLOAT4{},
+                   float{32.0f}};
 
     struct BlendSettings
     {
@@ -24,7 +26,8 @@ namespace dx
         std::uint32_t SampleMask;
     };
 
-    void SetupBlending(ID3D11DeviceContext& context3D, const BlendSettings& blendSettings);
+    void SetupBlending(ID3D11DeviceContext& context3D,
+                       const BlendSettings& blendSettings);
 
     struct DepthStencilSettings
     {
@@ -32,8 +35,9 @@ namespace dx
         std::uint32_t StencilRef;
     };
 
-    void SetupDepthStencilStates(ID3D11DeviceContext& context3D,
-                                 const DepthStencilSettings& depthStencilSettings);
+    void
+    SetupDepthStencilStates(ID3D11DeviceContext& context3D,
+                            const DepthStencilSettings& depthStencilSettings);
 
     struct Pass
     {
@@ -56,22 +60,26 @@ namespace dx
         static void Initialize();
         static std::shared_ptr<Pass> GetPlainShadowCaster();
 
-	private:
-		std::shared_ptr<Pass> m_defaultShadowCaster;
+      private:
+        std::shared_ptr<Pass> m_defaultShadowCaster;
     };
 
-    void SetupRasterizerState(ID3D11DeviceContext& context3D, ID3D11RasterizerState& rasterState);
+    void SetupRasterizerState(ID3D11DeviceContext& context3D,
+                              ID3D11RasterizerState& rasterState);
     void SetupPass(ID3D11DeviceContext& context3D, const Pass& pass);
 
     // TODO: multi pass?
     struct Material
     {
-        Material(std::shared_ptr<Pass> mainPass, std::shared_ptr<Pass> shadowCasterPass)
-            : mainPass{std::move(mainPass)}, shadowCasterPass{std::move(shadowCasterPass)}
+        Material(std::shared_ptr<Pass> mainPass,
+                 std::shared_ptr<Pass> shadowCasterPass)
+            : mainPass{std::move(mainPass)}, shadowCasterPass{
+                                                 std::move(shadowCasterPass)}
         {}
 
         Material(std::shared_ptr<Pass> mainPass)
-            : Material{std::move(mainPass), PredefinedPasses::GetPlainShadowCaster()}
+            : Material{std::move(mainPass),
+                       PredefinedPasses::GetPlainShadowCaster()}
         {}
 
         DEFAULT_MOVE(Material)

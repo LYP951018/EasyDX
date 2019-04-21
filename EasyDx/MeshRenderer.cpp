@@ -6,7 +6,8 @@
 
 namespace dx
 {
-    MeshRenderer::MeshRenderer(std::shared_ptr<Mesh> mesh, std::shared_ptr<Material> material)
+    MeshRenderer::MeshRenderer(std::shared_ptr<Mesh> mesh,
+                               std::shared_ptr<Material> material)
         : m_mesh{std::move(mesh)}, m_material{std::move(material)}
     {}
 

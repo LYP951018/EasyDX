@@ -29,13 +29,15 @@ namespace dx
 
         TryHR(D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, options,
                                 fanctory2D_.ReleaseAndGetAddressOf()));
-        TryHR(fanctory2D_->CreateDevice(dxgiDevice_.Get(), device2D_.ReleaseAndGetAddressOf()));
-        TryHR(device2D_->CreateDeviceContext(D2D1_DEVICE_CONTEXT_OPTIONS_NONE,
-                                             context2D_.ReleaseAndGetAddressOf()));
+        TryHR(fanctory2D_->CreateDevice(dxgiDevice_.Get(),
+                                        device2D_.ReleaseAndGetAddressOf()));
+        TryHR(device2D_->CreateDeviceContext(
+            D2D1_DEVICE_CONTEXT_OPTIONS_NONE,
+            context2D_.ReleaseAndGetAddressOf()));
 
-        TryHR(
-            DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED, __uuidof(IDWriteFactory1),
-                                reinterpret_cast<IUnknown**>(dwFactory_.ReleaseAndGetAddressOf())));
+        TryHR(DWriteCreateFactory(
+            DWRITE_FACTORY_TYPE_SHARED, __uuidof(IDWriteFactory1),
+            reinterpret_cast<IUnknown**>(dwFactory_.ReleaseAndGetAddressOf())));
     }
 
     namespace Internal
@@ -51,32 +53,40 @@ namespace dx
         }
     } // namespace Internal
 
-    wrl::ComPtr<ID3D11Texture2D> GetBuffer(IDXGISwapChain& swapChain, std::uint32_t index)
+    wrl::ComPtr<ID3D11Texture2D> GetBuffer(IDXGISwapChain& swapChain,
+                                           std::uint32_t index)
     {
         wrl::ComPtr<ID3D11Texture2D> tex;
         void* ptr;
-        TryHR(swapChain.GetBuffer(gsl::narrow<UINT>(index), __uuidof(ID3D11Texture2D), &ptr));
+        TryHR(swapChain.GetBuffer(gsl::narrow<UINT>(index),
+                                  __uuidof(ID3D11Texture2D), &ptr));
         tex.Attach(static_cast<ID3D11Texture2D*>(ptr));
-        // leak: return wrl::ComPtr<ID3D11Texture2D>{static_cast<ID3D11Texture2D*>(ptr)}
+        // leak: return
+        // wrl::ComPtr<ID3D11Texture2D>{static_cast<ID3D11Texture2D*>(ptr)}
         return tex;
     }
 
-    DXGI_SWAP_CHAIN_DESC DefaultSwapChainDescFromWindowHandle(void* windowHandle)
+    DXGI_SWAP_CHAIN_DESC
+    DefaultSwapChainDescFromWindowHandle(void* windowHandle)
     {
         return SwapChainDescBuilder{}.WindowHandle(windowHandle).Build();
     }
 
-    SwapChain::SwapChain(ID3D11Device& device, const DXGI_SWAP_CHAIN_DESC& options)
+    SwapChain::SwapChain(ID3D11Device& device,
+                         const DXGI_SWAP_CHAIN_DESC& options)
     {
         wrl::ComPtr<IDXGIDevice1> dxgiDevice;
         TryHR(device.QueryInterface(dxgiDevice.GetAddressOf()));
-        const auto adapter = Internal::GetParent<IDXGIAdapter1>(Ref(dxgiDevice));
+        const auto adapter =
+            Internal::GetParent<IDXGIAdapter1>(Ref(dxgiDevice));
         const auto factory = Internal::GetParent<IDXGIFactory1>(Ref(adapter));
-        // CreateSwapChain 接受的 Desc 不是 const，IDXGIFactory2::CreateSwapChainForHwnd 接受的 desc
-        // 是 const
+        // CreateSwapChain 接受的 Desc 不是
+        // const，IDXGIFactory2::CreateSwapChainForHwnd 接受的 desc 是
+        // const
         // TODO: switch to CreateSwapChainForHwnd
         auto fuckMsCopy = options;
-        TryHR(factory->CreateSwapChain(&device, &fuckMsCopy, swapChain_.GetAddressOf()));
+        TryHR(factory->CreateSwapChain(&device, &fuckMsCopy,
+                                       swapChain_.GetAddressOf()));
         UpdateBuffers(device);
     }
 
@@ -89,12 +99,13 @@ namespace dx
     void SwapChain::Reset() { m_backBuffer.Reset(); }
 
     // https://stackoverflow.com/questions/28095798/how-to-change-window-size-in-directx-11-desktop-application
-    void SwapChain::Resize(ID3D11Device& device, const DXGI_SWAP_CHAIN_DESC& options)
+    void SwapChain::Resize(ID3D11Device& device,
+                           const DXGI_SWAP_CHAIN_DESC& options)
     {
-        TryHR(swapChain_->ResizeBuffers(options.BufferCount,
-                                        gsl::narrow<UINT>(options.BufferDesc.Width),
-                                        gsl::narrow<UINT>(options.BufferDesc.Height),
-                                        options.BufferDesc.Format, options.Flags));
+        TryHR(swapChain_->ResizeBuffers(
+            options.BufferCount, gsl::narrow<UINT>(options.BufferDesc.Width),
+            gsl::narrow<UINT>(options.BufferDesc.Height),
+            options.BufferDesc.Format, options.Flags));
         UpdateBuffers(device);
     }
 
@@ -110,21 +121,25 @@ namespace dx
     void SwapChain::UpdateBuffers(ID3D11Device&)
     {
         // https://msdn.microsoft.com/en-us/library/windows/desktop/mt427784%28v=vs.85%29.aspx
-        // In Direct3D 11, applications could call GetBuffer(0, ��) only once.Every call to Present
-        // implicitly changed the resource identity of the returned interface.
+        // In Direct3D 11, applications could call GetBuffer(0, ��) only
+        // once.Every call to Present implicitly changed the resource
+        // identity of the returned interface.
         m_backBuffer = GetBuffer(Ref(swapChain_), 0);
     }
 
-    DepthStencil::DepthStencil(ID3D11Device& device, const Size& size, DxgiFormat format)
+    DepthStencil::DepthStencil(ID3D11Device& device, const Size& size,
+                               DxgiFormat format)
     {
-        CD3D11_TEXTURE2D_DESC desc{static_cast<DXGI_FORMAT>(format), size.Width, size.Height};
+        CD3D11_TEXTURE2D_DESC desc{static_cast<DXGI_FORMAT>(format), size.Width,
+                                   size.Height};
         desc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
         TryHR(device.CreateTexture2D(&desc, {}, tex_.GetAddressOf()));
         SetName(Ref(tex_), "Depth Buffer");
         D3D11_DEPTH_STENCIL_VIEW_DESC depthDesc{};
         depthDesc.Format = static_cast<DXGI_FORMAT>(format);
         depthDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
-        TryHR(device.CreateDepthStencilView(tex_.Get(), &depthDesc, view_.GetAddressOf()));
+        TryHR(device.CreateDepthStencilView(tex_.Get(), &depthDesc,
+                                            view_.GetAddressOf()));
     }
 
     void DepthStencil::ClearDepth(ID3D11DeviceContext& context, float depth)
@@ -132,15 +147,17 @@ namespace dx
         context.ClearDepthStencilView(View(), D3D11_CLEAR_DEPTH, depth, {});
     }
 
-    void DepthStencil::ClearStencil(ID3D11DeviceContext& context, std::uint8_t stencil)
+    void DepthStencil::ClearStencil(ID3D11DeviceContext& context,
+                                    std::uint8_t stencil)
     {
         context.ClearDepthStencilView(View(), D3D11_CLEAR_STENCIL, {}, stencil);
     }
 
-    void DepthStencil::ClearBoth(ID3D11DeviceContext& context, float depth, std::uint8_t stencil)
+    void DepthStencil::ClearBoth(ID3D11DeviceContext& context, float depth,
+                                 std::uint8_t stencil)
     {
-        context.ClearDepthStencilView(View(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, depth,
-                                      stencil);
+        context.ClearDepthStencilView(
+            View(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, depth, stencil);
     }
 
     void DepthStencil::Reset()
@@ -159,7 +176,8 @@ namespace dx
         m_desc.Windowed = TRUE;
     }
 
-    SwapChainDescBuilder& SwapChainDescBuilder::Size(std::uint32_t width, std::uint32_t height)
+    SwapChainDescBuilder& SwapChainDescBuilder::Size(std::uint32_t width,
+                                                     std::uint32_t height)
     {
         auto& bufferDesc = m_desc.BufferDesc;
         bufferDesc.Width = width;
@@ -197,7 +215,8 @@ namespace dx
         return *this;
     }
 
-    SwapChainDescBuilder& SwapChainDescBuilder::SwapEffect(DxgiSwapEffect effect)
+    SwapChainDescBuilder&
+    SwapChainDescBuilder::SwapEffect(DxgiSwapEffect effect)
     {
         m_desc.SwapEffect = static_cast<DXGI_SWAP_EFFECT>(effect);
         return *this;
@@ -230,7 +249,8 @@ namespace dx
         ClearMainRt(Context3D(), color);
     }
 
-    DependentGraphics::DependentGraphics(ID3D11Device& device3D, const DXGI_SWAP_CHAIN_DESC& desc)
+    DependentGraphics::DependentGraphics(ID3D11Device& device3D,
+                                         const DXGI_SWAP_CHAIN_DESC& desc)
         : SwapChainDesc{desc}, m_swapChain{device3D, desc}
     {
         // hack
@@ -243,15 +263,17 @@ namespace dx
         m_depthStencil = DepthStencil{device3D, m_swapChain.BufferSize()};
     }
 
-    void DependentGraphics::ClearMainRt(ID3D11DeviceContext& context3D, DirectX::XMVECTOR color)
+    void DependentGraphics::ClearMainRt(ID3D11DeviceContext& context3D,
+                                        DirectX::XMVECTOR color)
     {
         DirectX::XMFLOAT4 colorFloats;
         DirectX::XMStoreFloat4(&colorFloats, color);
-        context3D.ClearRenderTargetView(m_mainRt.Get(),
-                                        reinterpret_cast<const float*>(&colorFloats));
+        context3D.ClearRenderTargetView(
+            m_mainRt.Get(), reinterpret_cast<const float*>(&colorFloats));
     }
 
-    void DependentGraphics::OnResize(ID3D11Device& device3D, ID3D11DeviceContext& context3D,
+    void DependentGraphics::OnResize(ID3D11Device& device3D,
+                                     ID3D11DeviceContext& context3D,
                                      [[maybe_unused]] const Size& newSize)
     {
         // https://docs.microsoft.com/en-us/windows/desktop/direct3ddxgi/d3d10-graphics-programming-guide-dxgi#handling-window-resizing
@@ -270,8 +292,9 @@ namespace dx
         D3D11_RENDER_TARGET_VIEW_DESC rtDesc{};
         rtDesc.Format = SwapChainDesc.BufferDesc.Format;
         rtDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
-        TryHR(device3D.CreateRenderTargetView(&GetSwapChain().Front(), &rtDesc,
-                                              m_mainRt.ReleaseAndGetAddressOf()));
+        TryHR(
+            device3D.CreateRenderTargetView(&GetSwapChain().Front(), &rtDesc,
+                                            m_mainRt.ReleaseAndGetAddressOf()));
     }
 
 } // namespace dx

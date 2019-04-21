@@ -62,7 +62,8 @@ namespace dx
         queuedCallbacks_.push(std::move(action));
     }
 
-    EventLoop::EventLoop() : resized_{}, threadRunning_{std::this_thread::get_id()}
+    EventLoop::EventLoop()
+        : resized_{}, threadRunning_{std::this_thread::get_id()}
     {
         pumpingThread_ = std::thread{[&] { MessagePump(); }};
         pumpingThread_.detach();
@@ -121,61 +122,69 @@ namespace dx
                 static_cast<std::int32_t>(GET_Y_LPARAM(lParam))};
     }
 
-    void ProcessMessage(GameWindow& window, std::uint32_t messageId, std::uintptr_t wParam,
-                        std::intptr_t lParam) noexcept
+    void ProcessMessage(GameWindow& window, std::uint32_t messageId,
+                        std::uintptr_t wParam, std::intptr_t lParam) noexcept
     {
         const auto MakeKeyStates = [&]() noexcept
         {
             return KeyStates{static_cast<std::uint32_t>(wParam)};
         };
         auto& eventLoop = EventLoop::GetInstanceInCurrentThread();
-        const auto PushEvent = [&](auto arg) { eventLoop.PushEvent(&window, std::move(arg)); };
+        const auto PushEvent = [&](auto arg) {
+            eventLoop.PushEvent(&window, std::move(arg));
+        };
 
         switch (messageId)
         {
-        case WM_SIZE:
-        {
-            const auto newWidth = static_cast<std::uint32_t>(lParam & 0xFFFF);
-            const auto newHeight = static_cast<std::uint32_t>(lParam >> 16);
-            eventLoop.PushResizeEvent(&window, ResizeEventArgs{newWidth, newHeight});
-        }
-        break;
-        case WM_DESTROY:
-            // TODO
-            ::PostQuitMessage(0);
+            case WM_SIZE:
+            {
+                const auto newWidth =
+                    static_cast<std::uint32_t>(lParam & 0xFFFF);
+                const auto newHeight = static_cast<std::uint32_t>(lParam >> 16);
+                eventLoop.PushResizeEvent(&window,
+                                          ResizeEventArgs{newWidth, newHeight});
+            }
             break;
-        case WM_DPICHANGED:
-        {
-            const auto newDpiX = static_cast<std::uint32_t>(LOWORD(wParam));
-            const auto newDpiY = static_cast<std::uint32_t>(HIWORD(wParam));
-            const auto rect = *reinterpret_cast<const RECT*>(lParam);
-            const auto newRect = IntRect::FromRECT(rect);
-            PushEvent(DpiChangedEventArgs{newDpiX, newDpiY, newRect});
-        }
-        break;
-        // TODO: Right buttons
-        case WM_LBUTTONDOWN:
-            PushEvent(KeyEventArgs{static_cast<std::uint32_t>(VirtualKey::kLeftButton),
-                                   ElementState::Pressed, MakeKeyStates()});
+            case WM_DESTROY:
+                // TODO
+                ::PostQuitMessage(0);
+                break;
+            case WM_DPICHANGED:
+            {
+                const auto newDpiX = static_cast<std::uint32_t>(LOWORD(wParam));
+                const auto newDpiY = static_cast<std::uint32_t>(HIWORD(wParam));
+                const auto rect = *reinterpret_cast<const RECT*>(lParam);
+                const auto newRect = IntRect::FromRECT(rect);
+                PushEvent(DpiChangedEventArgs{newDpiX, newDpiY, newRect});
+            }
             break;
-        case WM_LBUTTONUP:
-            PushEvent(KeyEventArgs{static_cast<std::uint32_t>(VirtualKey::kLeftButton),
-                                   ElementState::Released, MakeKeyStates()});
-            break;
-        case WM_KEYDOWN:
-            PushEvent(KeyEventArgs{static_cast<std::uint32_t>(wParam), ElementState::Pressed,
-                                   MakeKeyStates()});
-            break;
-        case WM_KEYUP:
-            PushEvent(KeyEventArgs{static_cast<std::uint32_t>(wParam), ElementState::Released,
-                                   MakeKeyStates()});
-            break;
-        default:
-            break;
+            // TODO: Right buttons
+            case WM_LBUTTONDOWN:
+                PushEvent(KeyEventArgs{
+                    static_cast<std::uint32_t>(VirtualKey::kLeftButton),
+                    ElementState::Pressed, MakeKeyStates()});
+                break;
+            case WM_LBUTTONUP:
+                PushEvent(KeyEventArgs{
+                    static_cast<std::uint32_t>(VirtualKey::kLeftButton),
+                    ElementState::Released, MakeKeyStates()});
+                break;
+            case WM_KEYDOWN:
+                PushEvent(KeyEventArgs{static_cast<std::uint32_t>(wParam),
+                                       ElementState::Pressed, MakeKeyStates()});
+                break;
+            case WM_KEYUP:
+                PushEvent(KeyEventArgs{static_cast<std::uint32_t>(wParam),
+                                       ElementState::Released,
+                                       MakeKeyStates()});
+                break;
+            default:
+                break;
         }
     }
 
-    ::LRESULT __stdcall EventLoop::WndProc(::HWND windowHandle, ::UINT messageId, ::WPARAM wParam,
+    ::LRESULT __stdcall EventLoop::WndProc(::HWND windowHandle,
+                                           ::UINT messageId, ::WPARAM wParam,
                                            ::LPARAM lParam) noexcept
     {
         GameWindow* window = {};
@@ -184,11 +193,13 @@ namespace dx
             const auto pcs = reinterpret_cast<::CREATESTRUCT*>(lParam);
             window = static_cast<GameWindow*>(pcs->lpCreateParams);
             Ensures(window != nullptr);
-            ::SetWindowLongPtr(windowHandle, GWLP_USERDATA, reinterpret_cast<::LONG_PTR>(window));
+            ::SetWindowLongPtr(windowHandle, GWLP_USERDATA,
+                               reinterpret_cast<::LONG_PTR>(window));
         }
         else
         {
-            window = reinterpret_cast<GameWindow*>(::GetWindowLongPtr(windowHandle, GWLP_USERDATA));
+            window = reinterpret_cast<GameWindow*>(
+                ::GetWindowLongPtr(windowHandle, GWLP_USERDATA));
             if (window != nullptr)
             {
                 ProcessMessage(*window, static_cast<std::uint32_t>(messageId),

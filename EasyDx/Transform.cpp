@@ -4,7 +4,8 @@
 namespace dx
 {
     Transform::Transform()
-        : m_dirty{true}, m_position{}, m_scale{1.0f, 1.0f, 1.0f}, m_data{aligned_unique<Data>()}
+        : m_dirty{true}, m_position{}, m_scale{1.0f, 1.0f, 1.0f},
+          m_data{aligned_unique<Data>()}
     {
         m_data->Rotation = DirectX::XMQuaternionIdentity();
     }
@@ -49,8 +50,8 @@ namespace dx
         {
             const auto position = XMLoadFloat3(&m_position);
             const auto scale = XMLoadFloat3(&m_scale);
-            m_data->Matrix =
-                XMMatrixAffineTransformation(scale, XMVectorZero(), m_data->Rotation, position);
+            m_data->Matrix = XMMatrixAffineTransformation(
+                scale, XMVectorZero(), m_data->Rotation, position);
         }
         return m_data->Matrix;
     }

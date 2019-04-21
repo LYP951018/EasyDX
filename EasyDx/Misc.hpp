@@ -30,7 +30,8 @@ namespace dx
     DirectX::XMFLOAT4 MakePosition4(const DirectX::XMFLOAT3& position) noexcept;
     DirectX::XMFLOAT4 MakePosition4(float x, float y, float z) noexcept;
     DirectX::XMFLOAT4 MakePosition4(DirectX::XMVECTOR vec) noexcept;
-    DirectX::XMFLOAT4 MakeDirection4(const DirectX::XMFLOAT3& direction) noexcept;
+    DirectX::XMFLOAT4
+    MakeDirection4(const DirectX::XMFLOAT3& direction) noexcept;
     DirectX::XMFLOAT4 MakeDirection4(float x, float y, float z) noexcept;
     DirectX::XMFLOAT4 MakeDirection4(DirectX::XMVECTOR vec) noexcept;
 

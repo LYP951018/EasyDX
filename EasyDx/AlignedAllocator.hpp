@@ -20,13 +20,20 @@ namespace dx
 
         pointer allocate(std::size_t n)
         {
-            return static_cast<pointer>(AlignedAlloc(n * sizeof(value_type), alignof(value_type)));
+            return static_cast<pointer>(
+                AlignedAlloc(n * sizeof(value_type), alignof(value_type)));
         }
 
-        void deallocate(pointer ptr, std::size_t n) noexcept { AlignedFree(ptr); }
+        void deallocate(pointer ptr, std::size_t n) noexcept
+        {
+            AlignedFree(ptr);
+        }
 
         bool operator==(const AlignAllocator& rhs) noexcept { return true; }
-        bool operator!=(const AlignAllocator& rhs) noexcept { return !(*this == rhs); }
+        bool operator!=(const AlignAllocator& rhs) noexcept
+        {
+            return !(*this == rhs);
+        }
     };
 
     template<typename T>
@@ -38,14 +45,16 @@ namespace dx
     template<typename T>
     aligned_unique_ptr<T> aligned_unique()
     {
-        return {static_cast<std::add_pointer_t<T>>(dx::AlignedAlloc(sizeof(T), alignof(T))),
+        return {static_cast<std::add_pointer_t<T>>(
+                    dx::AlignedAlloc(sizeof(T), alignof(T))),
                 dx::AlignedFree};
     }
 
     template<typename T>
     aligned_unique_ptr<T[]> aligned_unique(std::size_t n)
     {
-        return {static_cast<std::add_pointer_t<T>>(dx::AlignedAlloc(sizeof(T) * n, alignof(T))),
+        return {static_cast<std::add_pointer_t<T>>(
+                    dx::AlignedAlloc(sizeof(T) * n, alignof(T))),
                 dx::AlignedFree};
     }
 

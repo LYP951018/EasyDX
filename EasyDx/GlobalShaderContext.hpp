@@ -14,14 +14,15 @@ namespace dx
         DirectX::XMMATRIX ViewMatrix;
         DirectX::XMMATRIX ProjMatrix;
         DirectX::XMMATRIX ViewProjMatrix;
-		DirectX::XMFLOAT3 EyePos;
-		cb::Light lights[10];
-		int lightCount;
+        DirectX::XMFLOAT3 EyePos;
+        cb::Light lights[10];
+        int lightCount;
 
         void Flush();
 
       private:
         friend class Shader;
-        void Apply(const std::unordered_map<std::string, gsl::span<std::byte>>& bytesMap) const;
+        void Apply(const std::unordered_map<std::string, gsl::span<std::byte>>&
+                       bytesMap) const;
     };
 } // namespace dx

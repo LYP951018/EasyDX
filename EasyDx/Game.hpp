@@ -23,13 +23,14 @@ namespace dx
 
         void AddSceneCreator(std::uint32_t index, SceneCreator creator);
 
-        template<typename EnumT, typename = std::enable_if_t<std::is_enum_v<EnumT>>>
+        template<typename EnumT,
+                 typename = std::enable_if_t<std::is_enum_v<EnumT>>>
         void AddSceneCreator(EnumT index, SceneCreator creator)
         {
             using type = std::underlying_type_t<EnumT>;
-            static_assert(
-                sizeof(type) < sizeof(std::uint32_t),
-                "The size of enum's underlying type should be less than sizeof(std::uint32_t).");
+            static_assert(sizeof(type) < sizeof(std::uint32_t),
+                          "The size of enum's underlying type should be "
+                          "less than sizeof(std::uint32_t).");
             AddSceneCreator(static_cast<type>(index), std::move(creator));
         }
 
@@ -59,7 +60,8 @@ namespace dx
         friend void RunGame(Game&, std::unique_ptr<GameWindow>, std::uint32_t);
 
       public:
-        Game(std::unique_ptr<GlobalGraphicsContext> globalGraphics, std::uint32_t fps);
+        Game(std::unique_ptr<GlobalGraphicsContext> globalGraphics,
+             std::uint32_t fps);
         ~Game();
 
         WindowResizeEvent WindowResize;
@@ -68,8 +70,14 @@ namespace dx
         GameWindow& MainWindow() const { return *mainWindow_; }
         GlobalGraphicsContext& GlobalGraphics() { return *m_globalGraphics; }
         SceneSwitcher& Switcher() noexcept { return sceneSwitcher_; }
-        const SceneSwitcher& Switcher() const noexcept { return sceneSwitcher_; }
-        const InputSystem& GetInputSystem() const noexcept { return *m_inputSystem; }
+        const SceneSwitcher& Switcher() const noexcept
+        {
+            return sceneSwitcher_;
+        }
+        const InputSystem& GetInputSystem() const noexcept
+        {
+            return *m_inputSystem;
+        }
 
       private:
         friend struct MessageDispatcher;
@@ -88,5 +96,6 @@ namespace dx
         std::uint32_t fps_;
     };
 
-    void RunGame(Game& game, std::unique_ptr<GameWindow> mainWindow, std::uint32_t mainSceneIndex);
+    void RunGame(Game& game, std::unique_ptr<GameWindow> mainWindow,
+                 std::uint32_t mainSceneIndex);
 } // namespace dx

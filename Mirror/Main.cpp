@@ -8,12 +8,19 @@ using namespace DirectX;
 
 int main()
 {
-    dx::IndependentGraphics independent;
     auto& loop = dx::EventLoop::GetInstanceInCurrentThread();
     auto window = dx::MakeUnique<dx::GameWindow>(loop);
-    auto game = dx::MakeUnique<dx::Game>(std::move(independent), 30);
-    game->Switcher().AddSceneCreator(0, [](dx::Game& game) {
-        return dx::MakeUnique<MainScene>(game);
-    });
-    dx::RunGame(*game, std::move(window), 0);
+    dx::Game game{
+        std::make_unique<dx::GlobalGraphicsContext>(
+            dx::DefaultSwapChainDescFromWindowHandle(window->NativeHandle())),
+        30};
+    auto& device3D = game.GlobalGraphics().Device3D();
+    dx::Shaders::Setup();
+    dx::Shaders::LoadDefaultShaders(device3D);
+    dx::InputLayoutAllocator::Setup();
+    dx::InputLayoutAllocator::LoadDefaultInputLayouts(device3D);
+    dx::PredefinedResources::Setup(device3D);
+    game.Switcher().AddSceneCreator(
+        0, [](dx::Game& game) { return dx::MakeUnique<MainScene>(game); });
+    dx::RunGame(game, std::move(window), 0);
 }

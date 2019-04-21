@@ -43,7 +43,8 @@ namespace dx
         return g_predefineResources->drawnOnly_;
     }
 
-    wrl::ComPtr<ID3D11DepthStencilState> PredefinedResources::GetNoDoubleBlending()
+    wrl::ComPtr<ID3D11DepthStencilState>
+    PredefinedResources::GetNoDoubleBlending()
     {
         return g_predefineResources->noDoubleBlending_;
     }
@@ -87,28 +88,33 @@ namespace dx
     {
         wrl::ComPtr<ID3D11Texture2D> tex;
         {
-            auto pixels = std::vector<DirectX::XMFLOAT4>(kDefaultTexHeight * kDefaultTexWidth);
-            std::fill(pixels.begin(), pixels.end(), DirectX::XMFLOAT4{1.0f, 1.0f, 1.0f, 1.0f});
-            CD3D11_TEXTURE2D_DESC desc{DXGI_FORMAT_R32G32B32A32_FLOAT, kDefaultTexWidth,
-                                       kDefaultTexHeight};
+            auto pixels = std::vector<DirectX::XMFLOAT4>(kDefaultTexHeight *
+                                                         kDefaultTexWidth);
+            std::fill(pixels.begin(), pixels.end(),
+                      DirectX::XMFLOAT4{1.0f, 1.0f, 1.0f, 1.0f});
+            CD3D11_TEXTURE2D_DESC desc{DXGI_FORMAT_R32G32B32A32_FLOAT,
+                                       kDefaultTexWidth, kDefaultTexHeight};
             desc.MipLevels = 1;
             D3D11_SUBRESOURCE_DATA resourceData{};
             resourceData.pSysMem = pixels.data();
             resourceData.SysMemPitch = kDefaultTexWidth;
             resourceData.SysMemSlicePitch =
                 gsl::narrow<UINT>(pixels.size() * sizeof(DirectX::XMFLOAT4));
-            TryHR(device.CreateTexture2D(&desc, &resourceData, tex.GetAddressOf()));
+            TryHR(device.CreateTexture2D(&desc, &resourceData,
+                                         tex.GetAddressOf()));
         }
         {
             CD3D11_SAMPLER_DESC desc{CD3D11_DEFAULT{}};
             // desc.Filter = D3D11_FILTER_MIN_LINEAR_MAG_MIP_POINT;
-            TryHR(device.CreateSamplerState(&desc, defaultSampler_.GetAddressOf()));
+            TryHR(device.CreateSamplerState(&desc,
+                                            defaultSampler_.GetAddressOf()));
         }
         {
             CD3D11_SAMPLER_DESC desc{CD3D11_DEFAULT{}};
             desc.AddressW = desc.AddressV = desc.AddressU =
                 D3D11_TEXTURE_ADDRESS_MODE::D3D11_TEXTURE_ADDRESS_WRAP;
-            TryHR(device.CreateSamplerState(&desc, repeatSampler_.GetAddressOf()));
+            TryHR(device.CreateSamplerState(&desc,
+                                            repeatSampler_.GetAddressOf()));
         }
         {
             D3D11_SAMPLER_DESC desc{};
@@ -117,7 +123,8 @@ namespace dx
             desc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
             desc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
             desc.ComparisonFunc = D3D11_COMPARISON_LESS;
-            TryHR(device.CreateSamplerState(&desc, m_shadowMapSampler.GetAddressOf()));
+            TryHR(device.CreateSamplerState(&desc,
+                                            m_shadowMapSampler.GetAddressOf()));
         }
         white_ = Get2DTexView(device, Ref(tex));
     }
@@ -145,7 +152,8 @@ namespace dx
             stencilDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_REPLACE;
             stencilDesc.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
 
-            TryHR(device.CreateDepthStencilState(&stencilDesc, stencilAlways_.GetAddressOf()));
+            TryHR(device.CreateDepthStencilState(
+                &stencilDesc, stencilAlways_.GetAddressOf()));
         }
 
         {
@@ -158,16 +166,19 @@ namespace dx
             drawReflectionDesc.StencilWriteMask = 0xff;
 
             drawReflectionDesc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
-            drawReflectionDesc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_KEEP;
+            drawReflectionDesc.FrontFace.StencilDepthFailOp =
+                D3D11_STENCIL_OP_KEEP;
             drawReflectionDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
             drawReflectionDesc.FrontFace.StencilFunc = D3D11_COMPARISON_EQUAL;
 
             drawReflectionDesc.BackFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
-            drawReflectionDesc.BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_KEEP;
+            drawReflectionDesc.BackFace.StencilDepthFailOp =
+                D3D11_STENCIL_OP_KEEP;
             drawReflectionDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
             drawReflectionDesc.BackFace.StencilFunc = D3D11_COMPARISON_EQUAL;
 
-            TryHR(device.CreateDepthStencilState(&drawReflectionDesc, drawnOnly_.GetAddressOf()));
+            TryHR(device.CreateDepthStencilState(&drawReflectionDesc,
+                                                 drawnOnly_.GetAddressOf()));
         }
 
         {
@@ -180,17 +191,19 @@ namespace dx
             noDoubleBlendDesc.StencilWriteMask = 0xff;
 
             noDoubleBlendDesc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
-            noDoubleBlendDesc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_KEEP;
+            noDoubleBlendDesc.FrontFace.StencilDepthFailOp =
+                D3D11_STENCIL_OP_KEEP;
             noDoubleBlendDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_INCR;
             noDoubleBlendDesc.FrontFace.StencilFunc = D3D11_COMPARISON_EQUAL;
 
             noDoubleBlendDesc.BackFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
-            noDoubleBlendDesc.BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_KEEP;
+            noDoubleBlendDesc.BackFace.StencilDepthFailOp =
+                D3D11_STENCIL_OP_KEEP;
             noDoubleBlendDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_INCR;
             noDoubleBlendDesc.BackFace.StencilFunc = D3D11_COMPARISON_EQUAL;
 
-            TryHR(device.CreateDepthStencilState(&noDoubleBlendDesc,
-                                                 noDoubleBlending_.GetAddressOf()));
+            TryHR(device.CreateDepthStencilState(
+                &noDoubleBlendDesc, noDoubleBlending_.GetAddressOf()));
         }
     }
 
@@ -203,14 +216,20 @@ namespace dx
 
             noRenderTargetWritesDesc.RenderTarget[0].BlendEnable = false;
             noRenderTargetWritesDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_ONE;
-            noRenderTargetWritesDesc.RenderTarget[0].DestBlend = D3D11_BLEND_ZERO;
-            noRenderTargetWritesDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
-            noRenderTargetWritesDesc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
-            noRenderTargetWritesDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
-            noRenderTargetWritesDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+            noRenderTargetWritesDesc.RenderTarget[0].DestBlend =
+                D3D11_BLEND_ZERO;
+            noRenderTargetWritesDesc.RenderTarget[0].BlendOp =
+                D3D11_BLEND_OP_ADD;
+            noRenderTargetWritesDesc.RenderTarget[0].SrcBlendAlpha =
+                D3D11_BLEND_ONE;
+            noRenderTargetWritesDesc.RenderTarget[0].DestBlendAlpha =
+                D3D11_BLEND_ZERO;
+            noRenderTargetWritesDesc.RenderTarget[0].BlendOpAlpha =
+                D3D11_BLEND_OP_ADD;
             noRenderTargetWritesDesc.RenderTarget[0].RenderTargetWriteMask = 0;
 
-            TryHR(device.CreateBlendState(&noRenderTargetWritesDesc, noWriteToRt_.GetAddressOf()));
+            TryHR(device.CreateBlendState(&noRenderTargetWritesDesc,
+                                          noWriteToRt_.GetAddressOf()));
         }
 
         {
@@ -220,14 +239,17 @@ namespace dx
 
             transparentDesc.RenderTarget[0].BlendEnable = true;
             transparentDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_BLEND_FACTOR;
-            transparentDesc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_BLEND_FACTOR;
+            transparentDesc.RenderTarget[0].DestBlend =
+                D3D11_BLEND_INV_BLEND_FACTOR;
             transparentDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
             transparentDesc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
             transparentDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
             transparentDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
-            transparentDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+            transparentDesc.RenderTarget[0].RenderTargetWriteMask =
+                D3D11_COLOR_WRITE_ENABLE_ALL;
 
-            TryHR(device.CreateBlendState(&transparentDesc, transparent_.GetAddressOf()));
+            TryHR(device.CreateBlendState(&transparentDesc,
+                                          transparent_.GetAddressOf()));
         }
     }
 
@@ -239,7 +261,8 @@ namespace dx
             cullClockwiseDesc.CullMode = D3D11_CULL_BACK;
             cullClockwiseDesc.FrontCounterClockwise = true;
             cullClockwiseDesc.DepthClipEnable = true;
-            TryHR(device.CreateRasterizerState(&cullClockwiseDesc, cullClockWise_.GetAddressOf()));
+            TryHR(device.CreateRasterizerState(&cullClockwiseDesc,
+                                               cullClockWise_.GetAddressOf()));
         }
 
         {
@@ -249,19 +272,25 @@ namespace dx
             wireframeDesc.FrontCounterClockwise = false;
             wireframeDesc.DepthClipEnable = true;
 
-            TryHR(device.CreateRasterizerState(&wireframeDesc, wireFrameOnly_.GetAddressOf()));
+            TryHR(device.CreateRasterizerState(&wireframeDesc,
+                                               wireFrameOnly_.GetAddressOf()));
         }
     }
 
-    std::unique_ptr<Object> obj(Object obj) { return std::make_unique<Object>(std::move(obj)); }
+    std::unique_ptr<Object> obj(Object obj)
+    {
+        return std::make_unique<Object>(std::move(obj));
+    }
 
-    void PresetupBasicPsCb(ShaderInputs& psInputs, const PredefinedResources& predefined,
+    void PresetupBasicPsCb(ShaderInputs& psInputs,
+                           const PredefinedResources& predefined,
                            const dx::Smoothness& smoothness,
                            wrl::ComPtr<ID3D11ShaderResourceView> mainTexture,
                            wrl::ComPtr<ID3D11SamplerState> sampler)
     {
         // auto& perObject = *psInputs.GetCbInfo("PerObjectLightingInfo");
-        psInputs.SetField("ObjectMaterial", dx::cb::Material{smoothness, mainTexture != nullptr});
+        psInputs.SetField("ObjectMaterial",
+                          dx::cb::Material{smoothness, mainTexture != nullptr});
         if (mainTexture == nullptr)
         {
             mainTexture = predefined.GetWhite();
@@ -274,11 +303,14 @@ namespace dx
         psInputs.Bind("Sampler", std::move(sampler));
     }
 
-    std::shared_ptr<Material> MakeBasicLightingMaterial(
-        const PredefinedResources& predefined, const dx::Smoothness& smoothness,
-        wrl::ComPtr<ID3D11ShaderResourceView> mainTexture, wrl::ComPtr<ID3D11SamplerState> sampler)
+    std::shared_ptr<Material>
+    MakeBasicLightingMaterial(const PredefinedResources& predefined,
+                              const dx::Smoothness& smoothness,
+                              wrl::ComPtr<ID3D11ShaderResourceView> mainTexture,
+                              wrl::ComPtr<ID3D11SamplerState> sampler)
     {
-        Shader defaultVS = Shaders::Get(Shaders::kPosNormalTexTransform).value();
+        Shader defaultVS =
+            Shaders::Get(Shaders::kPosNormalTexTransform).value();
         Shader defaultPS = Shaders::Get(Shaders::kBasicLighting).value();
         ShaderCollection shaderCollection =
             MakeShaderCollection(std::move(defaultVS), std::move(defaultPS));
@@ -287,16 +319,20 @@ namespace dx
             std::make_shared<dx::Pass>(dx::Pass{std::move(shaderCollection)});
         std::shared_ptr<Material> material =
             std::make_shared<Material>(Material{std::move(defaultPass)});
-        PresetupBasicPsCb(material->mainPass.inputs, predefined, smoothness, std::move(mainTexture),
-                          std::move(sampler));
+        PresetupBasicPsCb(material->mainPass.inputs, predefined, smoothness,
+                          std::move(mainTexture), std::move(sampler));
         return material;
     }
 
     void PredefinedResources::Setup(ID3D11Device& device3D)
     {
-        g_predefineResources = std::make_unique<const PredefinedResources>(device3D);
+        g_predefineResources =
+            std::make_unique<const PredefinedResources>(device3D);
     }
 
-    const PredefinedResources& PredefinedResources::GetInstance() { return *g_predefineResources; }
+    const PredefinedResources& PredefinedResources::GetInstance()
+    {
+        return *g_predefineResources;
+    }
 
 } // namespace dx

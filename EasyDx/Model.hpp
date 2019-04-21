@@ -29,7 +29,10 @@ namespace dx
     TexCoordType MakeTexCoord(float x, float y);
     ColorType MakeColor(float r, float g, float b, float a);
 
-    inline VectorType StoreVec(DirectX::XMVECTOR vec) { return Store<VectorType>(vec); }
+    inline VectorType StoreVec(DirectX::XMVECTOR vec)
+    {
+        return Store<VectorType>(vec);
+    }
 
     enum class LoadFlags : std::uint32_t
     {
@@ -67,29 +70,38 @@ namespace dx
 
     void IndicesFromMesh(const aiMesh& mesh, std::vector<ShortIndex>& indices);
 
-    std::optional<Smoothness> SmoothnessFromMaterial(const aiMaterial& material);
+    std::optional<Smoothness>
+    SmoothnessFromMaterial(const aiMaterial& material);
 
     // TODO: VSSemantics expectedSemantics
-    std::shared_ptr<Mesh> ConvertToImmutableMesh(ID3D11Device& device3D, const aiMesh& aiMesh_);
-    D3D11_PRIMITIVE_TOPOLOGY AsD3DPrimitiveTopology(aiPrimitiveType primitiveType);
+    std::shared_ptr<Mesh> ConvertToImmutableMesh(ID3D11Device& device3D,
+                                                 const aiMesh& aiMesh_);
+    D3D11_PRIMITIVE_TOPOLOGY
+    AsD3DPrimitiveTopology(aiPrimitiveType primitiveType);
 
-    D3D11_TEXTURE_ADDRESS_MODE FromAssimpTexMapModeToDX(aiTextureMapMode mode);
+    D3D11_TEXTURE_ADDRESS_MODE
+    FromAssimpTexMapModeToDX(aiTextureMapMode mode);
 
-    void FillAddressModes(const aiMaterial& material, std::uint32_t n,
-                          D3D11_SAMPLER_DESC& samplerDesc,
-                          aiTextureType texUsage = aiTextureType::aiTextureType_DIFFUSE);
+    void FillAddressModes(
+        const aiMaterial& material, std::uint32_t n,
+        D3D11_SAMPLER_DESC& samplerDesc,
+        aiTextureType texUsage = aiTextureType::aiTextureType_DIFFUSE);
 
-    void GetTexPath(const aiMaterial& material, std::uint32_t n, fs::path& path,
-                    aiTextureType texUsage = aiTextureType::aiTextureType_DIFFUSE);
+    void
+    GetTexPath(const aiMaterial& material, std::uint32_t n, fs::path& path,
+               aiTextureType texUsage = aiTextureType::aiTextureType_DIFFUSE);
 
-    auto GetMaterialsInScene(const aiScene& scene) -> gsl::span<const Ptr<const aiMaterial>>;
-    auto GetMeshesInScene(const aiScene& scene) -> gsl::span<const Ptr<const aiMesh>>;
+    auto GetMaterialsInScene(const aiScene& scene)
+        -> gsl::span<const Ptr<const aiMaterial>>;
+    auto GetMeshesInScene(const aiScene& scene)
+        -> gsl::span<const Ptr<const aiMesh>>;
 
-    void MakeCylinder(float bottomRadius, float topRadius, float height, std::uint16_t sliceCount,
-                      std::uint16_t stackCount, LoadedMesh& meshData);
-
-    void MakeUVSphere(float radius, std::uint16_t sliceCount, std::uint16_t stackCount,
+    void MakeCylinder(float bottomRadius, float topRadius, float height,
+                      std::uint16_t sliceCount, std::uint16_t stackCount,
                       LoadedMesh& meshData);
+
+    void MakeUVSphere(float radius, std::uint16_t sliceCount,
+                      std::uint16_t stackCount, LoadedMesh& meshData);
 
     /*void MakeIcoSphere(std::uint32_t recursionLevel,
         CpuMesh<SimpleVertex>& meshData);*/

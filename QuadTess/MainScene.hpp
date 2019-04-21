@@ -13,12 +13,12 @@ struct TessQuad;
 
 class MainScene : public dx::Scene
 {
-public:
+  public:
     MainScene(dx::Game& game, dx::Rc<void> args);
     void Update(const dx::UpdateArgs& args) override;
     ~MainScene() override;
 
-private:
+  private:
     std::unique_ptr<TessQuad> quad_;
     dx::DirectionalLight light_;
 };

@@ -14,5 +14,3 @@ int main()
         0, [](dx::Game& game) { return dx::MakeUnique<MainScene>(game); });
     dx::RunGame(*game, std::move(window), 0);
 }
-
-

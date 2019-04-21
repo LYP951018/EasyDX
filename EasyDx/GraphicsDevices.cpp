@@ -16,10 +16,11 @@ namespace dx
 
         const D3D_FEATURE_LEVEL featureLevel[] = {D3D_FEATURE_LEVEL_11_0};
 
-        TryHR(D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, creationFlags,
-                                featureLevel, gsl::narrow<UINT>(std::size(featureLevel)),
-                                D3D11_SDK_VERSION, pair.first.ReleaseAndGetAddressOf(), nullptr,
-                                pair.second.ReleaseAndGetAddressOf()));
+        TryHR(D3D11CreateDevice(
+            nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, creationFlags,
+            featureLevel, gsl::narrow<UINT>(std::size(featureLevel)),
+            D3D11_SDK_VERSION, pair.first.ReleaseAndGetAddressOf(), nullptr,
+            pair.second.ReleaseAndGetAddressOf()));
         return pair;
     }
 

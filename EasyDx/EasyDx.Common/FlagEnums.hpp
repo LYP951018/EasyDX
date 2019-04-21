@@ -9,22 +9,23 @@ namespace dx::Internal
     using UseEnumFlagOp = decltype(UseEnumFlag(std::declval<T>()));
 
     template<typename T>
-    using EnableIfUseEnumFlag =
-        std::enable_if_t<std::is_enum_v<T>&& ::dx::is_detected_v<UseEnumFlagOp, T>>;
+    using EnableIfUseEnumFlag = std::enable_if_t<
+        std::is_enum_v<T>&& ::dx::is_detected_v<UseEnumFlagOp, T>>;
 } // namespace dx::Internal
 
-#define DEF_OPERATOR(op)                                                                     \
-    template<typename T, typename = dx::Internal::EnableIfUseEnumFlag<T>>                    \
-    inline constexpr T operator op(T lhs, T rhs)                                             \
-    {                                                                                        \
-        using Underlying = std::underlying_type_t<T>;                                        \
-        return static_cast<T>(static_cast<Underlying>(lhs) op static_cast<Underlying>(rhs)); \
-    }                                                                                        \
-    template<typename T, typename = dx::Internal::EnableIfUseEnumFlag<T>>                    \
-    inline constexpr T& operator op##=(T& lhs, T rhs)                                        \
-    {                                                                                        \
-        lhs = lhs op rhs;                                                                    \
-        return lhs;                                                                          \
+#define DEF_OPERATOR(op)                                                  \
+    template<typename T, typename = dx::Internal::EnableIfUseEnumFlag<T>> \
+    inline constexpr T operator op(T lhs, T rhs)                          \
+    {                                                                     \
+        using Underlying = std::underlying_type_t<T>;                     \
+        return static_cast<T>(static_cast<Underlying>(lhs)                \
+                                  op static_cast<Underlying>(rhs));       \
+    }                                                                     \
+    template<typename T, typename = dx::Internal::EnableIfUseEnumFlag<T>> \
+    inline constexpr T& operator op##=(T& lhs, T rhs)                     \
+    {                                                                     \
+        lhs = lhs op rhs;                                                 \
+        return lhs;                                                       \
     }
 
 DEF_OPERATOR(|)

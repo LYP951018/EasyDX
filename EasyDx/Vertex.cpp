@@ -3,8 +3,10 @@
 
 namespace dx
 {
-    D3D11_INPUT_ELEMENT_DESC MakeElementDesc(VSSemantics semantics, std::uint32_t inputSlot,
-                                             DxgiFormat format, std::uint32_t semanticsIndex)
+    D3D11_INPUT_ELEMENT_DESC MakeElementDesc(VSSemantics semantics,
+                                             std::uint32_t inputSlot,
+                                             DxgiFormat format,
+                                             std::uint32_t semanticsIndex)
     {
         D3D11_INPUT_ELEMENT_DESC desc;
         desc.AlignedByteOffset = -1;
@@ -17,10 +19,10 @@ namespace dx
         return desc;
     }
 
-    D3D11_INPUT_ELEMENT_DESC MakeInstancingElementDesc(VSSemantics semantics,
-                                                       std::uint32_t inputSlot, DxgiFormat format,
-                                                       std::uint32_t stepRate,
-                                                       std::uint32_t semanticsIndex)
+    D3D11_INPUT_ELEMENT_DESC
+    MakeInstancingElementDesc(VSSemantics semantics, std::uint32_t inputSlot,
+                              DxgiFormat format, std::uint32_t stepRate,
+                              std::uint32_t semanticsIndex)
     {
         D3D11_INPUT_ELEMENT_DESC desc;
         desc.AlignedByteOffset = -1;
@@ -33,25 +35,29 @@ namespace dx
         return desc;
     }
 
-    void FillInputElementsDesc(std::vector<D3D11_INPUT_ELEMENT_DESC>& inputElementsDesc,
-                               gsl::span<VSSemantics> semanticses, gsl::span<DxgiFormat> formats,
-                               gsl::span<std::uint32_t> semanticsIndices)
+    void FillInputElementsDesc(
+        std::vector<D3D11_INPUT_ELEMENT_DESC>& inputElementsDesc,
+        gsl::span<const VSSemantics> semanticses,
+        gsl::span<const DxgiFormat> formats,
+        gsl::span<const std::uint32_t> semanticsIndices)
     {
         inputElementsDesc.clear();
         std::uint32_t currentChannelIndex = 0;
         for (std::uint32_t i = 0; i < semanticses.size(); ++i)
         {
-            std::uint32_t semantics = static_cast<std::uint32_t>(semanticses[i]);
+            std::uint32_t semantics =
+                static_cast<std::uint32_t>(semanticses[i]);
             for (;;)
             {
                 unsigned long index = 0;
-                if (_BitScanForward(&index, static_cast<unsigned long>(semantics)) == 0)
+                if (_BitScanForward(&index,
+                                    static_cast<unsigned long>(semantics)) == 0)
                 {
                     break;
                 }
-                inputElementsDesc.push_back(MakeElementDesc(semanticses[i], i,
-                                                            formats[currentChannelIndex],
-                                                            semanticsIndices[currentChannelIndex]));
+                inputElementsDesc.push_back(MakeElementDesc(
+                    semanticses[i], i, formats[currentChannelIndex],
+                    semanticsIndices[currentChannelIndex]));
                 ++currentChannelIndex;
                 semantics &= ~(1 << index);
             }

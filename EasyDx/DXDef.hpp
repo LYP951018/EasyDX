@@ -50,7 +50,8 @@ namespace dx
     {
         Default,   // requires read and write access by the GPU
         Immutable, // can only be read by the GPU
-        Dynamic,   // accessible by both the GPU (read only) and the CPU (write only).
+        Dynamic,   // accessible by both the GPU (read only) and the CPU
+                   // (write only).
         Staging    // supports data transfer (copy) from the GPU to the CPU.
     };
 
@@ -71,17 +72,19 @@ namespace dx
     // TODO: Fill them all.
     enum class DxgiFormat
     {
-        // A four-component, 128-bit floating-point format that supports 32 bits per channel
-        // including alpha.
+        // A four-component, 128-bit floating-point format that supports 32
+        // bits per channel including alpha.
         R32G32B32A32Float = 2,
-        // A three-component, 96-bit floating-point format that supports 32 bits per color channel.
+        // A three-component, 96-bit floating-point format that supports 32
+        // bits per color channel.
         R32G32B32Float = 6,
         R32G32Float = 16,
-        // A single-component, 16-bit unsigned-integer format that supports 16 bits for the red
-        // channel.
+        // A single-component, 16-bit unsigned-integer format that supports
+        // 16 bits for the red channel.
         R16UInt = 57,
         B8G8R8A8UNorm = 87,
-        // A 32-bit z-buffer format that supports 24 bits for depth and 8 bits for stencil.
+        // A 32-bit z-buffer format that supports 24 bits for depth and 8
+        // bits for stencil.
         Depth24UNormStencilS8UInt = 45
     };
 

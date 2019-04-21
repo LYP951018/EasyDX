@@ -12,13 +12,13 @@ namespace dx
         if (wstr.empty())
             return {};
         const int inputSize = gsl::narrow<int>(wstr.size());
-        const int sizeRequired =
-            ::WideCharToMultiByte(CP_UTF8, {}, wstr.data(), inputSize, nullptr, 0, {}, {});
+        const int sizeRequired = ::WideCharToMultiByte(
+            CP_UTF8, {}, wstr.data(), inputSize, nullptr, 0, {}, {});
         Ensures(sizeRequired > 0);
         std::string result;
         result.resize(static_cast<std::size_t>(sizeRequired));
-        if (::WideCharToMultiByte(CP_UTF8, {}, wstr.data(), inputSize, result.data(), sizeRequired,
-                                  {}, {}) == 0)
+        if (::WideCharToMultiByte(CP_UTF8, {}, wstr.data(), inputSize,
+                                  result.data(), sizeRequired, {}, {}) == 0)
         {
             ThrowWin32();
         }
@@ -30,13 +30,13 @@ namespace dx
         if (str.empty())
             return {};
         const int inputSize = gsl::narrow<int>(str.size());
-        const int sizeRequired =
-            ::MultiByteToWideChar(CP_UTF8, {}, str.data(), inputSize, nullptr, 0);
+        const int sizeRequired = ::MultiByteToWideChar(CP_UTF8, {}, str.data(),
+                                                       inputSize, nullptr, 0);
         Ensures(sizeRequired > 0);
         std::wstring result;
         result.resize(static_cast<std::size_t>(sizeRequired));
-        if (::MultiByteToWideChar(CP_UTF8, {}, str.data(), inputSize, result.data(),
-                                  sizeRequired) == 0)
+        if (::MultiByteToWideChar(CP_UTF8, {}, str.data(), inputSize,
+                                  result.data(), sizeRequired) == 0)
         {
             ThrowWin32();
         }
@@ -45,7 +45,8 @@ namespace dx
 
     void ThrowWin32()
     {
-        throw std::system_error{{static_cast<int>(::GetLastError()), std::system_category()}};
+        throw std::system_error{
+            {static_cast<int>(::GetLastError()), std::system_category()}};
     }
 
     void TryHR(long hr)
@@ -73,7 +74,8 @@ namespace dx
         return std::abs(lhs - rhs) < std::numeric_limits<float>::epsilon();
     }
 
-    [[noreturn]] void ThrowHRException(HRESULT hr) {
+    [[noreturn]] void ThrowHRException(HRESULT hr)
+    {
         _com_error e{hr};
         const auto errorMessage = std::wstring_view{e.ErrorMessage()};
         throw std::runtime_error{ws2s(errorMessage)};

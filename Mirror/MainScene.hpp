@@ -3,15 +3,17 @@
 #include <DirectXMath.h>
 #include <EasyDx/Fwd.hpp>
 
-
 class MainScene : public dx::SceneBase
 {
   public:
     MainScene(dx::Game&);
 
   private:
-    //void Update(const dx::UpdateArgs& args, const dx::Game& game) override;
-    void Render(const dx::Game& game) override;
+    // void Update(const dx::UpdateArgs& args, const dx::Game& game)
+    // override;
+    void Render(ID3D11DeviceContext& context3D,
+                dx::GlobalGraphicsContext& globalGraphicsResources,
+                const dx::Game& game) override;
     void BuildLights();
     void BuildObjects();
     void InitReflectedMaterial();

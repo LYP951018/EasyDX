@@ -9,8 +9,8 @@
 //    template<typename T, std::size_t N>
 //    class static_vector
 //    {
-//        using StorageType = std::array<std::aligned_storage_t<sizeof(T), alignof(T)>, N>;
-//        using TypedStorage = std::array<T, N>;
+//        using StorageType = std::array<std::aligned_storage_t<sizeof(T),
+//        alignof(T)>, N>; using TypedStorage = std::array<T, N>;
 //
 //    public:
 //        using value_type = T;

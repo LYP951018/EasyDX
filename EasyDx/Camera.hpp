@@ -26,14 +26,17 @@ namespace dx
       public:
         Camera();
 
-        void Translate(float x, float y, float z, Space space = Space::LocalSpace) noexcept;
+        void Translate(float x, float y, float z,
+                       Space space = Space::LocalSpace) noexcept;
         void Pitch(float angle);
         void Yaw(float angle);
         void RotateY(float angle);
         void RotateX(float angle);
         void Rotate(DirectX::XMVECTOR rotation) noexcept;
-        void SetProjection(float fov, float aspectRatio, float nearZ, float farZ) noexcept;
-        void SetLookAt(const DirectX::XMFLOAT3& eye, const DirectX::XMFLOAT3& target,
+        void SetProjection(float fov, float aspectRatio, float nearZ,
+                           float farZ) noexcept;
+        void SetLookAt(const DirectX::XMFLOAT3& eye,
+                       const DirectX::XMFLOAT3& target,
                        const DirectX::XMFLOAT3& up) noexcept;
         void UpdateAspectRatio(float aspectRatio) noexcept;
         bool HasChanged() const noexcept;
@@ -49,7 +52,8 @@ namespace dx
         Rect& Viewport() noexcept { return *m_viewport; }
         const Rect& Viewport() const noexcept { return *m_viewport; }
 
-        // DirectX::XMMatrixPerspectiveFovLH 使用的是纵向 fov，这里也是纵向 fov。
+        // DirectX::XMMatrixPerspectiveFovLH 使用的是纵向 fov，这里也是纵向
+        // fov。
         float Fov() const { return m_fov; }
         void SetFov(float fov)
         {
@@ -74,7 +78,8 @@ namespace dx
       private:
         friend class Scene;
         friend class Game;
-        void PrepareForRendering(ID3D11DeviceContext& context3D, const Game& game);
+        void PrepareForRendering(ID3D11DeviceContext& context3D,
+                                 const Game& game);
         void Update(const UpdateArgs& args, const Game& game);
         void OnResize(Size newSize);
         void FlushProjectionDirty() const;

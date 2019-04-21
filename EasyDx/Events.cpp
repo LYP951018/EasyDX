@@ -4,11 +4,17 @@
 
 namespace dx
 {
-    bool KeyStates::Control() const noexcept { return KeyStateBits & MK_CONTROL; }
+    bool KeyStates::Control() const noexcept
+    {
+        return KeyStateBits & MK_CONTROL;
+    }
 
     bool KeyStates::Left() const noexcept { return KeyStateBits & MK_LBUTTON; }
 
-    bool KeyStates::Middle() const noexcept { return KeyStateBits & MK_MBUTTON; }
+    bool KeyStates::Middle() const noexcept
+    {
+        return KeyStateBits & MK_MBUTTON;
+    }
 
     bool KeyStates::Right() const noexcept { return KeyStateBits & MK_RBUTTON; }
 

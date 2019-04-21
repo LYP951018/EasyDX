@@ -5,9 +5,15 @@
 
 namespace dx
 {
-    gsl::span<std::byte> StreamInfo::BytesSpan() { return gsl::make_span(Bytes); }
+    gsl::span<std::byte> StreamInfo::BytesSpan()
+    {
+        return gsl::make_span(Bytes);
+    }
 
-    gsl::span<const std::byte> StreamInfo::BytesSpan() const { return gsl::make_span(Bytes); }
+    gsl::span<const std::byte> StreamInfo::BytesSpan() const
+    {
+        return gsl::make_span(Bytes);
+    }
 
     void StreamInfo::UpdateBytesWithSameLength(gsl::span<const std::byte> bytes)
     {
@@ -32,35 +38,46 @@ namespace dx
     {
         const StreamInfo& streamInfo = m_streams[0];
         // FIXME
-        return gsl::narrow<std::uint32_t>(streamInfo.BytesSpan().size() / streamInfo.GetStride());
+        return gsl::narrow<std::uint32_t>(streamInfo.BytesSpan().size() /
+                                          streamInfo.GetStride());
     }
 
     std::uint32_t Mesh::GetIndexCount() const { return m_indexCount; }
 
-    gsl::span<const D3D11_INPUT_ELEMENT_DESC> Mesh::GetFullInputElementDesces() const
+    gsl::span<const D3D11_INPUT_ELEMENT_DESC>
+    Mesh::GetFullInputElementDesces() const
     {
         return gsl::make_span(m_fullInputElementDesces);
     }
 
-    D3D11_PRIMITIVE_TOPOLOGY Mesh::GetPrimitiveTopology() const { return m_primitiveTopology; }
+    D3D11_PRIMITIVE_TOPOLOGY Mesh::GetPrimitiveTopology() const
+    {
+        return m_primitiveTopology;
+    }
 
-    Mesh::Mesh(std::vector<GpuBuffer> gpuBuffer, std::vector<StreamInfo> streams,
+    Mesh::Mesh(std::vector<GpuBuffer> gpuBuffer,
+               std::vector<StreamInfo> streams,
                std::vector<D3D11_INPUT_ELEMENT_DESC> fullInputElementDesces,
-               std::vector<VSSemantics> vsSemantics, std::vector<std::uint32_t> stridesAndOffsets,
-               GpuBuffer indexBuffer, std::uint32_t indexCount, bool isImmutable,
-               D3D_PRIMITIVE_TOPOLOGY topology, const DirectX::BoundingBox& boundingBox)
-        : m_gpuVertexBuffers{std::move(gpuBuffer)}, m_indexBuffer{std::move(indexBuffer)},
+               std::vector<VSSemantics> vsSemantics,
+               std::vector<std::uint32_t> stridesAndOffsets,
+               GpuBuffer indexBuffer, std::uint32_t indexCount,
+               bool isImmutable, D3D_PRIMITIVE_TOPOLOGY topology,
+               const DirectX::BoundingBox& boundingBox)
+        : m_gpuVertexBuffers{std::move(gpuBuffer)}, m_indexBuffer{std::move(
+                                                        indexBuffer)},
           m_fullInputElementDesces{std::move(fullInputElementDesces)},
           m_vsSemantics{std::move(vsSemantics)}, m_streams{std::move(streams)},
-          m_stridesAndOffsets{std::move(stridesAndOffsets)}, m_indexCount{indexCount},
-          m_isImmutable{isImmutable}, m_primitiveTopology{topology}, m_boundingBox{boundingBox}
+          m_stridesAndOffsets{std::move(stridesAndOffsets)},
+          m_indexCount{indexCount}, m_isImmutable{isImmutable},
+          m_primitiveTopology{topology}, m_boundingBox{boundingBox}
     {}
 
-    Mesh Mesh::CreateImmutable(ID3D11Device& device, std::uint32_t channelCount,
-                               const gsl::span<const std::byte>* bytes,
-                               const std::uint32_t* strides, const VSSemantics* semantics,
-                               std::vector<D3D11_INPUT_ELEMENT_DESC> inputElementDesces,
-                               gsl::span<const ShortIndex> indices, D3D_PRIMITIVE_TOPOLOGY topology)
+    Mesh Mesh::CreateImmutable(
+        ID3D11Device& device, std::uint32_t channelCount,
+        const gsl::span<const std::byte>* bytes, const std::uint32_t* strides,
+        const VSSemantics* semantics,
+        std::vector<D3D11_INPUT_ELEMENT_DESC> inputElementDesces,
+        gsl::span<const ShortIndex> indices, D3D_PRIMITIVE_TOPOLOGY topology)
     {
         std::uint32_t offset = {};
         std::vector<StreamInfo> streams;
@@ -88,9 +105,11 @@ namespace dx
         const std::uint32_t positionStride = strides[0];
         DirectX::BoundingBox::CreateFromPoints(
             boundingBox, bytes[0].size() / positionStride,
-            reinterpret_cast<const DirectX::XMFLOAT3*>(bytes[0].data()), positionStride);
+            reinterpret_cast<const DirectX::XMFLOAT3*>(bytes[0].data()),
+            positionStride);
         GpuBuffer indexBuffer = MakeImmutableIndexBuffer(device, indices);
-        std::vector<VSSemantics> vsSemantics{semantics, semantics + channelCount};
+        std::vector<VSSemantics> vsSemantics{semantics,
+                                             semantics + channelCount};
         return Mesh{std::move(vertexBuffers),
                     std::move(streams),
                     std::move(inputElementDesces),
@@ -103,7 +122,8 @@ namespace dx
                     boundingBox};
     }
 
-    void Mesh::SetAllStreamsInternal(gsl::span<const gsl::span<const std::byte>> streamsInBytes)
+    void Mesh::SetAllStreamsInternal(
+        gsl::span<const gsl::span<const std::byte>> streamsInBytes)
     {
         for (std::ptrdiff_t i = 0; i < streamsInBytes.size(); ++i)
         {
@@ -116,8 +136,9 @@ namespace dx
 
     bool Mesh::AnyDirty() const
     {
-        return std::any_of(m_streams.begin(), m_streams.end(),
-                           [](const StreamInfo& stream) { return stream.IsDirty; });
+        return std::any_of(
+            m_streams.begin(), m_streams.end(),
+            [](const StreamInfo& stream) { return stream.IsDirty; });
     }
 
     void Mesh::FlushAll(ID3D11DeviceContext& context3D) const
@@ -136,15 +157,18 @@ namespace dx
         }
     }
 
-    void Mesh::FlushStream(ID3D11DeviceContext& context3D, std::uint32_t streamId) const
+    void Mesh::FlushStream(ID3D11DeviceContext& context3D,
+                           std::uint32_t streamId) const
     {
         const auto& stream = m_streams[streamId];
-        UpdateWithDiscard(context3D, Ref(m_gpuVertexBuffers[streamId]), stream.BytesSpan());
+        UpdateWithDiscard(context3D, Ref(m_gpuVertexBuffers[streamId]),
+                          stream.BytesSpan());
         stream.IsDirty = false;
     }
 
-    void InputElementDescsFromMesh(std::vector<D3D11_INPUT_ELEMENT_DESC>& inputElementDesces,
-                                   const Mesh& mesh, VSSemantics mask)
+    void InputElementDescsFromMesh(
+        std::vector<D3D11_INPUT_ELEMENT_DESC>& inputElementDesces,
+        const Mesh& mesh, VSSemantics mask)
     {
         const gsl::span<const VSSemantics> semanticses = mesh.GetChannelMasks();
         const gsl::span<const D3D11_INPUT_ELEMENT_DESC> fullInputElementDesces =
@@ -153,13 +177,16 @@ namespace dx
         for (std::ptrdiff_t i = 0; i < semanticses.size(); ++i)
         {
             const VSSemantics semantics = semanticses[i];
-            const std::uint32_t semanticsCount = __popcnt(static_cast<unsigned int>(semantics));
+            const std::uint32_t semanticsCount =
+                __popcnt(static_cast<unsigned int>(semantics));
             if ((semantics & mask) != VSSemantics::kNone)
             {
                 // g_VSSemantics.push_back(semantics);
                 inputElementDesces.insert(
-                    inputElementDesces.end(), fullInputElementDesces.begin() + inputLayoutIndex,
-                    fullInputElementDesces.begin() + inputLayoutIndex + semanticsCount);
+                    inputElementDesces.end(),
+                    fullInputElementDesces.begin() + inputLayoutIndex,
+                    fullInputElementDesces.begin() + inputLayoutIndex +
+                        semanticsCount);
                 mask &= ~semantics;
             }
             inputLayoutIndex += semanticsCount;

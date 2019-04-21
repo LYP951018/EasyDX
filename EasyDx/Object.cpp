@@ -6,10 +6,11 @@ namespace dx
 {
     ComponentBase* Object::GetComponent(const std::type_info& type) const
     {
-        if (const auto it = std::find_if(m_components.begin(), m_components.end(),
-                                         [&](const std::unique_ptr<ComponentBase>& component) {
-                                             return typeid(*component) == type;
-                                         });
+        if (const auto it = std::find_if(
+                m_components.begin(), m_components.end(),
+                [&](const std::unique_ptr<ComponentBase>& component) {
+                    return typeid(*component) == type;
+                });
             it != m_components.end())
         {
             return it->get();

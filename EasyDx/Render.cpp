@@ -31,23 +31,31 @@ namespace dx
         assert(size == g_Strides.size() && size == g_Offsets.size());
     }
 
-    void DrawMesh(ID3D11DeviceContext& context3D, const Mesh& mesh, const Material& material)
+    void DrawMesh(ID3D11DeviceContext& context3D, const Mesh& mesh,
+                  const Material& material)
     {
         DrawMesh(context3D, mesh, *material.mainPass.pass);
     }
 
-    void DrawMesh(ID3D11DeviceContext& context3D, const Mesh& mesh, const Pass& pass)
+    void DrawMesh(ID3D11DeviceContext& context3D, const Mesh& mesh,
+                  const Pass& pass)
     {
         context3D.IASetPrimitiveTopology(mesh.GetPrimitiveTopology());
         SetupIndexBuffer(context3D, mesh.GetGpuIndexBuffer());
         VSSemantics mask = pass.Shaders.GetMask();
         UpdateGlobalMeshData(mesh, mask);
         // FIXME: .Get
-        context3D.IASetInputLayout(
-            InputLayoutAllocator::Query(gsl::make_span(g_InputElementDescs)).Get());
+        ID3D11InputLayout* const existingLayout =
+            InputLayoutAllocator::Query(gsl::make_span(g_InputElementDescs))
+                .Get();
+        if (existingLayout == nullptr)
+        {
+            throw std::out_of_range{"input layout does not exist"};
+        }
+        context3D.IASetInputLayout(existingLayout);
         mesh.FlushAll(context3D);
-        context3D.IASetVertexBuffers(0, g_Buffers.size(), g_Buffers.data(), g_Strides.data(),
-                                     g_Offsets.data());
+        context3D.IASetVertexBuffers(0, g_Buffers.size(), g_Buffers.data(),
+                                     g_Strides.data(), g_Offsets.data());
         SetupPass(context3D, pass);
         context3D.DrawIndexed(mesh.GetIndexCount(), 0, 0);
     }
@@ -56,7 +64,8 @@ namespace dx
     {
         const gsl::span<const VSSemantics> semanticses = mesh.GetChannelMasks();
         const gsl::span<const StreamInfo> streamsInfo = mesh.GetStreamsInfo();
-        const gsl::span<ID3D11Buffer* const> buffers = ComPtrsCast(mesh.GetGpuVbsWithoutFlush());
+        const gsl::span<ID3D11Buffer* const> buffers =
+            ComPtrsCast(mesh.GetGpuVbsWithoutFlush());
         const gsl::span<const D3D11_INPUT_ELEMENT_DESC> fullInputElementDesces =
             mesh.GetFullInputElementDesces();
         ClearVbDataStructures();
@@ -65,7 +74,8 @@ namespace dx
         for (std::ptrdiff_t i = 0; i < semanticses.size(); ++i)
         {
             const VSSemantics semantics = semanticses[i];
-            const std::uint32_t semanticsCount = __popcnt(static_cast<unsigned int>(semantics));
+            const std::uint32_t semanticsCount =
+                __popcnt(static_cast<unsigned int>(semantics));
             if ((semantics & mask) != VSSemantics::kNone)
             {
                 g_Buffers.push_back(buffers[i]);
@@ -74,7 +84,8 @@ namespace dx
                 g_VSSemantics.push_back(semantics);
                 for (std::uint32_t i = 0; i < semanticsCount; ++i)
                 {
-                    g_InputElementDescs.push_back(fullInputElementDesces[inputLayoutIndex + i]);
+                    g_InputElementDescs.push_back(
+                        fullInputElementDesces[inputLayoutIndex + i]);
                     g_InputElementDescs.back().InputSlot = inputSlot;
                 }
                 mask &= ~semantics;
@@ -86,8 +97,8 @@ namespace dx
     }
 
     // FIXME: instancing input layout
-    void DrawMeshInstancing(ID3D11DeviceContext& context3D, const Mesh& mesh, const Pass& pass,
-                            std::uint32_t instancingCount,
+    void DrawMeshInstancing(ID3D11DeviceContext& context3D, const Mesh& mesh,
+                            const Pass& pass, std::uint32_t instancingCount,
                             gsl::span<const GpuBuffer> instancingBuffers,
                             gsl::span<const std::uint32_t> strides)
     {
@@ -106,14 +117,17 @@ namespace dx
             g_Offsets.push_back(0);
         }
         CheckConsistency();
-        context3D.IASetVertexBuffers(0, gsl::narrow<std::uint32_t>(g_Buffers.size()),
-                                     g_Buffers.data(), g_Strides.data(), g_Offsets.data());
+        context3D.IASetVertexBuffers(
+            0, gsl::narrow<std::uint32_t>(g_Buffers.size()), g_Buffers.data(),
+            g_Strides.data(), g_Offsets.data());
         context3D.IASetInputLayout(
-            InputLayoutAllocator::Query(gsl::make_span(g_InputElementDescs)).Get());
+            InputLayoutAllocator::Query(gsl::make_span(g_InputElementDescs))
+                .Get());
         context3D.IASetPrimitiveTopology(mesh.GetPrimitiveTopology());
         SetupIndexBuffer(context3D, mesh.GetGpuIndexBuffer());
         SetupPass(context3D, pass);
-        context3D.DrawIndexedInstanced(mesh.GetIndexCount(), instancingCount, 0, 0, 0);
+        context3D.DrawIndexedInstanced(mesh.GetIndexCount(), instancingCount, 0,
+                                       0, 0);
     }
 
 } // namespace dx

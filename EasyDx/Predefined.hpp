@@ -73,21 +73,24 @@ namespace dx
         // Default white texture
         wrl::ComPtr<ID3D11ShaderResourceView> white_;
 
-        wrl::ComPtr<ID3D11SamplerState> defaultSampler_, repeatSampler_, m_shadowMapSampler;
+        wrl::ComPtr<ID3D11SamplerState> defaultSampler_, repeatSampler_,
+            m_shadowMapSampler;
 
-        wrl::ComPtr<ID3D11DepthStencilState> stencilAlways_, drawnOnly_, noDoubleBlending_;
+        wrl::ComPtr<ID3D11DepthStencilState> stencilAlways_, drawnOnly_,
+            noDoubleBlending_;
         wrl::ComPtr<ID3D11BlendState> noWriteToRt_, transparent_;
         wrl::ComPtr<ID3D11RasterizerState> cullClockWise_, wireFrameOnly_;
     };
 
-    void PresetupBasicPsCb(ShaderInputs& psInputs, const PredefinedResources& predefined,
-                           const dx::Smoothness& smoothness,
-                           wrl::ComPtr<ID3D11ShaderResourceView> mainTexture = {},
-                           wrl::ComPtr<ID3D11SamplerState> sampler = {});
+    void
+    PresetupBasicPsCb(ShaderInputs& psInputs,
+                      const PredefinedResources& predefined,
+                      const dx::Smoothness& smoothness,
+                      wrl::ComPtr<ID3D11ShaderResourceView> mainTexture = {},
+                      wrl::ComPtr<ID3D11SamplerState> sampler = {});
 
-    std::shared_ptr<Material>
-    MakeBasicLightingMaterial(const PredefinedResources& predefined,
-                              const dx::Smoothness& smoothness,
-                              wrl::ComPtr<ID3D11ShaderResourceView> mainTexture = {},
-                              wrl::ComPtr<ID3D11SamplerState> sampler = {});
+    std::shared_ptr<Material> MakeBasicLightingMaterial(
+        const PredefinedResources& predefined, const dx::Smoothness& smoothness,
+        wrl::ComPtr<ID3D11ShaderResourceView> mainTexture = {},
+        wrl::ComPtr<ID3D11SamplerState> sampler = {});
 } // namespace dx

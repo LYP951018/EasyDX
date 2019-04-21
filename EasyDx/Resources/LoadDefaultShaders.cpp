@@ -7,8 +7,10 @@ namespace dx
     {
         const auto currentPath = fs::current_path();
 
-        const auto addWithName = [&](const char* name, const wchar_t* shaderFileName) {
-            Add(name, Shader::FromCompiledCso(device3D, currentPath / shaderFileName));
+        const auto addWithName = [&](const char* name,
+                                     const wchar_t* shaderFileName) {
+            Add(name, Shader::FromCompiledCso(device3D,
+                                              currentPath / shaderFileName));
         };
         addWithName(kBasicLighting, L"BasicPS.cso");
         addWithName(kPosNormalTexTransform, L"BasicVS.cso");

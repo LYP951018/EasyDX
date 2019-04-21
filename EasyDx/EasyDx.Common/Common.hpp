@@ -57,15 +57,17 @@ namespace dx
     gsl::span<std::byte> AsBytes(T& object) noexcept
     {
         static_assert(std::is_standard_layout_v<T>);
-        return gsl::make_span(reinterpret_cast<std::byte*>(std::addressof(object)), sizeof(T));
+        return gsl::make_span(
+            reinterpret_cast<std::byte*>(std::addressof(object)), sizeof(T));
     }
 
     template<typename T>
     gsl::span<const std::byte> AsBytes(const T& object) noexcept
     {
         static_assert(std::is_standard_layout_v<T>);
-        return gsl::make_span(reinterpret_cast<const std::byte*>(std::addressof(object)),
-                              sizeof(T));
+        return gsl::make_span(
+            reinterpret_cast<const std::byte*>(std::addressof(object)),
+            sizeof(T));
     }
 
     template<std::size_t N>
@@ -83,24 +85,28 @@ namespace dx
     }
 
     template<typename T, std::ptrdiff_t N>
-    gsl::span<const Ptr<T>, N> ComPtrsCast(gsl::span<const wrl::ComPtr<T>, N> comPtrs) noexcept
+    gsl::span<const Ptr<T>, N>
+    ComPtrsCast(gsl::span<const wrl::ComPtr<T>, N> comPtrs) noexcept
     {
         static_assert(std::is_standard_layout_v<wrl::ComPtr<T>>,
                       "wrl::ComPtr<T> should be a standard layout class.");
         static_assert(sizeof(wrl::ComPtr<T>) == sizeof(Ptr<T>),
-                      "wrl::ComPtr<T> should have the same size as the raw pointer.");
+                      "wrl::ComPtr<T> should have the same size as the "
+                      "raw pointer.");
         const auto start = reinterpret_cast<const Ptr<T>*>(comPtrs.data());
         const auto last = start + comPtrs.size();
         return {start, last};
     }
 
     template<typename T, std::ptrdiff_t N>
-    gsl::span<Ptr<T>, N> ComPtrsCast(gsl::span<wrl::ComPtr<T>, N> comPtrs) noexcept
+    gsl::span<Ptr<T>, N>
+    ComPtrsCast(gsl::span<wrl::ComPtr<T>, N> comPtrs) noexcept
     {
         static_assert(std::is_standard_layout_v<wrl::ComPtr<T>>,
                       "wrl::ComPtr<T> should be a standard layout class.");
         static_assert(sizeof(wrl::ComPtr<T>) == sizeof(Ptr<T>),
-                      "wrl::ComPtr<T> should have the same size as the raw pointer.");
+                      "wrl::ComPtr<T> should have the same size as the "
+                      "raw pointer.");
         const auto start = reinterpret_cast<Ptr<T>*>(comPtrs.data());
         const auto last = start + comPtrs.size();
         return {start, last};
@@ -130,7 +136,8 @@ namespace dx
 
     template<typename T, typename... Args>
     auto MakeUnique(Args&&... args)
-        -> std::enable_if_t<std::is_constructible_v<T, Args&&...>, std::unique_ptr<T>>
+        -> std::enable_if_t<std::is_constructible_v<T, Args&&...>,
+                            std::unique_ptr<T>>
     {
         return std::make_unique<T>(std::forward<Args>(args)...);
     }
@@ -180,7 +187,8 @@ namespace dx
     bool NearEqual(float lhs, float rhs);
 
     template<typename T, typename... Args>
-    auto MakeVec(T&& t, Args&&... args) -> std::vector<std::remove_reference_t<T>>
+    auto MakeVec(T&& t, Args&&... args)
+        -> std::vector<std::remove_reference_t<T>>
     {
         std::vector<std::remove_reference_t<T>> vec;
         vec.reserve(sizeof...(Args) + 1);

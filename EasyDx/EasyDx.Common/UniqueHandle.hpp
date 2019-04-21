@@ -35,7 +35,10 @@ namespace dx
             swap(handle_, other.handle_);
         }
 
-        constexpr explicit operator bool() const noexcept { return handle_ != InvalidHandle(); }
+        constexpr explicit operator bool() const noexcept
+        {
+            return handle_ != InvalidHandle();
+        }
 
         HandleType Get() const noexcept { return handle_; }
 
@@ -66,7 +69,10 @@ namespace dx
                 Closer()(handle_);
         }
 
-        static /*constexpr */ HandleType InvalidHandle() noexcept { return Closer::InvalidHandle; }
+        static /*constexpr */ HandleType InvalidHandle() noexcept
+        {
+            return Closer::InvalidHandle;
+        }
 
       private:
         HandleType handle_;

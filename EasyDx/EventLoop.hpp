@@ -18,7 +18,8 @@ namespace dx
         EventLoop();
         friend class GameWindow;
         friend void ProcessMessage(GameWindow& window, std::uint32_t messageId,
-                                   std::uintptr_t wParam, std::intptr_t lParam) noexcept;
+                                   std::uintptr_t wParam,
+                                   std::intptr_t lParam) noexcept;
 
         // PushEvent 只允许在 B 线程上调用。
         // TODO：限制传入 resize event？
@@ -27,14 +28,16 @@ namespace dx
         {
             {
                 std::lock_guard lg{swapLock_};
-                frontEvents_.push_back(dx::WindowEventArgsPack{window, std::move(arg)});
+                frontEvents_.push_back(
+                    dx::WindowEventArgsPack{window, std::move(arg)});
             }
             consumerCv_.notify_one();
         }
 
         void MessagePump();
         void PushResizeEvent(GameWindow* window, ResizeEventArgs args);
-        static ::LRESULT __stdcall WndProc(::HWND windowHandle, ::UINT messageId, ::WPARAM wParam,
+        static ::LRESULT __stdcall WndProc(::HWND windowHandle,
+                                           ::UINT messageId, ::WPARAM wParam,
                                            ::LPARAM lParam) noexcept;
 
         bool resized_;

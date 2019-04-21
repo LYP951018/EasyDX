@@ -6,15 +6,15 @@
 
 namespace dx
 {
-    wrl::ComPtr<ID3D11Texture2D> MakeTexture2D(ID3D11Device& device,
-                                               const DirectX::ScratchImage& image,
-                                               const DirectX::TexMetadata& metaData,
-                                               ResourceUsage usage)
+    wrl::ComPtr<ID3D11Texture2D>
+    MakeTexture2D(ID3D11Device& device, const DirectX::ScratchImage& image,
+                  const DirectX::TexMetadata& metaData, ResourceUsage usage)
     {
         wrl::ComPtr<ID3D11Resource> resource;
-        TryHR(DirectX::CreateTextureEx(&device, image.GetImages(), image.GetImageCount(), metaData,
-                                       static_cast<D3D11_USAGE>(usage), D3D11_BIND_SHADER_RESOURCE,
-                                       0, 0, 0, resource.ReleaseAndGetAddressOf()));
+        TryHR(DirectX::CreateTextureEx(
+            &device, image.GetImages(), image.GetImageCount(), metaData,
+            static_cast<D3D11_USAGE>(usage), D3D11_BIND_SHADER_RESOURCE, 0, 0,
+            0, resource.ReleaseAndGetAddressOf()));
         wrl::ComPtr<ID3D11Texture2D> texture;
         const auto hr = resource.As(&texture);
         if (hr == E_NOINTERFACE)
@@ -24,17 +24,19 @@ namespace dx
     }
 
     wrl::ComPtr<ID3D11Texture2D> Load2DTexFromWicFile(ID3D11Device& device,
-                                                      const fs::path& filePath, ResourceUsage usage)
+                                                      const fs::path& filePath,
+                                                      ResourceUsage usage)
     {
         DirectX::ScratchImage image;
         DirectX::TexMetadata metaData;
-        TryHR(
-            DirectX::LoadFromWICFile(filePath.c_str(), DirectX::WIC_FLAGS_NONE, &metaData, image));
+        TryHR(DirectX::LoadFromWICFile(
+            filePath.c_str(), DirectX::WIC_FLAGS_NONE, &metaData, image));
         return MakeTexture2D(device, image, metaData, usage);
     }
 
     wrl::ComPtr<ID3D11Texture2D> Load2DTexFromTgaFile(ID3D11Device& device,
-                                                      const fs::path& filePath, ResourceUsage usage)
+                                                      const fs::path& filePath,
+                                                      ResourceUsage usage)
     {
         DirectX::ScratchImage image;
         DirectX::TexMetadata metaData;
@@ -43,19 +45,21 @@ namespace dx
     }
 
     wrl::ComPtr<ID3D11Texture2D> Load2DTexFromDdsFile(ID3D11Device& device,
-                                                      const fs::path& filePath, ResourceUsage usage,
+                                                      const fs::path& filePath,
+                                                      ResourceUsage usage,
                                                       std::uint32_t ddsFlags)
     {
         DirectX::ScratchImage image;
         DirectX::TexMetadata metaData;
-        TryHR(DirectX::LoadFromDDSFile(filePath.c_str(), ddsFlags, &metaData, image));
+        TryHR(DirectX::LoadFromDDSFile(filePath.c_str(), ddsFlags, &metaData,
+                                       image));
         return MakeTexture2D(device, image, metaData, usage);
     }
 
-    wrl::ComPtr<ID3D11Texture2D> Load2DTexFromMemory(ID3D11Device& device,
-                                                     const unsigned char* buffer,
-                                                     std::uint32_t width, std::uint32_t height,
-                                                     ResourceUsage usage)
+    wrl::ComPtr<ID3D11Texture2D>
+    Load2DTexFromMemory(ID3D11Device& device, const unsigned char* buffer,
+                        std::uint32_t width, std::uint32_t height,
+                        ResourceUsage usage)
     {
         D3D11_TEXTURE2D_DESC textureDesc = {};
         textureDesc.Width = width;
@@ -75,12 +79,14 @@ namespace dx
         data.pSysMem = buffer;
         data.SysMemPitch = width * 4;
         data.SysMemSlicePitch = width * height * 4;
-        TryHR(device.CreateTexture2D(&textureDesc, &data, d3dTexture.ReleaseAndGetAddressOf()));
+        TryHR(device.CreateTexture2D(&textureDesc, &data,
+                                     d3dTexture.ReleaseAndGetAddressOf()));
 
         return d3dTexture;
     }
 
-    wrl::ComPtr<ID3D11Texture2D> Load2DTexFromFile(ID3D11Device& device, const fs::path& filePath,
+    wrl::ComPtr<ID3D11Texture2D> Load2DTexFromFile(ID3D11Device& device,
+                                                   const fs::path& filePath,
                                                    ResourceUsage usage)
     {
         const auto format = filePath.extension();
@@ -90,7 +96,8 @@ namespace dx
         }
         else if (format == L".dds")
         {
-            return Load2DTexFromDdsFile(device, filePath, usage, DirectX::DDS_FLAGS_NONE);
+            return Load2DTexFromDdsFile(device, filePath, usage,
+                                        DirectX::DDS_FLAGS_NONE);
         }
         else
         {
@@ -108,7 +115,8 @@ namespace dx
         desc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
         desc.Texture2D = {0, textureDesc.MipLevels};
         wrl::ComPtr<ID3D11ShaderResourceView> view;
-        TryHR(device.CreateShaderResourceView(&texture, &desc, view.ReleaseAndGetAddressOf()));
+        TryHR(device.CreateShaderResourceView(&texture, &desc,
+                                              view.ReleaseAndGetAddressOf()));
         return view;
     }
 } // namespace dx

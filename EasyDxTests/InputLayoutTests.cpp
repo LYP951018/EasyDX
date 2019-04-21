@@ -6,8 +6,6 @@
 TEST_CASE("Input element descs' Creation", "[InputLayout]")
 {
     constexpr auto desc = dx::PosDesc[0];
-
-
 }
 
 TEST_CASE("Input element descs' ElementEquality", "[InputLayout]")

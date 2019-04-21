@@ -31,23 +31,26 @@ namespace dx
         return kShaderTargetStrings[static_cast<std::uint32_t>(kind)];
     }
 
-#define CREATE_SHADER_Decl(shaderName)                                         \
-    wrl::ComPtr<ID3D11##shaderName> Create##shaderName(::ID3D11Device& device, \
-                                                       gsl::span<const std::byte> byteCode)
+#define CREATE_SHADER_Decl(shaderName)                  \
+    wrl::ComPtr<ID3D11##shaderName> Create##shaderName( \
+        ::ID3D11Device& device, gsl::span<const std::byte> byteCode)
 
     CREATE_SHADER_Decl(VertexShader);
     CREATE_SHADER_Decl(PixelShader);
     CREATE_SHADER_Decl(HullShader);
     CREATE_SHADER_Decl(DomainShader);
 
-    wrl::ComPtr<ID3D11DeviceChild> CreateShaderFromByteCode(ID3D11Device& device3D,
-                                                            gsl::span<const std::byte> byteCode,
-                                                            ShaderKind kind);
+    wrl::ComPtr<ID3D11DeviceChild>
+    CreateShaderFromByteCode(ID3D11Device& device3D,
+                             gsl::span<const std::byte> byteCode,
+                             ShaderKind kind);
 
-    wrl::ComPtr<ID3D10Blob> CompileShaderFromFile(const wchar_t* fileName, const char* entryPoint,
+    wrl::ComPtr<ID3D10Blob> CompileShaderFromFile(const wchar_t* fileName,
+                                                  const char* entryPoint,
                                                   const char* shaderModel);
 
-    wrl::ComPtr<ID3D11ShaderReflection> ReflectShader(gsl::span<const std::byte> byteCode);
+    wrl::ComPtr<ID3D11ShaderReflection>
+    ReflectShader(gsl::span<const std::byte> byteCode);
 
     struct CbFieldInfo
     {
@@ -70,7 +73,8 @@ namespace dx
 
         std::uint32_t AddInfo(const char* name)
         {
-            const std::uint32_t index = gsl::narrow<std::uint32_t>(Resources.size());
+            const std::uint32_t index =
+                gsl::narrow<std::uint32_t>(Resources.size());
             Resources.push_back(nullptr);
             Infos.push_back(BoundedResourcesInfo{std::string{name}, index});
             return index;
@@ -78,9 +82,11 @@ namespace dx
 
         void Bind(std::string_view name, wrl::ComPtr<T> resource)
         {
-            if (const auto pos = std::find_if(
-                    Infos.begin(), Infos.end(),
-                    [&](const BoundedResourcesInfo& info) { return name == info.Name; });
+            if (const auto pos =
+                    std::find_if(Infos.begin(), Infos.end(),
+                                 [&](const BoundedResourcesInfo& info) {
+                                     return name == info.Name;
+                                 });
                 pos != Infos.end())
             {
                 wrl::ComPtr<T>& oldResource = Resources[pos - Infos.begin()];
@@ -113,11 +119,13 @@ namespace dx
             return reinterpret_cast<T&>(*bytes.data());
         }
 
-        void SetBytes(std::string_view fieldName, gsl::span<const std::byte> bytes);
+        void SetBytes(std::string_view fieldName,
+                      gsl::span<const std::byte> bytes);
 
         ShaderInputs& Bind(std::string_view name,
                            wrl::ComPtr<ID3D11ShaderResourceView> resourceView);
-        ShaderInputs& Bind(std::string_view name, wrl::ComPtr<ID3D11SamplerState> sampler);
+        ShaderInputs& Bind(std::string_view name,
+                           wrl::ComPtr<ID3D11SamplerState> sampler);
         gsl::span<const Ptr<ID3D11SamplerState>> Samplers() const;
         gsl::span<const Ptr<ID3D11ShaderResourceView>> ResourceViews() const;
         gsl::span<const std::byte> Bytes() const;
@@ -126,11 +134,13 @@ namespace dx
       private:
         friend class Shader;
 
-        std::vector<CbFieldInfo> CollectFields(std::uint32_t count,
-                                               ID3D11ShaderReflectionConstantBuffer* cbReflection);
+        std::vector<CbFieldInfo>
+        CollectFields(std::uint32_t count,
+                      ID3D11ShaderReflectionConstantBuffer* cbReflection);
         CbFieldInfo& EnsureFieldExists(std::string_view name, std::size_t size);
         gsl::span<std::byte> BytesFromField(const CbFieldInfo& pInfo);
-        gsl::span<const std::byte> BytesFromField(const CbFieldInfo& pInfo) const;
+        gsl::span<const std::byte>
+        BytesFromField(const CbFieldInfo& pInfo) const;
 
         //一般不超过 8 个 constant buffer，线性查找问题不大。
         std::vector<CbFieldInfo> m_fields;
@@ -164,7 +174,8 @@ namespace dx
 
     struct SharedShaderData
     {
-        SharedShaderData(ID3D11Device& device3D, wrl::ComPtr<ID3D11ShaderReflection> reflection_);
+        SharedShaderData(ID3D11Device& device3D,
+                         wrl::ComPtr<ID3D11ShaderReflection> reflection_);
 
         wrl::ComPtr<ID3D11Buffer> GpuCb;
         wrl::ComPtr<ID3D11ShaderReflection> reflection;
@@ -188,22 +199,26 @@ namespace dx
         Shader(const Shader&) = default;
         Shader& operator=(const Shader&) = default;
 
-        static Shader FromSourceFile(ID3D11Device& device3D, const wchar_t* path,
+        static Shader FromSourceFile(ID3D11Device& device3D,
+                                     const wchar_t* path, ShaderKind shaderKind,
+                                     const char* entryName = kDefaultEntryName)
+        {
+            return Shader{device3D, CompileShaderFromFile(
+                                        path, entryName,
+                                        ShaderModelFromKind(shaderKind))};
+        }
+
+        static Shader FromSourceFile(ID3D11Device& device3D,
+                                     const fs::path& path,
                                      ShaderKind shaderKind,
                                      const char* entryName = kDefaultEntryName)
         {
-            return Shader{device3D,
-                          CompileShaderFromFile(path, entryName, ShaderModelFromKind(shaderKind))};
+            return FromSourceFile(device3D, path.c_str(), shaderKind,
+                                  entryName);
         }
 
-        static Shader FromSourceFile(ID3D11Device& device3D, const fs::path& path,
-                                     ShaderKind shaderKind,
-                                     const char* entryName = kDefaultEntryName)
-        {
-            return FromSourceFile(device3D, path.c_str(), shaderKind, entryName);
-        }
-
-        static Shader FromCompiledCso(ID3D11Device& device3D, const fs::path& path);
+        static Shader FromCompiledCso(ID3D11Device& device3D,
+                                      const fs::path& path);
 
         // ShaderKind Kind() const;
 
@@ -211,7 +226,8 @@ namespace dx
         void Apply(const GlobalShaderContext& shaderContext) const;
         void Flush(ID3D11DeviceContext& context3D) const;
         void Setup(ID3D11DeviceContext& context3D) const;
-        void SetBytes(std::string_view fieldName, gsl::span<const std::byte> bytes) const;
+        void SetBytes(std::string_view fieldName,
+                      gsl::span<const std::byte> bytes) const;
         ShaderKind GetKind() const { return m_kind; }
         const wrl::ComPtr<ID3D11ShaderReflection>& GetReflection() const
         {
@@ -224,8 +240,10 @@ namespace dx
             SetBytes(fieldName, gsl::as_bytes(SingleAsSpan(value)));
         }
 
-        void Bind(std::string_view name, wrl::ComPtr<ID3D11ShaderResourceView> resourceView) const;
-        void Bind(std::string_view name, wrl::ComPtr<ID3D11SamplerState> sampler) const;
+        void Bind(std::string_view name,
+                  wrl::ComPtr<ID3D11ShaderResourceView> resourceView) const;
+        void Bind(std::string_view name,
+                  wrl::ComPtr<ID3D11SamplerState> sampler) const;
 
         explicit operator bool() const { return m_shaderObject != nullptr; }
 
@@ -265,10 +283,14 @@ namespace dx
 
         const Shader& operator[](ShaderKind kind) const noexcept
         {
-            return static_cast<const BaseType&>(*this)[static_cast<std::size_t>(kind)];
+            return static_cast<const BaseType&>(
+                *this)[static_cast<std::size_t>(kind)];
         }
 
-        const Shader& GetVertexShader() const { return (*this)[ShaderKind::kVertexShader]; }
+        const Shader& GetVertexShader() const
+        {
+            return (*this)[ShaderKind::kVertexShader];
+        }
 
       private:
         VSSemantics MaskFromVertexShader();
@@ -279,14 +301,23 @@ namespace dx
     {
       public:
         ShadersBuilder()
-            : m_shaders{Shader{ShaderKind::kPixelShader},    Shader{ShaderKind::kVertexShader},
-                        Shader{ShaderKind::kGeometryShader}, Shader{ShaderKind::kHullShader},
-                        Shader{ShaderKind::kDomainShader},   Shader{ShaderKind::kComputeShader}}
+            : m_shaders{Shader{ShaderKind::kPixelShader},
+                        Shader{ShaderKind::kVertexShader},
+                        Shader{ShaderKind::kGeometryShader},
+                        Shader{ShaderKind::kHullShader},
+                        Shader{ShaderKind::kDomainShader},
+                        Shader{ShaderKind::kComputeShader}}
         {}
 
-        ShadersBuilder& WithVS(Shader vs) { return Set(ShaderKind::kVertexShader, std::move(vs)); }
+        ShadersBuilder& WithVS(Shader vs)
+        {
+            return Set(ShaderKind::kVertexShader, std::move(vs));
+        }
 
-        ShadersBuilder& WithPS(Shader ps) { return Set(ShaderKind::kPixelShader, std::move(ps)); }
+        ShadersBuilder& WithPS(Shader ps)
+        {
+            return Set(ShaderKind::kPixelShader, std::move(ps));
+        }
 
         ShaderCollection Build() const;
 
@@ -299,10 +330,14 @@ namespace dx
     struct Pass;
     struct PassWithShaderInputs;
 
-    ShaderCollection MakeShaderCollection(Shader vertexShader, Shader pixelShader);
-    void SetupShaders(ID3D11DeviceContext& context3D, const ShaderCollection& shaders);
-    void FillUpShaders(ID3D11DeviceContext& context3D, const PassWithShaderInputs& passWithInputs,
-                       const DirectX::XMMATRIX& world, const ShaderInputs* additionalInput,
+    ShaderCollection MakeShaderCollection(Shader vertexShader,
+                                          Shader pixelShader);
+    void SetupShaders(ID3D11DeviceContext& context3D,
+                      const ShaderCollection& shaders);
+    void FillUpShaders(ID3D11DeviceContext& context3D,
+                       const PassWithShaderInputs& passWithInputs,
+                       const DirectX::XMMATRIX& world,
+                       const ShaderInputs* additionalInput,
                        const GlobalShaderContext& shaderContext);
 
     struct Shaders
@@ -314,7 +349,8 @@ namespace dx
         static void Setup();
         static void LoadDefaultShaders(ID3D11Device& device3D);
 
-#define DEF_SHADER_NAME(name) inline static constexpr auto CONCAT(k, name) = CONCAT(u8, #name)
+#define DEF_SHADER_NAME(name) \
+    inline static constexpr auto CONCAT(k, name) = CONCAT(u8, #name)
         DEF_SHADER_NAME(BasicLighting);
         DEF_SHADER_NAME(PosNormalTexTransform);
         DEF_SHADER_NAME(QuadVS);
@@ -322,8 +358,8 @@ namespace dx
         DEF_SHADER_NAME(PosVS);
         DEF_SHADER_NAME(PosNormalTexVS);
         DEF_SHADER_NAME(PosNormTanTexVS);
-		DEF_SHADER_NAME(DefaultShadowCasterVS);
-		DEF_SHADER_NAME(DefaultShadowCasterPS);
+        DEF_SHADER_NAME(DefaultShadowCasterVS);
+        DEF_SHADER_NAME(DefaultShadowCasterPS);
 #undef DEF_SHADER_NAME
 
       private:
@@ -331,6 +367,7 @@ namespace dx
         friend class ShaderCollection;
 
         std::unordered_map<std::string, Shader> m_shaders;
-        std::unordered_map<std::string_view, VSSemantics> m_semanticsNameToMaskMap;
+        std::unordered_map<std::string_view, VSSemantics>
+            m_semanticsNameToMaskMap;
     };
 } // namespace dx

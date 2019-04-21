@@ -36,7 +36,8 @@ namespace dx
         ~IndependentGraphics();
     };
 
-    wrl::ComPtr<ID3D11Texture2D> GetBuffer(IDXGISwapChain& swapChain, std::uint32_t index = 0);
+    wrl::ComPtr<ID3D11Texture2D> GetBuffer(IDXGISwapChain& swapChain,
+                                           std::uint32_t index = 0);
 
     struct Size;
 
@@ -75,7 +76,8 @@ namespace dx
         DXGI_SWAP_CHAIN_DESC m_desc;
     };
 
-    DXGI_SWAP_CHAIN_DESC DefaultSwapChainDescFromWindowHandle(void* windowHandle);
+    DXGI_SWAP_CHAIN_DESC
+    DefaultSwapChainDescFromWindowHandle(void* windowHandle);
 
     struct DepthStencil
     {
@@ -88,7 +90,8 @@ namespace dx
 
         void ClearDepth(ID3D11DeviceContext& context, float depth);
         void ClearStencil(ID3D11DeviceContext& context, std::uint8_t stencil);
-        void ClearBoth(ID3D11DeviceContext& context, float depth = 1.0f, std::uint8_t stencil = 0);
+        void ClearBoth(ID3D11DeviceContext& context, float depth = 1.0f,
+                       std::uint8_t stencil = 0);
         void Reset();
 
         auto AsTuple() const { return std::tie(Ref(tex_), Ref(view_)); }
@@ -106,19 +109,22 @@ namespace dx
       public:
         DXGI_SWAP_CHAIN_DESC SwapChainDesc;
 
-        DependentGraphics(ID3D11Device& device3D, const DXGI_SWAP_CHAIN_DESC& desc);
+        DependentGraphics(ID3D11Device& device3D,
+                          const DXGI_SWAP_CHAIN_DESC& desc);
 
         SwapChain& GetSwapChain() { return m_swapChain; }
         DepthStencil& GetDepthStencil() { return m_depthStencil; }
         const DepthStencil& GetDepthStencil() const { return m_depthStencil; }
         ID3D11RenderTargetView* MainRt() const { return m_mainRt.Get(); }
-        void ClearMainRt(ID3D11DeviceContext& context3D, DirectX::XMVECTOR color);
+        void ClearMainRt(ID3D11DeviceContext& context3D,
+                         DirectX::XMVECTOR color);
 
         DELETE_COPY(DependentGraphics)
         DEFAULT_MOVE(DependentGraphics)
 
       protected:
-        void OnResize(ID3D11Device& device3D, ID3D11DeviceContext& context3D, const Size& newSize);
+        void OnResize(ID3D11Device& device3D, ID3D11DeviceContext& context3D,
+                      const Size& newSize);
 
       private:
         void CreateMainRt(ID3D11Device& device3D);

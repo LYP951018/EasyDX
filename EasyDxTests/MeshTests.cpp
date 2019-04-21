@@ -16,11 +16,12 @@ TEST_CASE("Mesh's single stream construction", "[Mesh]")
     const auto inputLayout =
         allocator.Register(device, dx::PosDesc, dx::AsBytes(FakePosVSByteCode));
     const dx::ShortIndex indices[] = {1, 2, 3, 4, 5, 6};
-    auto mesh = dx::Mesh::CreateImmutable(device, inputLayout, gsl::make_span(indices),
-                                          gsl::make_span(positions));
+    auto mesh =
+        dx::Mesh::CreateImmutable(device, inputLayout, gsl::make_span(indices),
+                                  gsl::make_span(positions));
     CHECK(gsl::make_span(positions) == mesh->Positions());
-    CHECK(mesh->IndexCount() == std::size(indices));
-    CHECK(mesh->VertexCount() == std::size(positions));
+    CHECK(mesh->GetIndexCount() == std::size(indices));
+    CHECK(mesh->GetVertexCount() == std::size(positions));
     auto& bindData = mesh->BindData();
     CHECK(bindData.Strides[0] == sizeof(dx::PositionType));
     CHECK(bindData.Offsets[0] == 0);
@@ -28,9 +29,9 @@ TEST_CASE("Mesh's single stream construction", "[Mesh]")
     const auto vbs = mesh->GetGpuVbsWithoutFlush();
     CHECK(vbs.size() == 1);
     /*{
-        auto mapped = dx::Map(context, dx::Ref(vbs[0]), dx::ResourceMapType::Read);
-        auto mem = mapped.Bytes();
-        CHECK(mem.size() == std::size(positions));
-        CHECK(mem.size_bytes() == std::size(positions) * sizeof(DirectX::XMFLOAT3A));
+        auto mapped = dx::Map(context, dx::Ref(vbs[0]),
+    dx::ResourceMapType::Read); auto mem = mapped.Bytes(); CHECK(mem.size()
+    == std::size(positions)); CHECK(mem.size_bytes() ==
+    std::size(positions) * sizeof(DirectX::XMFLOAT3A));
     }*/
 }

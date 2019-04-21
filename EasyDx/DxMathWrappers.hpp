@@ -32,8 +32,12 @@ namespace DirectX
 {
     inline bool operator==(const XMFLOAT3& lhs, const XMFLOAT3& rhs)
     {
-        return XMVector3NearEqual(::dx::Load(lhs), ::dx::Load(rhs), XMVectorSplatEpsilon());
+        return XMVector3NearEqual(::dx::Load(lhs), ::dx::Load(rhs),
+                                  XMVectorSplatEpsilon());
     }
 
-    inline bool operator!=(const XMFLOAT3& lhs, const XMFLOAT3& rhs) { return !(lhs == rhs); }
+    inline bool operator!=(const XMFLOAT3& lhs, const XMFLOAT3& rhs)
+    {
+        return !(lhs == rhs);
+    }
 } // namespace DirectX

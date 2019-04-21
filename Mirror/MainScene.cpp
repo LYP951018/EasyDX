@@ -10,85 +10,96 @@ std::unique_ptr<dx::Object> MainScene::MakeFloor() const
 {
     using namespace DirectX;
 
-    const dx::PositionType positions[] = {{-3.5f, 0.0f, -10.0f}, {-3.5f, 0.0f, 0.0f},
-                                          {7.5f, 0.0f, 0.0f},    {-3.5f, 0.0f, -10.0f},
-                                          {7.5f, 0.0f, 0.0f},    {7.5f, 0.0f, -10.0f}};
+    const dx::PositionType positions[] = {
+        {-3.5f, 0.0f, -10.0f}, {-3.5f, 0.0f, 0.0f}, {7.5f, 0.0f, 0.0f},
+        {-3.5f, 0.0f, -10.0f}, {7.5f, 0.0f, 0.0f},  {7.5f, 0.0f, -10.0f}};
     const dx::VectorType normals[] = {
         {0.0f, 1.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 1.0f, 0.0f},
         {0.0f, 1.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 1.0f, 0.0f},
     };
-    const dx::TexCoordType texCoords[] = {{0.0f, 4.0f}, {0.0f, 0.0f}, {4.0f, 0.0f},
-                                          {0.0f, 4.0f}, {4.0f, 0.0f}, {4.0f, 4.0f}};
+    const dx::TexCoordType texCoords[] = {{0.0f, 4.0f}, {0.0f, 0.0f},
+                                          {4.0f, 0.0f}, {0.0f, 4.0f},
+                                          {4.0f, 0.0f}, {4.0f, 4.0f}};
     const dx::ShortIndex indices[] = {0, 1, 2, 3, 4, 5};
-    const dx::Smoothness smoothness = {
-        XMFLOAT4{0.5f, 0.5f, 0.5f, 1.0f}, XMFLOAT4{1.0f, 1.0f, 1.0f, 1.0f},
-        XMFLOAT4{0.4f, 0.4f, 0.4f, 1.0f}, XMFLOAT4{1.0f, 1.0f, 1.0f, 1.0f}, 16.0f};
+    const dx::Smoothness smoothness = {XMFLOAT4{0.5f, 0.5f, 0.5f, 1.0f},
+                                       XMFLOAT4{1.0f, 1.0f, 1.0f, 1.0f},
+                                       XMFLOAT4{0.4f, 0.4f, 0.4f, 1.0f},
+                                       XMFLOAT4{1.0f, 1.0f, 1.0f, 1.0f}, 16.0f};
 
     return dx::MakeObjectWithDefaultRendering(
-        Device3D, Predefined,
-        dx::PosNormTexVertexInput{span{positions}, span{normals}, span{texCoords}, span{indices}},
-        smoothness, dx::Get2DTexView(Device3D, dx::Ref(m_checkBoardTex)), Predefined.GetRepeatSampler());
+        Device3D, dx::PredefinedResources::GetInstance(),
+        dx::PosNormTexVertexInput{span{positions}, span{normals},
+                                  span{texCoords}, span{indices}},
+        smoothness, dx::Get2DTexView(Device3D, dx::Ref(m_checkBoardTex)),
+        dx::PredefinedResources::GetRepeatSampler());
 }
 
 std::unique_ptr<dx::Object> MainScene::MakeWall() const
 {
     const dx::PositionType positions[] = {
-        {-3.5f, 0.0f, 0.0f}, {-3.5f, 4.0f, 0.0f}, {-2.5f, 4.0f, 0.0f}, {-3.5f, 0.0f, 0.0f},
-        {-2.5f, 4.0f, 0.0f}, {-2.5f, 0.0f, 0.0f}, {2.5f, 0.0f, 0.0f},  {2.5f, 4.0f, 0.0f},
-        {7.5f, 4.0f, 0.0f},  {2.5f, 0.0f, 0.0f},  {7.5f, 4.0f, 0.0f},  {7.5f, 0.0f, 0.0f},
-        {-3.5f, 4.0f, 0.0f}, {-3.5f, 6.0f, 0.0f}, {7.5f, 6.0f, 0.0f},  {-3.5f, 4.0f, 0.0f},
-        {7.5f, 6.0f, 0.0f},  {7.5f, 4.0f, 0.0f}};
+        {-3.5f, 0.0f, 0.0f}, {-3.5f, 4.0f, 0.0f}, {-2.5f, 4.0f, 0.0f},
+        {-3.5f, 0.0f, 0.0f}, {-2.5f, 4.0f, 0.0f}, {-2.5f, 0.0f, 0.0f},
+        {2.5f, 0.0f, 0.0f},  {2.5f, 4.0f, 0.0f},  {7.5f, 4.0f, 0.0f},
+        {2.5f, 0.0f, 0.0f},  {7.5f, 4.0f, 0.0f},  {7.5f, 0.0f, 0.0f},
+        {-3.5f, 4.0f, 0.0f}, {-3.5f, 6.0f, 0.0f}, {7.5f, 6.0f, 0.0f},
+        {-3.5f, 4.0f, 0.0f}, {7.5f, 6.0f, 0.0f},  {7.5f, 4.0f, 0.0f}};
     const dx::VectorType normals[] = {
-        {0.0f, 0.0f, -1.0f}, {0.0f, 0.0f, -1.0f}, {0.0f, 0.0f, -1.0f}, {0.0f, 0.0f, -1.0f},
-        {0.0f, 0.0f, -1.0f}, {0.0f, 0.0f, -1.0f}, {0.0f, 0.0f, -1.0f}, {0.0f, 0.0f, -1.0f},
-        {0.0f, 0.0f, -1.0f}, {0.0f, 0.0f, -1.0f}, {0.0f, 0.0f, -1.0f}, {0.0f, 0.0f, -1.0f},
-        {0.0f, 0.0f, -1.0f}, {0.0f, 0.0f, -1.0f}, {0.0f, 0.0f, -1.0f}, {0.0f, 0.0f, -1.0f},
-        {0.0f, 0.0f, -1.0f}, {0.0f, 0.0f, -1.0f}};
+        {0.0f, 0.0f, -1.0f}, {0.0f, 0.0f, -1.0f}, {0.0f, 0.0f, -1.0f},
+        {0.0f, 0.0f, -1.0f}, {0.0f, 0.0f, -1.0f}, {0.0f, 0.0f, -1.0f},
+        {0.0f, 0.0f, -1.0f}, {0.0f, 0.0f, -1.0f}, {0.0f, 0.0f, -1.0f},
+        {0.0f, 0.0f, -1.0f}, {0.0f, 0.0f, -1.0f}, {0.0f, 0.0f, -1.0f},
+        {0.0f, 0.0f, -1.0f}, {0.0f, 0.0f, -1.0f}, {0.0f, 0.0f, -1.0f},
+        {0.0f, 0.0f, -1.0f}, {0.0f, 0.0f, -1.0f}, {0.0f, 0.0f, -1.0f}};
     const dx::TexCoordType texCoords[] = {
-        {0.0f, 2.0f}, {0.0f, 0.0f}, {0.5f, 0.0f}, {0.0f, 2.0f}, {0.5f, 0.0f}, {0.5f, 2.0f},
-        {0.0f, 2.0f}, {0.0f, 0.0f}, {2.0f, 0.0f}, {0.0f, 2.0f}, {2.0f, 0.0f}, {2.0f, 2.0f},
-        {0.0f, 1.0f}, {0.0f, 0.0f}, {6.0f, 0.0f}, {0.0f, 1.0f}, {6.0f, 0.0f}, {6.0f, 1.0f},
+        {0.0f, 2.0f}, {0.0f, 0.0f}, {0.5f, 0.0f}, {0.0f, 2.0f}, {0.5f, 0.0f},
+        {0.5f, 2.0f}, {0.0f, 2.0f}, {0.0f, 0.0f}, {2.0f, 0.0f}, {0.0f, 2.0f},
+        {2.0f, 0.0f}, {2.0f, 2.0f}, {0.0f, 1.0f}, {0.0f, 0.0f}, {6.0f, 0.0f},
+        {0.0f, 1.0f}, {6.0f, 0.0f}, {6.0f, 1.0f},
     };
     std::uint16_t indices[18];
     std::iota(std::begin(indices), std::end(indices), 0);
     using namespace DirectX;
 
-    const auto smoothness =
-        dx::Smoothness{XMFLOAT4{0.5f, 0.5f, 0.5f, 1.0f}, XMFLOAT4{1.0f, 1.0f, 1.0f, 1.0f},
-                       XMFLOAT4{0.4f, 0.4f, 0.4f, 1.0f}, XMFLOAT4{1.0f, 1.0f, 1.0f, 1.0f}, 16.0f};
+    const auto smoothness = dx::Smoothness{
+        XMFLOAT4{0.5f, 0.5f, 0.5f, 1.0f}, XMFLOAT4{1.0f, 1.0f, 1.0f, 1.0f},
+        XMFLOAT4{0.4f, 0.4f, 0.4f, 1.0f}, XMFLOAT4{1.0f, 1.0f, 1.0f, 1.0f},
+        16.0f};
 
     return dx::MakeObjectWithDefaultRendering(
-        Device3D, Predefined,
-        dx::PosNormTexVertexInput{span{positions}, span{normals}, span{texCoords}, span{indices}},
-        smoothness,
-        dx::Get2DTexView(Device3D, dx::Ref(m_brick01Tex)), Predefined.GetRepeatSampler());
+        Device3D, dx::PredefinedResources::GetInstance(),
+        dx::PosNormTexVertexInput{span{positions}, span{normals},
+                                  span{texCoords}, span{indices}},
+        smoothness, dx::Get2DTexView(Device3D, dx::Ref(m_brick01Tex)),
+        dx::PredefinedResources::GetRepeatSampler());
 }
 
 std::unique_ptr<dx::Object> MainScene::MakeMirror() const
 {
     using namespace DirectX;
 
-    const dx::PositionType positions[] = {{-2.5f, 0.0f, 0.0f}, {-2.5f, 4.0f, 0.0f},
-                                          {2.5f, 4.0f, 0.0f},  {-2.5f, 0.0f, 0.0f},
-                                          {2.5f, 4.0f, 0.0f},  {2.5f, 0.0f, 0.0f}};
+    const dx::PositionType positions[] = {
+        {-2.5f, 0.0f, 0.0f}, {-2.5f, 4.0f, 0.0f}, {2.5f, 4.0f, 0.0f},
+        {-2.5f, 0.0f, 0.0f}, {2.5f, 4.0f, 0.0f},  {2.5f, 0.0f, 0.0f}};
 
     const dx::VectorType normals[] = {
         {0.0f, 0.0f, -1.0f}, {0.0f, 0.0f, -1.0f}, {0.0f, 0.0f, -1.0f},
         {0.0f, 0.0f, -1.0f}, {0.0f, 0.0f, -1.0f}, {0.0f, 0.0f, -1.0f},
     };
 
-    const dx::TexCoordType texCoords[] = {{0.0f, 1.0f}, {0.0f, 0.0f}, {1.0f, 0.0f},
-                                          {0.0f, 1.0f}, {1.0f, 0.0f}, {1.0f, 1.0f}};
+    const dx::TexCoordType texCoords[] = {{0.0f, 1.0f}, {0.0f, 0.0f},
+                                          {1.0f, 0.0f}, {0.0f, 1.0f},
+                                          {1.0f, 0.0f}, {1.0f, 1.0f}};
 
     const std::uint16_t indices[] = {0, 1, 2, 3, 4, 5};
 
-    auto smoothness =
-        dx::Smoothness{XMFLOAT4{0.5f, 0.5f, 0.5f, 1.0f}, XMFLOAT4{1.0f, 1.0f, 1.0f, 0.5f},
-                       XMFLOAT4{0.4f, 0.4f, 0.4f, 1.0f}, XMFLOAT4{}, 16.0f};
+    auto smoothness = dx::Smoothness{
+        XMFLOAT4{0.5f, 0.5f, 0.5f, 1.0f}, XMFLOAT4{1.0f, 1.0f, 1.0f, 0.5f},
+        XMFLOAT4{0.4f, 0.4f, 0.4f, 1.0f}, XMFLOAT4{}, 16.0f};
 
     return dx::MakeObjectWithDefaultRendering(
-        Device3D, Predefined,
-        dx::PosNormTexVertexInput{span{positions}, span{normals}, span{texCoords}, span{indices}},
+        Device3D, dx::PredefinedResources::GetInstance(),
+        dx::PosNormTexVertexInput{span{positions}, span{normals},
+                                  span{texCoords}, span{indices}},
         smoothness, dx::Get2DTexView(Device3D, dx::Ref(m_iceTex)));
 }
 
@@ -96,17 +107,16 @@ std::unique_ptr<dx::Object> MainScene::MakeBall() const
 {
     using namespace DirectX;
 
-    dx::ModelResultUnit sphereMesh;
-    dx::MakeUVSphere(1.0f, 30.0f, 30.0f, sphereMesh);
+    dx::LoadedMesh sphereMesh;
+    dx::MakeUVSphere(1.0f, 30, 30, sphereMesh);
 
-    auto smoothness =
-        dx::Smoothness{XMFLOAT4{0.5f, 0.5f, 0.5f, 1.0f}, XMFLOAT4{1.0f, 1.0f, 1.0f, 0.5f},
-                       XMFLOAT4{0.4f, 0.4f, 0.4f, 1.0f}, XMFLOAT4{}, 16.0f};
+    auto smoothness = dx::Smoothness{
+        XMFLOAT4{0.5f, 0.5f, 0.5f, 1.0f}, XMFLOAT4{1.0f, 1.0f, 1.0f, 0.5f},
+        XMFLOAT4{0.4f, 0.4f, 0.4f, 1.0f}, XMFLOAT4{}, 16.0f};
 
     auto ball = dx::MakeObjectWithDefaultRendering(
-        Device3D, Predefined,
-        sphereMesh,
-        smoothness, Predefined.GetWhite());
+        Device3D, dx::PredefinedResources::GetInstance(), sphereMesh,
+        smoothness, dx::PredefinedResources::GetWhite());
 
     dx::Transform transform;
     transform.SetPosition({0.0f, 2.0f, -2.5f});
@@ -114,11 +124,8 @@ std::unique_ptr<dx::Object> MainScene::MakeBall() const
     return ball;
 };
 
-MainScene::MainScene(dx::Game& game)
-    : dx::SceneBase{game}
+MainScene::MainScene(dx::Game& game) : dx::SceneBase{game}
 {
-    auto& resources = game.IndependentResources();
-    auto& device = resources.Device3D();
     BuildLights();
     BuildCamera();
     BuildObjects();
@@ -139,14 +146,16 @@ void MainScene::InitReflectedMaterial()
     using namespace DirectX;
 
     m_reflectedMaterial = dx::MakeBasicLightingMaterial(
-        Predefined,
+        dx::PredefinedResources::GetInstance(),
         // the same smoothness with sphere
-        dx::Smoothness{XMFLOAT4{0.5f, 0.5f, 0.5f, 1.0f}, XMFLOAT4{1.0f, 1.0f, 1.0f, 0.5f},
+        dx::Smoothness{XMFLOAT4{0.5f, 0.5f, 0.5f, 1.0f},
+                       XMFLOAT4{1.0f, 1.0f, 1.0f, 0.5f},
                        XMFLOAT4{0.4f, 0.4f, 0.4f, 1.0f}, XMFLOAT4{}, 16.0f},
-        Predefined.GetWhite());
-    auto& [shaders, blending, depthStencil, rasterizerState] = m_reflectedMaterial->Passes[0];
-    rasterizerState = Predefined.GetCullClockwise();
-    depthStencil.StencilState = Predefined.GetDrawnOnly();
+        dx::PredefinedResources::GetWhite());
+    auto& [shaders, blending, depthStencil, rasterizerState] =
+        m_reflectedMaterial->Passes[0];
+    rasterizerState = dx::PredefinedResources::GetCullClockwise();
+    depthStencil.StencilState = dx::PredefinedResources::GetDrawnOnly();
     depthStencil.StencilRef = 1;
 }
 
@@ -189,25 +198,25 @@ void MainScene::BuildLights()
 
 void MainScene::LoadTextures()
 {
-    m_checkBoardTex =
-        dx::Load2DTexFromDdsFile(Device3D, fs::current_path() / "Tex" / "checkboard.dds");
-    m_brick01Tex = dx::Load2DTexFromDdsFile(Device3D, fs::current_path() / "Tex" / "brick01.dds");
-    m_iceTex = dx::Load2DTexFromDdsFile(Device3D, fs::current_path() / "Tex" / "ice.dds");
+    m_checkBoardTex = dx::Load2DTexFromDdsFile(
+        Device3D, fs::current_path() / "Tex" / "checkboard.dds");
+    m_brick01Tex = dx::Load2DTexFromDdsFile(
+        Device3D, fs::current_path() / "Tex" / "brick01.dds");
+    m_iceTex = dx::Load2DTexFromDdsFile(Device3D,
+                                        fs::current_path() / "Tex" / "ice.dds");
 }
 
-void MainScene::Render(const dx::Game& game)
+void MainScene::Render(ID3D11DeviceContext& context3D,
+                       dx::GlobalGraphicsContext& gfxContext,
+                       const dx::Game& game)
 {
-    auto& dependentGraphics = game.DependentResources();
-    auto& [swapChain, depthStencilBuffer] = dependentGraphics;
-    auto& independent = game.IndependentResources();
-    auto& context3D = independent.Context3D();
-    dependentGraphics.Bind(context3D);
+    gfxContext.ClearBoth();
+    gfxContext.ClearMainRt(DirectX::Colors::White);
     const auto& camera = MainCamera();
-    // const auto lights = gsl::make_span(dirLights_);
-    depthStencilBuffer.ClearBoth(context3D);
-    swapChain.Front().Clear(context3D, DirectX::Colors::White);
+    auto mainRt = gfxContext.MainRt();
+    context3D.OMSetRenderTargets(1, &mainRt,
+                                 gfxContext.GetDepthStencil().View());
     context3D.IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    const auto& predefined = game.Predefined();
 
     using namespace dx::systems;
 
@@ -226,10 +235,11 @@ void MainScene::Render(const dx::Game& game)
 
     // 2. Render mirror. stencil buffer only
     {
-        auto& [shaders, blending, depthStencil, rasterizerState] = mirrorMat.Passes[0];
-        blending.BlendState = predefined.GetNoWriteToRT();
+        auto& [shaders, blending, depthStencil, rasterizerState] =
+            mirrorMat.Passes[0];
+        blending.BlendState = dx::PredefinedResources::GetNoWriteToRT();
         blending.SampleMask = static_cast<UINT>(-1);
-        depthStencil.StencilState = predefined.GetStencilAlways();
+        depthStencil.StencilState = dx::PredefinedResources::GetStencilAlways();
         depthStencil.StencilRef = 1;
         render(*m_mirror);
     }
@@ -241,22 +251,24 @@ void MainScene::Render(const dx::Game& game)
         auto sharedMesh = meshRenderer->SharedMesh();
         auto& material = meshRenderer->GetMaterial();
         auto lights = Lights();
-        auto reflectionMatrix =
-            DirectX::XMMatrixReflect(DirectX::XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f));
+        auto reflectionMatrix = DirectX::XMMatrixReflect(
+            DirectX::XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f));
         for (auto& light : lights)
         {
             auto& direction = std::get<dx::DirectionalLight>(light).Direction;
             auto dirF4 = dx::MakeDirection4(direction);
-            auto reflected =
-                DirectX::XMVector4Transform(DirectX::XMLoadFloat4(&dirF4), reflectionMatrix);
+            auto reflected = DirectX::XMVector4Transform(
+                DirectX::XMLoadFloat4(&dirF4), reflectionMatrix);
             DirectX::XMStoreFloat3(&direction, reflected);
         }
-        auto& transform = m_ball->GetComponent<dx::TransformComponent>()->GetTransform();
+        auto& transform =
+            m_ball->GetComponent<dx::TransformComponent>()->GetTransform();
         auto& shaders = m_reflectedMaterial->Passes[0].Shaders;
         dx::systems::PrepareVsCb(context3D, shaders.VertexShader_.Inputs,
-                                 transform.Matrix() * reflectionMatrix, gsl::make_span(lights), camera);
-        dx::systems::PreparePsCb(context3D, shaders.PixelShader_.Inputs, gsl::make_span(lights),
-                                 camera);
+                                 transform.Matrix() * reflectionMatrix,
+                                 camera.GetView(), camera.GetProjection());
+        dx::systems::PreparePsCb(context3D, shaders.PixelShader_.Inputs,
+                                 gsl::make_span(lights), camera);
         dx::DrawMesh(context3D, *sharedMesh, *m_reflectedMaterial);
     }
 
@@ -264,18 +276,18 @@ void MainScene::Render(const dx::Game& game)
     {
         auto& blending = mirrorMat.Passes[0].Blending;
         blending.BlendFactor = {0.5f, 0.5f, 0.5f, 1.0f};
-        blending.BlendState = predefined.GetTransparent();
+        blending.BlendState = dx::PredefinedResources::GetTransparent();
         blending.SampleMask = static_cast<UINT>(-1);
         render(*m_mirror);
     }
 
     //// 5. Draw the shadow.
     //{
-    //    context3D.OMSetDepthStencilState(predefined.GetNoDoubleBlending().Get(), 0);
-    //    dx::UpdateAndDraw(drawContext, sphereShadow_);
+    //    context3D.OMSetDepthStencilState(predefined.GetNoDoubleBlending().Get(),
+    //    0); dx::UpdateAndDraw(drawContext, sphereShadow_);
     //    context3D.OMSetBlendState({}, {}, static_cast<UINT>(-1));
     //    context3D.OMSetDepthStencilState({}, 0);
     //}
 
-    // swapChain.Present();
+    gfxContext.GetSwapChain().Present();
 }

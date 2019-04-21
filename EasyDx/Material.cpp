@@ -3,7 +3,8 @@
 
 namespace dx
 {
-    void SetupBlending(ID3D11DeviceContext& context3D, const BlendSettings& blendSettings)
+    void SetupBlending(ID3D11DeviceContext& context3D,
+                       const BlendSettings& blendSettings)
     {
         if (blendSettings.BlendState == nullptr)
         {
@@ -12,12 +13,14 @@ namespace dx
         else
         {
             context3D.OMSetBlendState(blendSettings.BlendState.Get(),
-                                      blendSettings.BlendFactor.data(), blendSettings.SampleMask);
+                                      blendSettings.BlendFactor.data(),
+                                      blendSettings.SampleMask);
         }
     }
 
-    void SetupDepthStencilStates(ID3D11DeviceContext& context3D,
-                                 const DepthStencilSettings& depthStencilSettings)
+    void
+    SetupDepthStencilStates(ID3D11DeviceContext& context3D,
+                            const DepthStencilSettings& depthStencilSettings)
     {
         if (depthStencilSettings.StencilState == nullptr)
         {
@@ -25,12 +28,14 @@ namespace dx
         }
         else
         {
-            context3D.OMSetDepthStencilState(depthStencilSettings.StencilState.Get(),
-                                             depthStencilSettings.StencilRef);
+            context3D.OMSetDepthStencilState(
+                depthStencilSettings.StencilState.Get(),
+                depthStencilSettings.StencilRef);
         }
     }
 
-    void SetupRasterizerState(ID3D11DeviceContext& context3D, ID3D11RasterizerState& rasterState)
+    void SetupRasterizerState(ID3D11DeviceContext& context3D,
+                              ID3D11RasterizerState& rasterState)
     {
         context3D.RSSetState(&rasterState);
     }
@@ -49,9 +54,10 @@ namespace dx
     {
         g_predefinedPasses = std::make_unique<PredefinedPasses>();
 
-        g_predefinedPasses->m_defaultShadowCaster = std::make_shared<Pass>(
-            Pass{MakeShaderCollection(Shaders::Get(Shaders::kDefaultShadowCasterVS).value(),
-                                      Shaders::Get(Shaders::kDefaultShadowCasterPS).value())});
+        g_predefinedPasses->m_defaultShadowCaster =
+            std::make_shared<Pass>(Pass{MakeShaderCollection(
+                Shaders::Get(Shaders::kDefaultShadowCasterVS).value(),
+                Shaders::Get(Shaders::kDefaultShadowCasterPS).value())});
     }
 
     std::shared_ptr<Pass> PredefinedPasses::GetPlainShadowCaster()

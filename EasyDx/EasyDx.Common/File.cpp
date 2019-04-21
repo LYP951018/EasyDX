@@ -8,7 +8,8 @@ namespace dx
                                 FileOpenMode openMode, FileShareMode shareMode)
     {
         auto fileHandle = FileHandle{::CreateFile(
-            path.c_str(), static_cast<DWORD>(accessMode), static_cast<DWORD>(shareMode), nullptr,
+            path.c_str(), static_cast<DWORD>(accessMode),
+            static_cast<DWORD>(shareMode), nullptr,
             static_cast<DWORD>(openMode), FILE_ATTRIBUTE_NORMAL, nullptr)};
         if (!fileHandle)
         {

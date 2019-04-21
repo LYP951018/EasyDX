@@ -29,9 +29,10 @@ namespace dx
         }
 
         template<typename... ComponentsT,
-                 typename = std::enable_if_t<std::conjunction_v<std::negation<
-                     std::disjunction<is_unique_ptr<std::decay_t<ComponentsT>>,
-                                      std::is_same<std::decay_t<ComponentsT>, Object>>>...>>>
+                 typename = std::enable_if_t<
+                     std::conjunction_v<std::negation<std::disjunction<
+                         is_unique_ptr<std::decay_t<ComponentsT>>,
+                         std::is_same<std::decay_t<ComponentsT>, Object>>>...>>>
         Object(ComponentsT&&... components)
         {
             AddComponents(std::make_unique<std::decay_t<ComponentsT>>(
@@ -54,12 +55,13 @@ namespace dx
             return ret;
         }
 
-        template<
-            typename T, typename... Args,
-            typename = std::enable_if_t<!std::disjunction_v<is_unique_ptr<std::decay_t<Args>>...>>>
+        template<typename T, typename... Args,
+                 typename = std::enable_if_t<
+                     !std::disjunction_v<is_unique_ptr<std::decay_t<Args>>...>>>
         T& AddComponent(Args&&... args)
         {
-            return AddComponent<T>(std::make_unique<T>(std::forward<Args>(args)...));
+            return AddComponent<T>(
+                std::make_unique<T>(std::forward<Args>(args)...));
         }
 
         template<typename... Args>
@@ -72,7 +74,8 @@ namespace dx
       private:
         void AddComponentInternal(std::unique_ptr<ComponentBase> component);
 
-        boost::container::static_vector<std::unique_ptr<ComponentBase>, kMaxComponentCount>
+        boost::container::static_vector<std::unique_ptr<ComponentBase>,
+                                        kMaxComponentCount>
             m_components;
     };
 } // namespace dx

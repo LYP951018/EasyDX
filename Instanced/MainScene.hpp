@@ -9,7 +9,6 @@ class MainScene : public dx::SceneBase
 {
   public:
     MainScene(dx::Game& game);
-    
 
   private:
     void InitInstancingBuffer();

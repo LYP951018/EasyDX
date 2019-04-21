@@ -44,7 +44,10 @@ namespace dx
         m_mousePosPair = std::pair{point, point};
     }
 
-    void InputSystem::OnFrameDone() { m_mousePosPair->first = m_mousePosPair->second; }
+    void InputSystem::OnFrameDone()
+    {
+        m_mousePosPair->first = m_mousePosPair->second;
+    }
 
     void InputSystem::OnFrameStart()
     {

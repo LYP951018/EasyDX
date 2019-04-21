@@ -47,7 +47,8 @@ namespace dx
     using FileMappingViewHandle = UniqueHandle<FileMappingViewUnmapper>;
 
     template<typename UniqueHandleType>
-    UniqueHandleType OpenWin32WithCheck(typename UniqueHandleType::HandleType handle)
+    UniqueHandleType
+    OpenWin32WithCheck(typename UniqueHandleType::HandleType handle)
     {
         auto uniqueHandle = UniqueHandleType{handle};
         if (!uniqueHandle)

@@ -7,9 +7,11 @@
 namespace dx
 {
     void GlobalShaderContext::Apply(
-        const std::unordered_map<std::string, gsl::span<std::byte>>& bytesMap) const
+        const std::unordered_map<std::string, gsl::span<std::byte>>& bytesMap)
+        const
     {
-        //不想再用 boost::unordered_map 找来找去，代码太长了，先用 string 了……
+        //不想再用 boost::unordered_map 找来找去，代码太长了，先用 string
+        //了……
         const auto SetIfExists = [&](std::string name, const auto& value) {
             if (const auto it = bytesMap.find(name); it != bytesMap.end())
             {
@@ -20,9 +22,9 @@ namespace dx
         SetIfExists(PROJ_MATRIX, ProjMatrix);
         SetIfExists(VIEW_MATRIX, ViewMatrix);
         SetIfExists(VIEW_PROJ_MATRIX, ViewProjMatrix);
-		SetIfExists(EYE_POS, EyePos);
-		SetIfExists(LIGHTS, lights);
-		SetIfExists(LIGHT_COUNT, lightCount);
+        SetIfExists(EYE_POS, EyePos);
+        SetIfExists(LIGHTS, lights);
+        SetIfExists(LIGHT_COUNT, lightCount);
     }
 
 } // namespace dx

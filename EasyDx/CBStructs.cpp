@@ -54,14 +54,20 @@ namespace dx::cb
     {
         struct Visitor
         {
-            Light operator()(const PointLight& point) const noexcept { return Light{point}; }
+            Light operator()(const PointLight& point) const noexcept
+            {
+                return Light{point};
+            }
 
             Light operator()(const DirectionalLight& directional) const noexcept
             {
                 return Light{directional};
             }
 
-            Light operator()(const SpotLight& spot) const noexcept { return Light{spot}; }
+            Light operator()(const SpotLight& spot) const noexcept
+            {
+                return Light{spot};
+            }
         };
         *this = std::visit(Visitor{}, light);
     }

@@ -86,12 +86,12 @@ namespace dx
         {
             switch (args.State)
             {
-            case ElementState::Pressed:
-                Game_.GetInputSystem().OnKeyDown(args.Key);
-                break;
-            case ElementState::Released:
-                Game_.GetInputSystem().OnKeyUp(args.Key);
-                break;
+                case ElementState::Pressed:
+                    Game_.GetInputSystem().OnKeyDown(args.Key);
+                    break;
+                case ElementState::Released:
+                    Game_.GetInputSystem().OnKeyUp(args.Key);
+                    break;
             }
         }
 
@@ -107,7 +107,8 @@ namespace dx
 
         void operator()(DpiChangedEventArgs args) noexcept
         {
-            Window->PrepareForDpiChanging(args.NewDpiX, args.NewDpiY, args.NewRect);
+            Window->PrepareForDpiChanging(args.NewDpiX, args.NewDpiY,
+                                          args.NewRect);
             Game_.DpiChanged(Window, args);
         }
 
@@ -126,7 +127,8 @@ namespace dx
 
     void Game::UnpackMessage(WindowEventArgsPack event)
     {
-        std::visit(MessageDispatcher{*this, event.Window}, std::move(event.Arg));
+        std::visit(MessageDispatcher{*this, event.Window},
+                   std::move(event.Arg));
     }
 
     void Game::PrepareGraphicsForResizing(GameWindow*, Size newSize)
@@ -137,7 +139,8 @@ namespace dx
         globalGraphics.OnResize(newSize);
     }
 
-    void SceneSwitcher::ReallySwitchToScene([[maybe_unused]] Game& game, std::uint32_t index)
+    void SceneSwitcher::ReallySwitchToScene([[maybe_unused]] Game& game,
+                                            std::uint32_t index)
     {
         const auto it = sceneCreators_.find(index);
         if (it != sceneCreators_.end())
@@ -167,31 +170,38 @@ namespace dx
 
     SceneSwitcher::SceneSwitcher(Game& game) : game_{game} {}
 
-    void SceneSwitcher::AddSceneCreator(std::uint32_t index, SceneCreator creator)
+    void SceneSwitcher::AddSceneCreator(std::uint32_t index,
+                                        SceneCreator creator)
     {
         sceneCreators_.insert(std::make_pair(index, std::move(creator)));
     }
 
-    void SceneSwitcher::WantToSwitchSceneTo(std::uint32_t index) { nextSceneIndex_ = index; }
+    void SceneSwitcher::WantToSwitchSceneTo(std::uint32_t index)
+    {
+        nextSceneIndex_ = index;
+    }
 
     IndependentGraphics::~IndependentGraphics() {}
 
-    Game::Game(std::unique_ptr<GlobalGraphicsContext> globalGraphics, std::uint32_t fps)
-        : fps_{fps}, m_globalGraphics{std::move(globalGraphics)}, sceneSwitcher_{*this},
-          m_inputSystem{MakeUnique<InputSystem>()}
+    Game::Game(std::unique_ptr<GlobalGraphicsContext> globalGraphics,
+               std::uint32_t fps)
+        : fps_{fps}, m_globalGraphics{std::move(globalGraphics)},
+          sceneSwitcher_{*this}, m_inputSystem{MakeUnique<InputSystem>()}
     {
         TryHR(::CoInitialize(nullptr));
     }
 
     Game::~Game() {}
 
-    void RunGame(Game& game, std::unique_ptr<GameWindow> mainWindow, std::uint32_t mainSceneIndex)
+    void RunGame(Game& game, std::unique_ptr<GameWindow> mainWindow,
+                 std::uint32_t mainSceneIndex)
     {
         // Step 1: setup the main window.
         game.SetUp(std::move(mainWindow));
-        // Step 2: switch to the main scene, in which Scene::Start will be called, which may depend
-        // on MainWindow. There always be event registration in Scene::Start, so we must ensure
-        // GameWindow::Show be executed after Start.
+        // Step 2: switch to the main scene, in which Scene::Start will be
+        // called, which may depend on MainWindow. There always be event
+        // registration in Scene::Start, so we must ensure GameWindow::Show
+        // be executed after Start.
         auto& sceneSwitcher = game.Switcher();
         sceneSwitcher.ReallySwitchToScene(game, mainSceneIndex);
         // Step 3: run the game.
