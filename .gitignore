@@ -271,3 +271,6 @@ EasyDx/FakePosNormalTexVS.hpp
 EasyDx/FakePosNormalVS.hpp
 EasyDx/FakePosVS.hpp
 *.cso
+
+*.diagsession
+Primitive/
