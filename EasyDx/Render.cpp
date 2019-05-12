@@ -32,25 +32,33 @@ namespace dx
     }
 
     void DrawMesh(ID3D11DeviceContext& context3D, const Mesh& mesh,
-                  const Material& material)
+                  const Material& material, ID3D11Device* deviceToCreateInputLayout)
     {
-        DrawMesh(context3D, mesh, *material.mainPass.pass);
+        DrawMesh(context3D, mesh, *material.mainPass.pass, deviceToCreateInputLayout);
     }
 
     void DrawMesh(ID3D11DeviceContext& context3D, const Mesh& mesh,
-                  const Pass& pass)
+                  const Pass& pass, ID3D11Device* deviceToCreateInputLayout)
     {
         context3D.IASetPrimitiveTopology(mesh.GetPrimitiveTopology());
         SetupIndexBuffer(context3D, mesh.GetGpuIndexBuffer());
         VSSemantics mask = pass.Shaders.GetMask();
         UpdateGlobalMeshData(mesh, mask);
         // FIXME: .Get
-        ID3D11InputLayout* const existingLayout =
+        ID3D11InputLayout* existingLayout =
             InputLayoutAllocator::Query(gsl::make_span(g_InputElementDescs))
                 .Get();
         if (existingLayout == nullptr)
         {
-            throw std::out_of_range{"input layout does not exist"};
+            if (deviceToCreateInputLayout == nullptr)
+            {
+                throw std::out_of_range{ "input layout does not exist" };
+            }
+            else
+            {
+                existingLayout = InputLayoutAllocator::Register(*deviceToCreateInputLayout,
+                    gsl::make_span(g_InputElementDescs), pass.Shaders.GetVertexShader().GetByteCode()).Get();
+            }
         }
         context3D.IASetInputLayout(existingLayout);
         mesh.FlushAll(context3D);

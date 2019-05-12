@@ -288,6 +288,12 @@ namespace dx
         }
     }
 
+    gsl::span<const std::byte> Shader::GetByteCode() const
+    {
+        assert(GetKind() == ShaderKind::kVertexShader);
+        return gsl::make_span(m_sharedData->byteCode);
+    }
+
     void Shader::Bind(std::string_view name,
                       wrl::ComPtr<ID3D11ShaderResourceView> resourceView) const
     {
@@ -309,17 +315,23 @@ namespace dx
 
     Shader::Shader(ID3D11Device& device3D, gsl::span<const std::byte> byteCode,
                    wrl::ComPtr<ID3D11ShaderReflection> reflection)
-        : m_sharedData{std::make_shared<SharedShaderData>(device3D,
-                                                          reflection)},
-          m_kind{KindFromReflection(dx::Ref(reflection))},
+        : m_kind { KindFromReflection(dx::Ref(reflection))},
+        m_sharedData{std::make_shared<SharedShaderData>(device3D,
+                                                          reflection, m_kind, byteCode)},
           m_shaderObject{
               CreateShaderFromByteCode(device3D, byteCode, GetKind())}
     {}
 
     SharedShaderData::SharedShaderData(
-        ID3D11Device& device3D, wrl::ComPtr<ID3D11ShaderReflection> reflection_)
+        ID3D11Device& device3D, wrl::ComPtr<ID3D11ShaderReflection> reflection_,
+        ShaderKind kind, gsl::span<const std::byte> byteCode_)
         : reflection{std::move(reflection_)}
     {
+        if (kind == ShaderKind::kVertexShader)
+        {
+            byteCode.insert(byteCode.end(), byteCode_.begin(), byteCode_.end());
+        }
+
         D3D11_SHADER_DESC shaderDesc;
         TryHR(reflection->GetDesc(&shaderDesc));
         const std::uint32_t cbCount = shaderDesc.ConstantBuffers;

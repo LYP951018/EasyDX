@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include <d3d11.h>
 #include <d3d11shader.h>
@@ -175,7 +175,9 @@ namespace dx
     struct SharedShaderData
     {
         SharedShaderData(ID3D11Device& device3D,
-                         wrl::ComPtr<ID3D11ShaderReflection> reflection_);
+                         wrl::ComPtr<ID3D11ShaderReflection> reflection_,
+            ShaderKind kind,
+            gsl::span<const std::byte> byteCode_);
 
         wrl::ComPtr<ID3D11Buffer> GpuCb;
         wrl::ComPtr<ID3D11ShaderReflection> reflection;
@@ -183,6 +185,8 @@ namespace dx
         std::unordered_map<std::string, gsl::span<std::byte>> BytesMap;
         BoundedResources<ID3D11ShaderResourceView> ResourceViews;
         BoundedResources<ID3D11SamplerState> Samplers;
+        //for vertex shaders only.
+        std::vector<std::byte> byteCode;
     };
 
     class Shader
@@ -229,6 +233,7 @@ namespace dx
         void SetBytes(std::string_view fieldName,
                       gsl::span<const std::byte> bytes) const;
         ShaderKind GetKind() const { return m_kind; }
+        gsl::span<const std::byte> GetByteCode() const;
         const wrl::ComPtr<ID3D11ShaderReflection>& GetReflection() const
         {
             return m_sharedData->reflection;
@@ -255,8 +260,8 @@ namespace dx
         Shader(ID3D11Device& device3D, gsl::span<const std::byte> byteCode,
                wrl::ComPtr<ID3D11ShaderReflection> reflection);
 
-        std::shared_ptr<SharedShaderData> m_sharedData;
         ShaderKind m_kind;
+        std::shared_ptr<SharedShaderData> m_sharedData;
         wrl::ComPtr<ID3D11DeviceChild> m_shaderObject;
     };
 
