@@ -15,7 +15,7 @@ MainScene::MainScene(dx::Game& game) : dx::SceneBase{game}
     LoadScene(dx::PredefinedResources::GetInstance());
     m_shadowMapRenderer = std::make_unique<CascadedShadowMappingRenderer>(
         Device3D,
-        CascadedShadowMapConfig{dx::Size{1024, 1024}, dx::Size{1024, 1024},
+        CascadedShadowMapConfig{dx::Size{1024, 1024}, dx::Size{1008, 985},
                                 std::array{0.0f, 0.1f, 0.3f, 0.5f, 1.0f}});
 
     // InitShadowMapping(game);
@@ -69,11 +69,11 @@ void MainScene::LoadScene(const dx::PredefinedResources& predefinedRes)
             dx::TransformComponent{dx::Transform(
                 XMVectorSet(1.0f, 1.0f, 1.0f, 1.0f), XMQuaternionIdentity(),
                 XMVectorSet(0.0f, 0.0f, 15.0f, 0.0f))}));
-        m_objects.push_back(std::make_shared<dx::Object>(
+       /* m_objects.push_back(std::make_shared<dx::Object>(
             dx::MeshRenderer{mesh, m_materials[aiMesh_->mMaterialIndex]},
             dx::TransformComponent{dx::Transform(
                 XMVectorSet(1.0f, 1.0f, 1.0f, 1.0f), XMQuaternionIdentity(),
-                XMVectorSet(0.0f, 0.0f, 20.0f, 0.0f))}));
+                XMVectorSet(0.0f, 0.0f, 20.0f, 0.0f))}));*/
     }
 }
 
@@ -259,18 +259,18 @@ void MainScene::Render(ID3D11DeviceContext& context3D,
     m_shadowMapRenderer->GenerateShadowMap(gfxContext, MainCamera(), Lights(),
                                            gsl::make_span(renderNodes),
                                            context);
-    // context3D.OMSetRenderTargets(1, &mainRt,
-    // gfxContext.GetDepthStencil().View());
-    //////TODO: sort by material
-    // for (const dx::RenderNode& node : renderNodes)
-    //{
-    //    const dx::Material& material = node.material;
-    //    const dx::Mesh& mesh = node.mesh;
-    //    const dx::PassWithShaderInputs& mainPassWithInputs =
-    //    material.mainPass; dx::FillUpShaders(context3D,
-    //    mainPassWithInputs, node.World, nullptr, context);
-    //    dx::DrawMesh(context3D, mesh, mainPassWithInputs.pass);
-    //}
+     context3D.OMSetRenderTargets(1, &mainRt,
+     gfxContext.GetDepthStencil().View());
+    ////TODO: sort by material
+     for (const dx::RenderNode& node : renderNodes)
+    {
+        const dx::Material& material = node.material;
+        const dx::Mesh& mesh = node.mesh;
+        const dx::PassWithShaderInputs& mainPassWithInputs =
+        material.mainPass; dx::FillUpShaders(context3D,
+        mainPassWithInputs, node.World, nullptr, context);
+        dx::DrawMesh(context3D, mesh, mainPassWithInputs.pass);
+    }
 
     gfxContext.GetSwapChain().Present();
 

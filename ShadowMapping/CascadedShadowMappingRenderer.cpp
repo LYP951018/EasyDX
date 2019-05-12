@@ -45,6 +45,8 @@ void CascadedShadowMappingRenderer::GenerateShadowMap(
     // 为了从 screen space 还原到 world space。
     std::array<ID3D11RenderTargetView* const, 1> nullView = {};
     context3D.OMSetRenderTargets(1, nullView.data(), m_worldDepthView.Get());
+   // context3D.ClearRenderTargetView(rt, color.data());
+    context3D.ClearDepthStencilView(m_worldDepthView.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
     RunShadowCaster(renderNodes, shaderContext, context3D);
     BoundingBox viewSpaceSceneAabb;
     BoundingBox::CreateFromPoints(viewSpaceSceneAabb, g_XMNegInfinity,
@@ -102,10 +104,15 @@ void CascadedShadowMappingRenderer::GenerateShadowMap(
         XMFLOAT4{0.0f, 0.0f, 1.0f, 1.0f},
         XMFLOAT4{1.0f, 1.0f, 0.0f, 1.0f},
     };
+    D3D11_VIEWPORT viewport{
+        0.0f, 0.0f, m_config.ShadowMapSize.Width, m_config.ShadowMapSize.Height, 0, 1
+    };;
+    context3D.RSSetViewports(1, &viewport);
     for (std::uint32_t i = 0; i < partitionCount; ++i)
     {
         const float low = nearZ + m_partitions[i] * nearFarDistance;
         const float high = nearZ + m_partitions[i + 1] * nearFarDistance;
+        m_intervals[i] = low;
         XMMATRIX projMatrix = CalcLightProjMatrix(
             mainLight, frustum, low, high, lightSpaceProjMatrix,
             viewSpaceSceneAabb, viewToLight);
@@ -119,7 +126,7 @@ void CascadedShadowMappingRenderer::GenerateShadowMap(
         shaderContextForShadowMapping.ViewProjMatrix =
             shaderContextForShadowMapping.ViewMatrix *
             shaderContextForShadowMapping.ProjMatrix;
-        m_lightViewProjs[i] = lightSpaceViewMatrix * projMatrix;
+        m_lightViewProjs[i] = viewToLight * projMatrix;
         ID3D11RenderTargetView* rt = m_shadowMapRtViews[i].Get();
         context3D.OMSetRenderTargets(1, &rt, m_shadowMapRtDepthStencil.View());
         std::array<float, 4> color = {};
@@ -136,7 +143,7 @@ void CascadedShadowMappingRenderer::GenerateShadowMap(
                      *renderNode.material.shadowCasterPass.pass);
         }
     }
-    if (!m_cubePass)
+    /*if (!m_cubePass)
     {
         const auto mappedCso =
             MemoryMappedCso{fs::current_path() / L"CubeVS.cso"};
@@ -157,10 +164,33 @@ void CascadedShadowMappingRenderer::GenerateShadowMap(
         FillUpShaders(context3D, dx::PassWithShaderInputs{m_cubePass},
                       XMMatrixIdentity(), nullptr, shaderContext);
         DrawMesh(context3D, *mesh, *m_cubePass);
-    }
+    }*/
+    ID3D11RenderTargetView* rts[] = { m_sssmRt.Get() };
+    context3D.OMSetRenderTargets(1, rts, nullptr);
+    D3D11_VIEWPORT viewport2{
+        0.0f, 0.0f, m_config.ScreenSpaceTexSize.Width, m_config.ScreenSpaceTexSize.Height, 0, 1
+    };;
+    context3D.RSSetViewports(1, &viewport2);
+    float color[4] = {};
+    context3D.ClearRenderTargetView(m_sssmRt.Get(), color);
+    ShaderInputs& inputs = m_collectPass.inputs;
+    const XMMATRIX invProj = XMMatrixInverse({}, camera.GetProjection());
+    inputs.SetField("InvProj", invProj);
+    inputs.SetField("lightSpaceProjs", m_lightViewProjs);
+    inputs.SetField("Intervals", m_intervals);
+    inputs.Bind("DepthMap", m_depthSrv);
+    inputs.Bind("ShadowMapArray", m_shadowMapTexArraySrv);
+    inputs.Bind("NearestPointSampler", m_nearestPointSampler);
+    FillUpShaders(context3D, m_collectPass,
+        DirectX::XMMatrixIdentity(), nullptr,
+        shaderContextForShadowMapping);
+    DrawMesh(context3D, *m_screenSpaceQuad,
+        m_collectPass.pass, &gfxContext.Device3D());
+    ID3D11ShaderResourceView* srvs[] = { nullptr, nullptr };
+    context3D.PSSetShaderResources(0, 2, srvs);
+    context3D.VSSetShaderResources(0, 2, srvs);
 
     // m_depthTexArray has been filled.
-
     // last pass: generate screen space shadowmap
 
     // auto invViewProj = XMMatrixInverse({},
@@ -168,8 +198,8 @@ void CascadedShadowMappingRenderer::GenerateShadowMap(
 
     // dx::ShaderInputs additionalInputs;
     //// viewspace
-    // additionalInputs.SetField("InvViewProj", invViewProj);
-    // additionalInputs.SetField("LightViewProjs", m_lightViewProjs);
+    // additionalInputs.SetField("lightSpaceProjs", m_lightViewProjs);
+    // additionalInputs.SetField("InvProj", m_lightViewProjs);
     // additionalInputs.Bind("DepthTex", m_shadowMapTexArraySrv);
     // additionalInputs.Bind("DepthTexSampler", m_nearestPointSampler);
     // DrawMesh(context3D, *m_quad, m_collectPass);
@@ -266,7 +296,8 @@ DirectX::XMMATRIX CascadedShadowMappingRenderer::CalcLightProjMatrix(
                     const XMVECTOR minFrustum = XMLoadFloat3(&frustumCorner);
                     return XMVectorMin(g_BoxOffset[index] * minBox,
             g_BoxOffset[index] * minFrustum);
-                    
+                    
+
             };
 
             BoundingBox newBox;
@@ -388,18 +419,43 @@ void CascadedShadowMappingRenderer::CreateSssmRt(ID3D11Device& device3D,
     rtDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
     TryHR(device3D.CreateRenderTargetView(m_screenSpaceShadowMap.Get(), &rtDesc,
                                           m_sssmRt.GetAddressOf()));
-    /* const ShortIndex quadIndices[] = {0, 1, 2, 1, 2, 3};
+     const ShortIndex quadIndices[] = {0, 1, 2, 2, 1, 3};
      const PositionType quadPositions[] = {
          MakePosition(-1.0f, 1.0f, 1.0f),
          MakePosition(1.0f, 1.0f, 1.0f),
          MakePosition(-1.0f, -1.0f, 1.0f),
-         MakePosition(-1.0f, 1.0f, 1.0f),
+         MakePosition(1.0f, -1.0f, 1.0f),
      };
-     const TexCoordType quadTexCoords[] = {MakeTexCoord(0.0f, 0.0f),
-     MakeTexCoord(1.0f, 0.0f), MakeTexCoord(0.0f, 1.0f),
-     MakeTexCoord(1.0f, 1.0f)}; m_quad = Mesh::CreateImmutable(device3D,
-     InputLayoutAllocator::Query(dx::PosTexDesc), gsl::span(quadIndices),
-     gsl::span(quadPositions), gsl::span(quadTexCoords));*/
+     const TexCoordType quadTexCoords[] = {
+         MakeTexCoord(0.0f, 0.0f), MakeTexCoord(1.0f, 0.0f),
+         MakeTexCoord(0.0f, 1.0f), MakeTexCoord(1.0f, 1.0f)}; 
+     VSSemantics semantics[] = {
+         VSSemantics::kPosition, VSSemantics::kTexCoord
+     };
+     DxgiFormat formats[] = {
+         DxgiFormat::R32G32B32A32Float,
+         DxgiFormat::R32G32Float
+     };
+     std::uint32_t indices[] = { 0, 0 };
+     std::vector<D3D11_INPUT_ELEMENT_DESC> inputElementsDesces;
+     FillInputElementsDesc(inputElementsDesces, semantics, formats,
+         indices);
+     m_screenSpaceQuad = Mesh::CreateImmutable(
+         device3D, D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST, gsl::span(quadIndices),
+         semantics, 4, std::move(inputElementsDesces),
+     quadPositions, quadTexCoords);
+
+     m_collectPass.pass = std::make_shared<dx::Pass>(dx::Pass
+     {
+         MakeShaderCollection(
+             dx::Shader::FromCompiledCso(device3D, fs::current_path() /
+                                                       "ShadowCollectVS.cso"),
+             dx::Shader::FromCompiledCso(device3D, fs::current_path() /
+                                                       L"ShadowCollectPS.cso"))
+     });
+     CD3D11_SAMPLER_DESC samplerDesc{ CD3D11_DEFAULT{} };
+     samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
+     TryHR(device3D.CreateSamplerState(&samplerDesc, m_nearestPointSampler.GetAddressOf()));
 }
 
 void CascadedShadowMappingRenderer::CreateDepthGenerationResources(
@@ -408,7 +464,7 @@ void CascadedShadowMappingRenderer::CreateDepthGenerationResources(
     // first pass: collect depth
     CD3D11_TEXTURE2D_DESC depthTexDesc{DXGI_FORMAT_R32G8X24_TYPELESS,
                                        m_config.ScreenSpaceTexSize.Width,
-                                       m_config.ScreenSpaceTexSize.Height};
+                                       m_config.ScreenSpaceTexSize.Height, 1, 1};
     depthTexDesc.BindFlags |= D3D11_BIND_FLAG::D3D11_BIND_DEPTH_STENCIL;
     TryHR(device3D.CreateTexture2D(&depthTexDesc, nullptr,
                                    m_worldSpaceDepthMap.GetAddressOf()));

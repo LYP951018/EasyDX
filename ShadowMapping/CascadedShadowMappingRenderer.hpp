@@ -68,8 +68,10 @@ class CascadedShadowMappingRenderer
     std::array<DirectX::XMMATRIX, kCascadedCount> m_lightViewProjs;
     wrl::ComPtr<ID3D11Texture2D> m_screenSpaceShadowMap;
     wrl::ComPtr<ID3D11RenderTargetView> m_sssmRt;
-    std::shared_ptr<dx::Pass> m_collectPass;
+    dx::PassWithShaderInputs m_collectPass;
     CascadedShadowMapConfig m_config;
+    std::shared_ptr<dx::Mesh> m_screenSpaceQuad;
+    std::array<float, kCascadedCount> m_intervals;
 };
 
 DirectX::XMMATRIX MatrixFromTransform(dx::TransformComponent* transform);

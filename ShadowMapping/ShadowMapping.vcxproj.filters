@@ -46,10 +46,16 @@
     <FxCompile Include="Shaders\BlackSolidColor.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="Shaders\SecondPassVS.hlsl">
+    <FxCompile Include="Shaders\CubePS.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="Shaders\SecondPassPS.hlsl">
+    <FxCompile Include="Shaders\CubeVS.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\ShadowCollectPS.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\ShadowCollectVS.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
   </ItemGroup>
