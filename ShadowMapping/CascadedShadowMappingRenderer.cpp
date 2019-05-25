@@ -126,7 +126,7 @@ void CascadedShadowMappingRenderer::GenerateShadowMap(
         shaderContextForShadowMapping.ViewProjMatrix =
             shaderContextForShadowMapping.ViewMatrix *
             shaderContextForShadowMapping.ProjMatrix;
-        m_lightViewProjs[i] = viewToLight * projMatrix;
+        m_lightViewProjs[i] = viewToLight * shaderContextForShadowMapping.ProjMatrix;
         ID3D11RenderTargetView* rt = m_shadowMapRtViews[i].Get();
         context3D.OMSetRenderTargets(1, &rt, m_shadowMapRtDepthStencil.View());
         std::array<float, 4> color = {};

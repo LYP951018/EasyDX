@@ -27,14 +27,17 @@ float4 main(dx::Outputs::PosTex input) : SV_Target
     float2 uv = input.TexCoord;
     float2 ndc = uv * 2.0f - 1.0f;
     float depth = DepthMap.Sample(NearestPointSampler, uv).r;
-    float4 homoPos = float4(ndc, 2 * depth - 1, 1.0f);
+    ndc.y = -ndc.y;
+    float4 homoPos = float4(ndc, depth, 1.0f);
     float4 viewSpacePosU = mul(InvProj, homoPos);
     float4 viewSpacePos = viewSpacePosU / viewSpacePosU.w;
     int index = IndexFromZ(viewSpacePos.z);
     float4 lightSpacePos = mul(lightSpaceProjs[index], viewSpacePos);
+    lightSpacePos /= lightSpacePos.w;
+    float2 lightUV = (lightSpacePos.xy + 1.0f.xx) / 2.0f;
+    lightUV.y = 1 - lightUV.y;
     float minimalDepth = ShadowMapArray.Sample(NearestPointSampler,
-        float3(lightSpacePos.x, lightSpacePos.y, index));
-    float4 p = lightSpacePos;
-    float color = (float)(depth <= minimalDepth);
+        float3(lightUV, index));
+    float color = (float)(abs(lightSpacePos.z - minimalDepth) <= 0.006f);
     return color.xxxx;
 }
